@@ -37,3 +37,20 @@
 3. DevTools → Application → localStorage → tüm cember:* sil
 4. Yenile, Yedek Yükle → kodu yapıştır
 5. Ayar değişikliği + yarım bulmaca geri gelmeli
+
+## Plan 02 — Final
+
+Branch `plan-02-patches-and-features` üzerinde 18 task tamamlandı. Toplam 17-18 commit.
+
+### Kullanıcı tarafı manuel doğrulama
+- [ ] Açılış: "Merhaba Yarim"
+- [ ] Türkçe karakterler her yerde doğru
+- [ ] Setup → hint density slider 0'a inebilir
+- [ ] Auto-X çalışıyor (0 etrafı, 3 etrafı)
+- [ ] Undo/Redo butonları, max 200 buffer
+- [ ] Auto-check 3 seçenek canlı update
+- [ ] Nasıl Oynanır sheet 5 sekme
+- [ ] Yedek Üret → kopyala → temizle → Yükle → restore
+
+### Sonraki adım
+Plan 03 — PWA setup (`docs/spec/plan-03-pwa.md` yazılacak).
