@@ -13,7 +13,7 @@ import {mulberry32} from "../core/rng.js";
  */
 export function generateMap(seed, config={}){
   const F=config.floors||5;
-  const W=config.maxWidth||3;
+  const W=config.maxWidth||4;
   const types=config.nodeTypes||["puzzle","puzzle","elite","chest","rest","event"];
   // Hash seed → rng
   let h=2166136261>>>0;
@@ -30,14 +30,25 @@ export function generateMap(seed, config={}){
       // Start — single node
       nodes.push({id:idOf(0,Math.floor(W/2)),floor:0,col:Math.floor(W/2),type:"puzzle"});
     }else{
-      // Middle floor — 2-3 nodes
-      const width=2+(rng()<0.5?1:0);
+      // Middle floor — 2..W nodes (random width), type from floorConfig.nodes pool if present.
+      const minWidth=2;
+      const width=Math.min(W,minWidth+((rng()*(W-minWidth+1))|0));
       const cols=[];
-      if(width===2){cols.push(0,W-1);}
-      else{cols.push(0,Math.floor(W/2),W-1);}
+      const usedCols=new Set();
+      while(cols.length<width){
+        const c=(rng()*W)|0;
+        if(!usedCols.has(c)){usedCols.add(c);cols.push(c);}
+      }
+      cols.sort((a,b)=>a-b);
+      const floorCfg=config.floorConfig&&config.floorConfig[f];
       for(const c of cols){
-        const t=types[(rng()*types.length)|0];
-        nodes.push({id:idOf(f,c),floor:f,col:c,type:t});
+        let preferredType=null;
+        if(floorCfg&&floorCfg.nodes&&floorCfg.nodes.length){
+          preferredType=floorCfg.nodes[(rng()*floorCfg.nodes.length)|0];
+        }else{
+          preferredType=types[(rng()*types.length)|0];
+        }
+        nodes.push({id:idOf(f,c),floor:f,col:c,type:preferredType});
       }
     }
   }

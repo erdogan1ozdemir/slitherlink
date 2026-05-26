@@ -879,7 +879,7 @@ function startRogueRun(realmId){
   if(wasNewRun){
     const seed="rogue-"+realmId+"-"+Date.now();
     const realm=getRealm(realmId);
-    activeRun=startRun({realmId,seed,config:{floors:realm.floors}});
+    activeRun=startRun({realmId,seed,config:{floors:realm.floors,maxWidth:4,floorConfig:realm.floorConfig}});
     // D2: bazı chest düğümlerini locked yap
     if(realmId==="karanlik-igne"){
       let h=2166136261>>>0;for(let i=0;i<seed.length;i++){h^=seed.charCodeAt(i);h=Math.imul(h,16777619);}
