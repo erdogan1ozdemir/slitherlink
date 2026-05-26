@@ -443,7 +443,12 @@ function deepMerge(target,source){
   return target;
 }
 let meta=deepMerge(Object.assign({},store.get(KEYS.meta,{})),META_DEFAULTS);
-if(!meta.version)meta.version=1;
+function migrateMeta(m){
+  if(!m.version)m.version=1;
+  // v1 = current; future versions: if(m.version<2){...; m.version=2;}
+  return m;
+}
+meta=migrateMeta(meta);
 store.set(KEYS.meta,meta);
 function saveMeta(){store.set(KEYS.meta,meta);}
 const TOGGLE_DEFS=[
