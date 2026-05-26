@@ -145,6 +145,68 @@ export const ACHIEVEMENTS={
     trigger:"single_session_clear:yildiz-gecidi",
     secret:false,
   },
+  // === Cross-realm meta ===
+  "ilk-iz":{
+    id:"ilk-iz",realm:null,title:"İlk İz",
+    body:"Herhangi bir koşu başlattın.",
+    diary:"Bir adım atıldı. İz başladı.",
+    trigger:"run_started",secret:false,
+  },
+  "on-cember":{
+    id:"on-cember",realm:null,title:"On Çember",
+    body:"10 puzzle çözdün.",
+    diary:"On çember, on iplik, on nefes.",
+    trigger:"solve_count:10",secret:false,
+  },
+  "yuz-cember":{
+    id:"yuz-cember",realm:null,title:"Yüz Çember",
+    body:"100 puzzle çözdün.",
+    diary:"Yüzüncü çember kapandı. Tezgah seni tanıyor.",
+    trigger:"solve_count:100",secret:false,
+  },
+  "uc-diyar":{
+    id:"uc-diyar",realm:null,title:"Üç Diyar",
+    body:"Üç diyarı da en az bir kez tamamladın.",
+    diary:"Üç kapıdan da geçtin. Geceyi de gündüzü de tanıdın.",
+    trigger:"realms_cleared_all",secret:false,
+  },
+  "uc-patron":{
+    id:"uc-patron",realm:null,title:"Üç Patron",
+    body:"Üç patronu da yendin.",
+    diary:"Üç sessizlik, üç selam.",
+    trigger:"bosses_defeated_all",secret:false,
+  },
+  "koleksiyoncu":{
+    id:"koleksiyoncu",realm:null,title:"Koleksiyoncu",
+    body:"Her diyardan en az 3 farklı relic gördün.",
+    diary:"Boncuklar uzun bir ip oldu.",
+    trigger:"relics_per_realm:3",secret:false,
+  },
+  "sessiz-dost":{
+    id:"sessiz-dost",realm:null,title:"Sessiz Dost",
+    body:"7 farklı günde oynadın.",
+    diary:"Her gün bir iplik bıraktın. Hiç sözsüz.",
+    trigger:"days_streak:7",secret:false,
+  },
+  "ev-sahibi":{
+    id:"ev-sahibi",realm:null,title:"Ev Sahibi",
+    body:"Permanent starter slot'unu doldurdun.",
+    diary:"Yuvana bir armağan koydun. Sonraki koşulara seninle gelir.",
+    trigger:"permanent_starter_set",secret:false,
+  },
+  // === Saklı ===
+  "jediyi-gor":{
+    id:"jediyi-gor",realm:null,title:"Jedi'yi Gör",
+    body:"Yuva'da Jedi'nin silüetine dokundun.",
+    diary:"Jedi sana baktı. Sen ona. Bir an her şey durdu.",
+    trigger:"jedi_tap",secret:true,
+  },
+  "saatin-kedisi":{
+    id:"saatin-kedisi",realm:null,title:"Saatin Kedisi",
+    body:"Gece 3 ile 4 arasında oynadın.",
+    diary:"Gece yarısı geçti, kedi uyumadı. Sen de.",
+    trigger:"played_in_hour:3",secret:true,
+  },
 };
 
 /** Engine — emit/check pattern.
