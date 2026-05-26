@@ -320,6 +320,18 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
 
 <script>
 /* =========================================================================
+   0) PWA — service worker register + persistent storage
+   ========================================================================= */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+  });
+}
+if(navigator.storage&&navigator.storage.persist){
+  navigator.storage.persist().catch(()=>{});
+}
+
+/* =========================================================================
    1) KISISELLESTIRME / CONFIG   (tek degistirecegin yer)
    ========================================================================= */
 const CONFIG = {
