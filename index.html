@@ -723,6 +723,14 @@ function startRogueRun(realmId){
     const seed="rogue-"+realmId+"-"+Date.now();
     const realm=getRealm(realmId);
     activeRun=startRun({realmId,seed,config:{floors:realm.floors}});
+    // D2: bazı chest düğümlerini locked yap
+    if(realmId==="karanlik-igne"){
+      let h=2166136261>>>0;for(let i=0;i<seed.length;i++){h^=seed.charCodeAt(i);h=Math.imul(h,16777619);}
+      const rng=mulberry32(h>>>0);
+      activeRun.mapGraph.nodes.forEach(n=>{
+        if(n.type==="chest"&&rng()<0.5)n.type="locked-chest";
+      });
+    }
     store.set(KEYS.rogueRun,activeRun);
     meta.totalStats.runs=(meta.totalStats.runs||0)+1;saveMeta();
   }
@@ -739,7 +747,7 @@ function renderRogueMap(run){
   const visited=new Set(run.visited);
   const current=run.currentNodeId;
 
-  const glyph={puzzle:"◇",elite:"☆",chest:"⬚",rest:"◐",event:"?",boss:"☠"};
+  const glyph={puzzle:"◇",elite:"☆",chest:"⬚","locked-chest":"⚿",rest:"◐",event:"?",boss:"☠"};
 
   const livesHtml=`<span style="color:var(--bad);">${"♥".repeat(run.lives.current)}</span><span style="color:var(--faint);">${"♥".repeat(run.lives.max-run.lives.current)}</span>`;
 
@@ -810,7 +818,7 @@ function handleRogueNode(nodeId){
     const keep=floorCfg?floorCfg.keep:0.75;
     const rng=mulberry32(hashSeed(run.seed+"-"+nodeId));
     startGame(makePuzzle(size,size,keep,rng),{mode:"rogue",realmId:run.realmId,nodeId,runRef:true});
-  }else if(node.type==="chest"){
+  }else if(node.type==="chest"||node.type==="locked-chest"){
     openChestModal(run,node);
   }else if(node.type==="event"){
     openEventModal(run,node);
@@ -827,6 +835,20 @@ function openChestModal(run,node){
   const realm=getRealm(run.realmId);
   let h=2166136261>>>0;const s=run.seed+"-chest-"+node.id;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}
   const rng=mulberry32(h>>>0);
+  // Locked chest: D2 ve floorConfig'te locked-chest tipi ise (veya node.type=="locked-chest")
+  const isLockedChest=node.type==="locked-chest";
+  if(isLockedChest&&!hasRelic(run,"bronz-anahtar")){
+    openRogueModal(`
+      <h2>Kilitli Sandık</h2>
+      <p>Sağlam bir kilit. Bronz Anahtar olmadan açılmıyor.</p>
+      <div style="display:flex;flex-direction:column;gap:10px;margin:14px 0;">
+        <button class="opt" data-skip="1" style="background:transparent;border:1px dashed var(--hairline);color:var(--muted);">Geç</button>
+      </div>
+    `,e=>{
+      if(e.target.closest("[data-skip]")){closeRogueModal();renderRogueMap(run);}
+    });
+    return;
+  }
   const offers=rollRelicOffer(realm.relicPool||[],3,rng).filter(r=>!run.relics.includes(r.id));
   if(!offers.length){renderRogueMap(run);return;}
   const html=`
@@ -856,6 +878,7 @@ function openChestModal(run,node){
       meta.realms[run.realmId].knownRelics=Array.from(new Set([...(meta.realms[run.realmId].knownRelics||[]),relicId]));
       saveMeta();
       checkAllRelicsSeenInRun(run);
+      if(isLockedChest)achievementUnlock("locked_chest_opened:"+run.realmId);
     }
     store.set(KEYS.rogueRun,run);
     closeRogueModal();
@@ -925,6 +948,45 @@ function applyEventEffect(run,ev,choice){
       run.relics.push(offer[0].id);
       if(!meta.realms[run.realmId])meta.realms[run.realmId]={};
       meta.realms[run.realmId].knownRelics=Array.from(new Set([...(meta.realms[run.realmId].knownRelics||[]),offer[0].id]));
+      saveMeta();
+      checkAllRelicsSeenInRun(run);
+    }
+  }else if(e.type==="chance-relic-or-damage"){
+    if(Math.random()<(e.chance||0.5)){
+      // gives a relic
+      const realm=getRealm(run.realmId);
+      const rng=mulberry32(Date.now()&0xffffffff);
+      const offer=rollRelicOffer(realm.relicPool||[],1,rng).filter(r=>!run.relics.includes(r.id));
+      if(offer.length){
+        run.relics.push(offer[0].id);
+        if(!meta.realms[run.realmId])meta.realms[run.realmId]={};
+        meta.realms[run.realmId].knownRelics=Array.from(new Set([...(meta.realms[run.realmId].knownRelics||[]),offer[0].id]));
+        saveMeta();
+        checkAllRelicsSeenInRun(run);
+      }
+    }else{
+      run.lives.current=Math.max(0,run.lives.current-1);
+      if(run.lives.current===0){run.ended=true;run.endReason="no-lives";}
+    }
+  }else if(e.type==="damage-then-relic"){
+    run.lives.current=Math.max(0,run.lives.current-(e.damage||1));
+    if(run.lives.current===0){run.ended=true;run.endReason="no-lives";return;}
+    const realm=getRealm(run.realmId);
+    const rng=mulberry32(Date.now()&0xffffffff);
+    const pool=realm.relicPool.filter(id=>RELICS[id]&&RELICS[id].rarity==="nadir");
+    const offer=rollRelicOffer(pool.length?pool:realm.relicPool||[],1,rng).filter(r=>!run.relics.includes(r.id));
+    if(offer.length){
+      run.relics.push(offer[0].id);
+      if(!meta.realms[run.realmId])meta.realms[run.realmId]={};
+      meta.realms[run.realmId].knownRelics=Array.from(new Set([...(meta.realms[run.realmId].knownRelics||[]),offer[0].id]));
+      saveMeta();
+      checkAllRelicsSeenInRun(run);
+    }
+  }else if(e.type==="chance-specific-relic"){
+    if(Math.random()<(e.chance||0.5)&&e.relicId&&RELICS[e.relicId]&&!run.relics.includes(e.relicId)){
+      run.relics.push(e.relicId);
+      if(!meta.realms[run.realmId])meta.realms[run.realmId]={};
+      meta.realms[run.realmId].knownRelics=Array.from(new Set([...(meta.realms[run.realmId].knownRelics||[]),e.relicId]));
       saveMeta();
       checkAllRelicsSeenInRun(run);
     }
@@ -1005,6 +1067,17 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
         if(run.realmId==="sogut-esigi"){
           if(!meta.realms["karanlik-igne"])meta.realms["karanlik-igne"]={};
           meta.realms["karanlik-igne"].unlocked=true;
+        }else if(run.realmId==="karanlik-igne"){
+          // D3 koşulu: D2 boss + farklı koşularda ≥3 farklı relic
+          const knownInD2=(meta.realms["karanlik-igne"]?.knownRelics||[]).length;
+          if(knownInD2>=3){
+            if(!meta.realms["yildiz-gecidi"])meta.realms["yildiz-gecidi"]={};
+            meta.realms["yildiz-gecidi"].unlocked=true;
+          }
+        }
+        // Speed clear achievement
+        if(run.realmId==="karanlik-igne"&&elapsed<900){
+          achievementUnlock("speed_clear:karanlik-igne:900");
         }
       }
       saveMeta();
