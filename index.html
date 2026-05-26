@@ -101,7 +101,8 @@ svg{width:100%;height:auto;display:block;touch-action:manipulation;}
 .chip{background:var(--panel);border:1px solid var(--hairline);border-radius:999px;padding:6px 13px;font-family:var(--font-mono);font-weight:700;font-size:12px;display:flex;gap:8px;align-items:center;font-variant-numeric:tabular-nums;}
 .chip small{color:var(--muted);font-weight:500;font-size:9px;letter-spacing:.22em;text-transform:uppercase;font-family:var(--font-mono);}
 .controls{display:flex;gap:10px;justify-content:center;padding:14px 16px calc(8px + var(--safe-b));}
-.controls button{font-family:var(--font-body);font-weight:700;font-size:14px;padding:13px 16px;border-radius:14px;border:1px solid var(--hairline);cursor:pointer;flex:1;max-width:150px;letter-spacing:.01em;}
+.controls button{font-family:var(--font-body);font-weight:700;font-size:14px;padding:13px 12px;border-radius:14px;border:1px solid var(--hairline);cursor:pointer;flex:1;max-width:150px;letter-spacing:.01em;min-width:44px;}
+.controls button:disabled{opacity:.3;cursor:not-allowed;}
 .btn-primary{background:var(--ink);color:var(--bg);border:none!important;}
 .btn-ghost{background:var(--panel);color:var(--ink);}
 .controls button:active{transform:translateY(2px);}
@@ -214,7 +215,9 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
     </div>
     <div class="board-wrap"><div class="board-card"><svg id="board"></svg></div></div>
     <div class="controls">
-      <button class="btn-ghost" id="resetBtn">↺ Temizle</button>
+      <button class="btn-ghost" id="undoBtn" title="Geri al">↶</button>
+      <button class="btn-ghost" id="redoBtn" title="İleri al">↷</button>
+      <button class="btn-ghost" id="resetBtn" title="Temizle">↺</button>
       <button class="btn-ghost hidden" id="hintBtn">💡 İpucu</button>
       <button class="btn-primary" id="newBtn">✦ Yeni</button>
     </div>
@@ -353,6 +356,7 @@ function journeyProgress(){return store.get(KEYS.jrnProg,{unlocked:0,times:{}});
 let P=null,hState=null,vState=null,solved=false,hints=0;
 let elapsed=0,timerId=null,timerBase=0;
 let ctx={mode:"free",levelIndex:null};
+let undoStack=[],redoStack=[];
 const $=id=>document.getElementById(id);
 const boardEl=$("board");
 
@@ -360,6 +364,7 @@ function buzz(ms){if(settings.haptics&&navigator.vibrate){try{navigator.vibrate(
 
 function startGame(puzzle,context,restore){
   P=puzzle;ctx=context;solved=false;
+  undoStack=[];redoStack=[];
   if(restore){hState=restore.hState;vState=restore.vState;hints=restore.hints||0;elapsed=restore.elapsed||0;}
   else{hState=Array.from({length:P.R+1},()=>Array(P.C).fill(0));
        vState=Array.from({length:P.R},()=>Array(P.C+1).fill(0));hints=0;elapsed=0;}
@@ -390,6 +395,7 @@ function render(){
   for(let r=0;r<=g.R;r++)for(let c=0;c<g.C;c++)hit(dx(c),dy(r),dx(c+1),dy(r),"h",r,c);
   for(let r=0;r<g.R;r++)for(let c=0;c<=g.C;c++)hit(dx(c),dy(r),dx(c),dy(r+1),"v",r,c);
   updateClueStates();
+  updateUndoRedoButtons();
 }
 function autoXAfterClue(r,c){
   if(!settings.autoX)return;
@@ -408,8 +414,18 @@ function applyAutoXAround(r,c){
     autoXAfterClue(r+dr,c+dc);
   }
 }
+function snapshotState(){
+  return {h:hState.map(row=>row.slice()),v:vState.map(row=>row.slice())};
+}
+function restoreState(s){
+  hState=s.h.map(row=>row.slice());
+  vState=s.v.map(row=>row.slice());
+}
 function toggle(k,r,c){
   if(solved)return;
+  undoStack.push(snapshotState());
+  if(undoStack.length>200)undoStack.shift();
+  redoStack=[];
   const arr=k==="h"?hState:vState;
   arr[r][c]=(arr[r][c]+1)%3;
   if(settings.autoX){
@@ -417,6 +433,18 @@ function toggle(k,r,c){
     else{applyAutoXAround(r,c);applyAutoXAround(r+1,c);}
   }
   buzz(8);render();autosave();checkWin();
+}
+function undo(){
+  if(!undoStack.length||solved)return;
+  redoStack.push(snapshotState());
+  restoreState(undoStack.pop());
+  buzz(6);render();autosave();
+}
+function redo(){
+  if(!redoStack.length||solved)return;
+  undoStack.push(snapshotState());
+  restoreState(redoStack.pop());
+  buzz(6);render();autosave();
 }
 function lineCount(r,c){return (hState[r][c]===1)+(hState[r+1][c]===1)+(vState[r][c]===1)+(vState[r][c+1]===1);}
 function decided(r,c){return [hState[r][c],hState[r+1][c],vState[r][c],vState[r][c+1]].every(s=>s!==0);}
@@ -462,12 +490,27 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
 }
 
 /* ipucu / temizle */
-function hint(){if(solved)return;const cand=[];
+function hint(){
+  if(solved)return;
+  undoStack.push(snapshotState());
+  if(undoStack.length>200)undoStack.shift();
+  redoStack=[];
+  const cand=[];
   for(let r=0;r<=P.R;r++)for(let c=0;c<P.C;c++)if(P.solH[r][c]===1&&hState[r][c]!==1)cand.push(["h",r,c]);
   for(let r=0;r<P.R;r++)for(let c=0;c<=P.C;c++)if(P.solV[r][c]===1&&vState[r][c]!==1)cand.push(["v",r,c]);
-  if(!cand.length)return;const[k,r,c]=cand[(Math.random()*cand.length)|0];(k==="h"?hState:vState)[r][c]=1;
-  hints++;$("hintsUsed").textContent=hints;render();autosave();checkWin();}
-function resetBoard(){hState=Array.from({length:P.R+1},()=>Array(P.C).fill(0));vState=Array.from({length:P.R},()=>Array(P.C+1).fill(0));solved=false;render();autosave();}
+  if(!cand.length)return;
+  const[k,r,c]=cand[(Math.random()*cand.length)|0];
+  (k==="h"?hState:vState)[r][c]=1;
+  hints++;$("hintsUsed").textContent=hints;render();autosave();checkWin();
+}
+function resetBoard(){
+  undoStack.push(snapshotState());
+  if(undoStack.length>200)undoStack.shift();
+  redoStack=[];
+  hState=Array.from({length:P.R+1},()=>Array(P.C).fill(0));
+  vState=Array.from({length:P.R},()=>Array(P.C+1).fill(0));
+  solved=false;render();autosave();
+}
 
 /* sure */
 function fmt(s){const m=(s/60)|0,ss=s%60;return m+":"+(ss<10?"0":"")+ss;}
@@ -586,8 +629,14 @@ $("startFreeBtn").addEventListener("click",startFree);
 $("levelList").addEventListener("click",e=>{const l=e.target.closest("[data-level]");if(!l||l.dataset.level==="")return;startJourney(+l.dataset.level);});
 $("journeyReset").addEventListener("click",()=>{if(confirm("Yolculuk ilerlemesi sıfırlansın mı?")){store.del(KEYS.jrnProg);store.del(KEYS.jrnCur);renderJourney();}});
 $("newBtn").addEventListener("click",()=>{if(ctx.mode==="journey")startJourney(ctx.levelIndex);else startFree();});
+$("undoBtn").addEventListener("click",undo);
+$("redoBtn").addEventListener("click",redo);
 $("resetBtn").addEventListener("click",resetBoard);
 $("hintBtn").addEventListener("click",hint);
+function updateUndoRedoButtons(){
+  $("undoBtn").disabled=!undoStack.length||solved;
+  $("redoBtn").disabled=!redoStack.length||solved;
+}
 $("homeSettings").addEventListener("click",()=>{renderToggles();$("settingsOverlay").classList.add("show");});
 $("gameSettings").addEventListener("click",()=>{renderToggles();$("settingsOverlay").classList.add("show");});
 $("settingsOverlay").addEventListener("click",e=>{if(e.target.id==="settingsOverlay")$("settingsOverlay").classList.remove("show");});
