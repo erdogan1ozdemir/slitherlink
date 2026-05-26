@@ -90,5 +90,5 @@ Her plan tamamlanınca:
 | 06 — Rogue infrastructure (Yuva + Karakter + İpliklik + Diken + Pusula) | ✓ tamamlandı | c38873c |
 | 07 — Söğüt Eşiği (D1) | ✓ tamamlandı | dd7d4ca |
 | 08 — Karanlık İğne (D2) | ✓ tamamlandı | 4272163 |
-| 09 — Yıldız Geçidi (D3) + Mum Modu + UX polish | ✓ tamamlandı | <merge-SHA> |
+| 09 — Yıldız Geçidi (D3) + Mum Modu + UX polish | ✓ tamamlandı | a7b7fdf |
 | 10 — Polish + Hediye + a11y + deploy | bekliyor | – |
