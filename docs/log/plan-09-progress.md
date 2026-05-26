@@ -6,7 +6,7 @@
 - [x] Task 4: Home Rogue Modu kartına resume pill
 - [x] Task 5: Game "Yeni" butonu rogue'da gizle + mid-puzzle save/resume
 ## Phase B - D3 content
-- [ ] Task 6: realms.js — yildiz-gecidi
+- [x] Task 6: realms.js — yildiz-gecidi
 - [ ] Task 7: relics.js — 6 D3 relic
 - [ ] Task 8: events.js — 6 D3 event
 - [ ] Task 9: achievements.js — 5 D3 achievement + multi-stage boss
