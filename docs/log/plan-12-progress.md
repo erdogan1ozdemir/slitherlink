@@ -18,7 +18,7 @@
 
 ## Phase E — Daily
 - [x] Task 9: daily.js (seed + local leaderboard)
-- [ ] Task 10: Ana menü "Günün Çemberi" kartı + flow
+- [x] Task 10: Ana menü "Günün Çemberi" kartı + flow
 
 ## Phase F — 4. diyar
 - [ ] Task 11: realms.js dugumun-ardi entry + unlock kuralı

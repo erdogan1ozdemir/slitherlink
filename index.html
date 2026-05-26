@@ -380,6 +380,7 @@ import {NEOW_BLESSINGS, rollBlessings as neowBlessings, applyBlessing as applyNe
 import {TILE_TYPES, applyTiles, revealTile, tickKayanTiles} from "./src/rogue/tiles.js";
 import {THORNS, getThorn, totalIzScore as thornsIzScore, applyThornsToRun, rewardMultiplier as thornsRewardMult} from "./src/rogue/thorns.js";
 import {KEEPSAKES, allUnlockedKeepsakes, checkAutoUnlock as checkKeepsakeUnlock} from "./src/rogue/keepsakes.js";
+import {todaySeed, todayDate, hasPlayedToday as todayHasPlayed, recordResult as recordDaily, getLeaderboard as getDailyLB} from "./src/rogue/daily.js";
 
 /* =========================================================================
    0) PWA — service worker register + persistent storage
@@ -1340,6 +1341,9 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
       store.set(KEYS.rogueRun,run);
     }
   }
+  else if(ctx.mode==="daily"){
+    recordDaily(store,{date:ctx.date,time:elapsed,solves:1,realmId:null,success:true});
+  }
   else store.del(KEYS.freeCur);
   $("winTime").textContent=fmt(elapsed);$("winHints").textContent=hints;
   const next=$("winNext");
@@ -1468,10 +1472,12 @@ function renderHome(){
   const rogueResume=rogueRunRaw&&!rogueRunRaw.ended?rogueRunRaw:null;
   const rogueRealmName=rogueResume?((REALMS[rogueResume.realmId]&&REALMS[rogueResume.realmId].name)||rogueResume.realmId):"";
   const prog=journeyProgress();
+  const dailyPlayed=todayHasPlayed(store);
   const cards=[
     {id:"free",emo:"✦",h:"Serbest Oyun",p:"Boyut, yoğunluk ve seed seç",resume:freeResume},
     {id:"journey",emo:"⬢",h:"Yolculuk",p:prog.unlocked+" / "+TOTAL_LEVELS+" bölüm açıldı",resume:jrnResume},
     {id:"rogue",emo:"☠",h:"Rogue Modu",p:rogueResume?("yarım koşu · "+rogueRealmName):"Yuva'na git, bir diyar seç",resume:rogueResume},
+    {id:"daily",emo:"☀",h:"Günün Çemberi",p:dailyPlayed?"bugün oynadın · yarın yeni":"Bugünün özel bulmacası",badge:dailyPlayed?"bitirildi":null},
   ];
   $("homeCards").innerHTML=cards.map(c=>`
     <div class="card ${c.locked?'locked':''}" data-card="${c.id}">
@@ -1479,6 +1485,30 @@ function renderHome(){
       <div class="meta"><h3>${c.h}</h3><p>${c.p}</p>${c.resume?'<span class="resume-pill">Devam et</span>':''}</div>
       <div class="go">${c.locked?'🔒':'›'}</div>
     </div>`).join("");
+}
+
+function showDailyLeaderboard(){
+  const lb=getDailyLB(store);
+  const entries=(lb&&lb.entries)||[];
+  const html=`
+    <h2 style="font-family:var(--font-serif);font-weight:500;margin-bottom:6px;">Günün Çemberi</h2>
+    <p style="font-family:var(--font-serif);font-style:italic;color:var(--ink-dim);font-size:13px;margin:0 0 12px;">Son 7 günün geçmişi. Bugün için yeni tohum yarın açılır.</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin:14px 0;">
+      ${entries.length?entries.map(e=>`
+        <div style="background:var(--panel);border:1px solid var(--hairline);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+          <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent);">${e.date}</span>
+          <span style="font-family:var(--font-mono);font-size:13px;color:var(--ink);">${fmt(e.time||0)}</span>
+          <span style="font-family:var(--font-mono);font-size:11px;color:${e.success?'var(--good)':'var(--bad)'};">${e.success?'✓':'×'}</span>
+        </div>
+      `).join(""):'<p style="color:var(--muted);font-style:italic;text-align:center;font-family:var(--font-serif);">Henüz kayıt yok.</p>'}
+    </div>
+    <div style="text-align:center;margin-top:14px;">
+      <button class="opt" data-daily-close style="background:var(--panel-2);border:1px solid var(--hairline);color:var(--ink);padding:10px 22px;">Kapat</button>
+    </div>
+  `;
+  openRogueModal(html,e=>{
+    if(e.target.closest("[data-daily-close]")||e.target.tagName==="BUTTON")closeRogueModal();
+  });
 }
 
 /* =========================================================================
@@ -2012,6 +2042,12 @@ $("homeCards").addEventListener("click",e=>{const c=e.target.closest("[data-card
   }
   if(id==="free"){const r=loadResume(KEYS.freeCur);if(r)startGame(r.puzzle,r.ctx,r);else{renderSetup();showScreen("s-setup");}}
   if(id==="journey"){const r=loadResume(KEYS.jrnCur);if(r)startGame(r.puzzle,r.ctx,r);else{renderJourney();showScreen("s-journey");}}
+  if(id==="daily"){
+    if(todayHasPlayed(store)){showDailyLeaderboard();return;}
+    const seed=todaySeed();
+    const rng=mulberry32(hashSeed(seed));
+    startGame(makePuzzle(7,7,0.7,rng),{mode:"daily",seed,date:todayDate()});
+  }
 });
 document.querySelectorAll("[data-back]").forEach(b=>b.addEventListener("click",e=>{
   const screen=e.target.closest(".screen");
