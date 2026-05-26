@@ -6,7 +6,7 @@
 - [x] Task 5: src/rogue/achievements.js (engine + 5 D1 ach)
 - [x] Task 6: Chest modal + relic offer UI
 - [x] Task 7: Event modal + choice resolver UI
-- [ ] Task 8: Boss → Pusula Yıldızı + winRun + currency
-- [ ] Task 9: Achievement notification toast + jediDiary
+- [x] Task 8: Boss → Pusula Yıldızı + winRun + currency
+- [x] Task 9: Achievement notification toast + jediDiary
 - [ ] Task 10: Yuva realm cards real data + D2 lock
 - [ ] Task 11: Final + merge + push

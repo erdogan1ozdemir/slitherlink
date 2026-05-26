@@ -986,8 +986,27 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
     let run=store.get(KEYS.rogueRun,null);
     if(run){
       const node=run.mapGraph.nodes.find(n=>n.id===ctx.nodeId);
-      if(node&&node.type==="boss"){winRun(run);meta.currencies.bead=(meta.currencies.bead||0)+1;}
       meta.currencies.thread=(meta.currencies.thread||0)+(node&&node.type==="elite"?5:3);
+      if(node&&node.type==="boss"){
+        winRun(run);
+        meta.currencies.bead=(meta.currencies.bead||0)+1;
+        if(!meta.realms[run.realmId])meta.realms[run.realmId]={};
+        meta.realms[run.realmId].compassStars=Math.min(5,(meta.realms[run.realmId].compassStars||0)+1);
+        meta.realms[run.realmId].timesCleared=(meta.realms[run.realmId].timesCleared||0)+1;
+        meta.realms[run.realmId].defeatedBosses=(meta.realms[run.realmId].defeatedBosses||0)+1;
+        achievementUnlock("boss_defeated:"+run.realmId);
+        achievementUnlock("realm_cleared:"+run.realmId);
+        if(hints===0)achievementUnlock("no_hint_clear:"+run.realmId);
+        // event chain check: yagmur-shelter + clear
+        if(run.eventLog&&run.eventLog.some(e=>e.eventId==="yagmur-basladi"&&e.choiceIdx===0)){
+          achievementUnlock("event_chain:"+run.realmId+":yagmur-shelter-and-clear");
+        }
+        // Unlock next realm
+        if(run.realmId==="sogut-esigi"){
+          if(!meta.realms["karanlik-igne"])meta.realms["karanlik-igne"]={};
+          meta.realms["karanlik-igne"].unlocked=true;
+        }
+      }
       saveMeta();
       store.set(KEYS.rogueRun,run);
     }
