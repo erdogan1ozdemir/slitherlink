@@ -447,7 +447,7 @@ const idbStore={
 /* =========================================================================
    5) AYARLAR
    ========================================================================= */
-const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only"};
+const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true};
 let settings=Object.assign({},DEFAULT_SETTINGS,store.get(KEYS.settings,{}));
 function saveSettings(){store.set(KEYS.settings,settings);}
 
@@ -472,11 +472,12 @@ meta=migrateMeta(meta);
 store.set(KEYS.meta,meta);
 function saveMeta(){store.set(KEYS.meta,meta);}
 const TOGGLE_DEFS=[
-  {k:"hints",  t:"İpucu butonu",            d:"Oyunda ipucu butonunu göster"},
-  {k:"autoX",  t:"Otomatik çarpı",          d:"Sayı tamamlanınca boş kenarlara çarpı koy"},
-  {k:"fade",   t:"Tamamlananı soluklaştır", d:"Çizgisi biten sayıyı soluklaştır"},
-  {k:"errors", t:"Hataları kırmızı göster", d:"Fazla/yanlış çizgide sayıyı kırmızı yap"},
-  {k:"haptics",t:"Titreşim",                d:"Dokununca küçük titreşim (destekleyen cihazda)"},
+  {k:"hints",       t:"İpucu butonu",            d:"Oyunda ipucu butonunu göster"},
+  {k:"undoButtons", t:"Geri al / İleri al",      d:"Oyun barında ↶ ↷ butonlarını göster"},
+  {k:"autoX",       t:"Otomatik çarpı",          d:"Sayı tamamlanınca boş kenarlara çarpı koy"},
+  {k:"fade",        t:"Tamamlananı soluklaştır", d:"Çizgisi biten sayıyı soluklaştır"},
+  {k:"errors",      t:"Hataları kırmızı göster", d:"Fazla/yanlış çizgide sayıyı kırmızı yap"},
+  {k:"haptics",     t:"Titreşim",                d:"Dokununca küçük titreşim (destekleyen cihazda)"},
 ];
 
 const HOW_CONTENT={
@@ -610,9 +611,10 @@ function startGame(puzzle,context,restore){
        vState=Array.from({length:P.R},()=>Array(P.C+1).fill(0));hints=0;elapsed=0;}
   $("hintsUsed").textContent=hints;
   $("gameTitle").textContent = ctx.mode==="journey" ? levelParams(ctx.levelIndex).title : (ctx.mode==="rogue" ? STUB_REALM.name : "Serbest");
-  applyHintVisibility();render();startTimer();showScreen("s-game");
+  applyHintVisibility();applyUndoVisibility();render();startTimer();showScreen("s-game");
 }
 function applyHintVisibility(){$("hintBtn").classList.toggle("hidden",!settings.hints);}
+function applyUndoVisibility(){const v=settings.undoButtons!==false;$("undoBtn").classList.toggle("hidden",!v);$("redoBtn").classList.toggle("hidden",!v);}
 
 /* cizim */
 function geom(){const R=P.R,C=P.C;const S=Math.max(34,Math.min(70,Math.floor(560/Math.max(R,C))));
@@ -1100,7 +1102,7 @@ $("toggleList").addEventListener("click",e=>{
   const sw=e.target.closest("[data-tog]");
   if(sw){
     const k=sw.dataset.tog;settings[k]=!settings[k];saveSettings();sw.classList.toggle("on",settings[k]);
-    if($("s-game").classList.contains("active")){applyHintVisibility();updateClueStates();render();}
+    if($("s-game").classList.contains("active")){applyHintVisibility();applyUndoVisibility();updateClueStates();render();}
     return;
   }
   const segBtn=e.target.closest("[data-val]");
