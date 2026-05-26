@@ -1997,10 +1997,10 @@ const PRESETS=[
   {n:"Kolay",size:5,dens:80},{n:"Orta",size:7,dens:68},{n:"Zor",size:9,dens:58},
   {n:"Uzman",size:12,dens:50},{n:"Rastgele",rand:true},
 ];
-let setupSize=7,setupDens=70;
+let setupSize=7,setupDens=70,setupActivePreset=-1;
 function renderSetup(){
   $("sizeChips").innerHTML=SIZE_OPTS.map(s=>`<div class="opt ${s===setupSize?'sel':''}" data-size="${s}">${s}×${s}</div>`).join("");
-  $("presetChips").innerHTML=PRESETS.map((p,i)=>`<div class="opt" data-preset="${i}">${p.n}</div>`).join("");
+  $("presetChips").innerHTML=PRESETS.map((p,i)=>`<div class="opt ${setupActivePreset===i?'sel':''}" data-preset="${i}">${p.n}</div>`).join("");
   $("density").value=setupDens;$("densVal").textContent="%"+setupDens;
 }
 function startFree(){
@@ -2123,9 +2123,9 @@ document.querySelectorAll("[data-back]").forEach(b=>b.addEventListener("click",e
     renderHome();showScreen("s-home");
   }
 }));
-$("sizeChips").addEventListener("click",e=>{const o=e.target.closest("[data-size]");if(!o)return;setupSize=+o.dataset.size;renderSetup();});
-$("presetChips").addEventListener("click",e=>{const o=e.target.closest("[data-preset]");if(!o)return;const p=PRESETS[+o.dataset.preset];if(p.rand){setupSize=SIZE_OPTS[(Math.random()*SIZE_OPTS.length)|0];setupDens=40+((Math.random()*45)|0);}else{setupSize=p.size;setupDens=p.dens;}renderSetup();});
-$("density").addEventListener("input",e=>{setupDens=+e.target.value;$("densVal").textContent="%"+setupDens;});
+$("sizeChips").addEventListener("click",e=>{const o=e.target.closest("[data-size]");if(!o)return;setupSize=+o.dataset.size;setupActivePreset=-1;renderSetup();});
+$("presetChips").addEventListener("click",e=>{const o=e.target.closest("[data-preset]");if(!o)return;const idx=+o.dataset.preset;const p=PRESETS[idx];if(p.rand){setupSize=SIZE_OPTS[(Math.random()*SIZE_OPTS.length)|0];setupDens=40+((Math.random()*45)|0);}else{setupSize=p.size;setupDens=p.dens;}setupActivePreset=idx;renderSetup();});
+$("density").addEventListener("input",e=>{setupDens=+e.target.value;$("densVal").textContent="%"+setupDens;if(setupActivePreset!==-1){setupActivePreset=-1;$("presetChips").innerHTML=PRESETS.map((p,i)=>`<div class="opt ${setupActivePreset===i?'sel':''}" data-preset="${i}">${p.n}</div>`).join("");}});
 $("seedRand").addEventListener("click",()=>{$("seedInput").value="merve-"+(Math.floor(Math.random()*900)+100);});
 $("startFreeBtn").addEventListener("click",startFree);
 $("levelList").addEventListener("click",e=>{const l=e.target.closest("[data-level]");if(!l||l.dataset.level==="")return;startJourney(+l.dataset.level);});
