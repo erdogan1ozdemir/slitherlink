@@ -88,7 +88,7 @@ Her plan tamamlanınca:
 | 04 — Persistence v2 | ✓ tamamlandı | 94c0207 |
 | 05 — Modular refactor | bekliyor | – |
 | 06 — Rogue infrastructure (Yuva + Karakter + İpliklik + Diken + Pusula) | bekliyor | – |
-| 07 — Söğüt Eşiği (D1) | bekliyor | – |
+| 07 — Söğüt Eşiği (D1) | ✓ tamamlandı | dd7d4ca |
 | 08 — Karanlık İğne (D2) | bekliyor | – |
 | 09 — Yıldız Geçidi (D3) | bekliyor | – |
 | 10 — Polish + Hediye + a11y + deploy | bekliyor | – |
