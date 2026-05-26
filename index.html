@@ -353,6 +353,28 @@ const store={
   del(k){try{localStorage.removeItem(k);}catch(e){}}
 };
 
+/* IDB sarmalayıcı — sessiz ayna; başarısız olursa null/noop */
+const IDB_NAME="cember-db",IDB_STORE="kv",IDB_VERSION=1;
+let _idbReady=null;
+function _idbOpen(){
+  if(_idbReady)return _idbReady;
+  _idbReady=new Promise(res=>{
+    try{
+      const req=indexedDB.open(IDB_NAME,IDB_VERSION);
+      req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(IDB_STORE))db.createObjectStore(IDB_STORE);};
+      req.onsuccess=()=>res(req.result);
+      req.onerror=()=>res(null);
+    }catch(e){res(null);}
+  });
+  return _idbReady;
+}
+const idbStore={
+  async get(k){const db=await _idbOpen();if(!db)return undefined;return new Promise(res=>{try{const tx=db.transaction(IDB_STORE,"readonly");const r=tx.objectStore(IDB_STORE).get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>res(undefined);}catch(e){res(undefined);}});},
+  async set(k,v){const db=await _idbOpen();if(!db)return;return new Promise(res=>{try{const tx=db.transaction(IDB_STORE,"readwrite");tx.objectStore(IDB_STORE).put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>res();}catch(e){res();}});},
+  async del(k){const db=await _idbOpen();if(!db)return;return new Promise(res=>{try{const tx=db.transaction(IDB_STORE,"readwrite");tx.objectStore(IDB_STORE).delete(k);tx.oncomplete=()=>res();tx.onerror=()=>res();}catch(e){res();}});},
+  async keys(){const db=await _idbOpen();if(!db)return [];return new Promise(res=>{try{const tx=db.transaction(IDB_STORE,"readonly");const r=tx.objectStore(IDB_STORE).getAllKeys();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>res([]);}catch(e){res([]);}});}
+};
+
 /* =========================================================================
    3) RASTGELELIK (seed'lenebilir RNG)
    ========================================================================= */

@@ -1,7 +1,7 @@
 # Plan 04 Progress
 
-- [ ] Task 1: Branch + log
-- [ ] Task 2: idbStore wrapper
+- [x] Task 1: Branch + log
+- [x] Task 2: idbStore wrapper
 - [ ] Task 3: store sarmalayıcı genişlet (mirror writes)
 - [ ] Task 4: cember:meta v1 init
 - [ ] Task 5: Schema versioning + migration runtime
