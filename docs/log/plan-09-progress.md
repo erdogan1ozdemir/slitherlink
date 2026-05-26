@@ -14,6 +14,6 @@
 ## Phase C - Mum Modu
 - [x] Task 11: Settings'e mumModu toggle
 - [x] Task 12: Rogue HUD mum + timer + node cost
-- [ ] Task 13: Timer tick + run end on timeout
+- [x] Task 13: Timer tick + run end on timeout (puzzle-içi tick SKIP — node geçişlerinden düşülüyor)
 ## Finalize
 - [ ] Task 14: Final + merge + push
