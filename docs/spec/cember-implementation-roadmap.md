@@ -93,4 +93,4 @@ Her plan tamamlanınca:
 | 09 — Yıldız Geçidi (D3) + Mum Modu + UX polish | ✓ tamamlandı | a7b7fdf |
 | 10 — Polish + meta ach + permanent starter + a11y + Vercel deploy | ✓ tamamlandı | 17ca9fa |
 | 11 — Gap fillers (İpliklik + Charms + Pati izi + Neow + Sis) | ✓ tamamlandı | d2ef0c9 |
-| 12 — Diken + 6 tile + Hediye + Mum tick + Daily + 4. diyar | ✓ tamamlandı | _merge_ |
+| 12 — Diken + 6 tile + Hediye + Mum tick + Daily + 4. diyar | ✓ tamamlandı | d76ab97 |
