@@ -3,7 +3,7 @@
 
 ## Phase A — Diken
 - [x] Task 2: thorns.js (10 modifier + apply + iz score)
-- [ ] Task 3: Diken Sözleşmesi UI + profile + run start apply
+- [x] Task 3: Diken Sözleşmesi UI + profile + run start apply
 
 ## Phase B — 6 tile
 - [ ] Task 4: tiles.js genişlet (ikiz, donmuş, ikiKonmaz, lanetli, yanki, kayan)
