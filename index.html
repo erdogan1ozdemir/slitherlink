@@ -739,6 +739,10 @@ function startRogueRun(realmId){
       activeRun.timeRemaining=600; // 10 dakika
       activeRun.candleTickAt=Date.now();
     }
+    // Permanent starter relic ekle (yeni koşuysa)
+    if(meta.permanentStarters&&meta.permanentStarters[0]&&!activeRun.relics.includes(meta.permanentStarters[0])){
+      activeRun.relics.push(meta.permanentStarters[0]);
+    }
     store.set(KEYS.rogueRun,activeRun);
     meta.totalStats.runs=(meta.totalStats.runs||0)+1;saveMeta();
     achievementUnlock("run_started");
@@ -1351,7 +1355,7 @@ function renderYuva(){
 
 function renderKarakter(){
   const stats=meta.totalStats;
-  const html=`
+  const existingHtml=`
     <div style="text-align:center;padding:24px 0 18px;">
       <svg width="120" height="100" viewBox="0 0 120 100">
         <!-- Daha detaylı Jedi avatarı -->
@@ -1387,7 +1391,76 @@ function renderKarakter(){
       `).join("")}
     </div>
   `;
-  $("karakterContent").innerHTML=html;
+
+  // Permanent starter slot
+  const starter=meta.permanentStarters&&meta.permanentStarters[0];
+  const starterHtml=starter?(()=>{
+    const r=RELICS[starter];
+    return r?`
+      <div style="display:flex;align-items:center;gap:12px;background:var(--panel-2);border:1px solid var(--accent);border-radius:14px;padding:14px;">
+        <div style="width:46px;height:46px;border-radius:12px;background:var(--bg);border:1px solid var(--hairline);display:grid;place-items:center;color:var(--accent);font-family:var(--font-serif);font-size:22px;">${r.glyph}</div>
+        <div style="flex:1;">
+          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;">yanında başla</div>
+          <div style="font-family:var(--font-serif);font-weight:600;font-size:15px;color:var(--ink);margin-top:2px;">${r.name}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;font-family:var(--font-serif);font-style:italic;">${r.desc}</div>
+        </div>
+        <button class="opt" id="starterChangeBtn" style="background:transparent;border:1px solid var(--hairline);color:var(--muted);font-size:11px;">değiştir</button>
+      </div>
+    `:"";
+  })():`
+    <div style="background:var(--panel);border:1px dashed var(--hairline);border-radius:14px;padding:14px;text-align:center;">
+      <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;">yanında başla</div>
+      <div style="font-family:var(--font-serif);font-style:italic;color:var(--ink-dim);margin-top:6px;font-size:13px;">henüz boş — gördüğün relic'lerden birini seç</div>
+      <button class="opt" id="starterSelectBtn" style="margin-top:10px;background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);">Seç</button>
+    </div>
+  `;
+
+  const fullHtml=existingHtml+`<div style="margin-top:16px;padding:0 4px;">${starterHtml}</div>`;
+  $("karakterContent").innerHTML=fullHtml;
+
+  // Handler
+  const sel=$("starterSelectBtn")||$("starterChangeBtn");
+  if(sel)sel.addEventListener("click",openStarterPicker);
+}
+
+function openStarterPicker(){
+  const seenRelics=new Set();
+  for(const realmId of Object.keys(meta.realms||{})){
+    for(const id of (meta.realms[realmId].knownRelics||[]))seenRelics.add(id);
+  }
+  const items=Array.from(seenRelics).map(id=>RELICS[id]).filter(Boolean);
+  if(!items.length){
+    alert("Henüz hiç relic görmedin. Bir koşuda chest aç ya da event'ten kazan.");
+    return;
+  }
+  const current=meta.permanentStarters&&meta.permanentStarters[0];
+  const html=`
+    <h2>Yanında Başla</h2>
+    <p>Koleksiyondan birini seç. Her yeni koşuda bu relic'le başlarsın.</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin:14px 0;max-height:50dvh;overflow-y:auto;">
+      ${items.map(r=>`
+        <button class="opt" data-starter="${r.id}" style="text-align:left;padding:12px 14px;background:${current===r.id?'var(--panel-2)':'var(--panel)'};border:1px solid ${current===r.id?'var(--accent)':'var(--hairline)'};">
+          <div style="display:flex;align-items:baseline;gap:10px;">
+            <span style="color:var(--accent);font-family:var(--font-serif);font-size:20px;">${r.glyph}</span>
+            <b style="font-family:var(--font-serif);font-weight:600;color:var(--ink);">${r.name}</b>
+            ${current===r.id?'<span style="margin-left:auto;color:var(--accent);">●</span>':""}
+          </div>
+          <div style="color:var(--muted);font-size:12px;margin-top:4px;font-family:var(--font-serif);font-style:italic;">${r.desc}</div>
+        </button>
+      `).join("")}
+      ${current?`<button class="opt" data-starter="" style="background:transparent;border:1px dashed var(--hairline);color:var(--muted);">Slot'u boşalt</button>`:""}
+    </div>
+  `;
+  openRogueModal(html,e=>{
+    const btn=e.target.closest("[data-starter]");
+    if(!btn)return;
+    const id=btn.dataset.starter;
+    if(id){meta.permanentStarters=[id];achievementUnlock("permanent_starter_set");}
+    else{meta.permanentStarters=[];}
+    saveMeta();
+    closeRogueModal();
+    renderKarakter();
+  });
 }
 
 function renderIpliklik(){
