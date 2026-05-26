@@ -795,6 +795,40 @@ $("howOverlay").addEventListener("click",e=>{if(e.target.id==="howOverlay")$("ho
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&$("s-game").classList.contains("active"))autosave();});
 window.addEventListener("pagehide",()=>{if($("s-game").classList.contains("active"))autosave();});
 
+const BACKUP_PREFIX="CEMBER-v1:";
+const BACKUP_KEYS=[KEYS.settings,KEYS.freeCur,KEYS.jrnProg,KEYS.jrnCur,KEYS.stats];
+function backupCollect(){
+  const data={v:1,t:Date.now(),keys:{}};
+  for(const k of BACKUP_KEYS){
+    const v=store.get(k,null);
+    if(v!==null)data.keys[k]=v;
+  }
+  return data;
+}
+function backupEncode(data){
+  try{
+    const json=JSON.stringify(data);
+    const b64=btoa(unescape(encodeURIComponent(json)));
+    return BACKUP_PREFIX+b64;
+  }catch(e){return null;}
+}
+function backupDecode(code){
+  if(!code||!code.startsWith(BACKUP_PREFIX))return null;
+  try{
+    const b64=code.slice(BACKUP_PREFIX.length).trim();
+    const json=decodeURIComponent(escape(atob(b64)));
+    return JSON.parse(json);
+  }catch(e){return null;}
+}
+function backupRestore(data){
+  if(!data||!data.keys||typeof data.keys!=="object")return false;
+  for(const k of BACKUP_KEYS){
+    if(data.keys[k]!==undefined)store.set(k,data.keys[k]);
+    else store.del(k);
+  }
+  return true;
+}
+
 renderHome();
 </script>
 </body>
