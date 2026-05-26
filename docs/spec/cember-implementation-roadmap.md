@@ -86,9 +86,9 @@ Her plan tamamlanınca:
 | 02 — Quick fixes + Slitherlink QoL + How-to-play + Backup code | ✓ tamamlandı | 11911ac |
 | 03 — PWA setup | ✓ tamamlandı | 04470bf |
 | 04 — Persistence v2 | ✓ tamamlandı | 94c0207 |
-| 05 — Modular refactor | bekliyor | – |
-| 06 — Rogue infrastructure (Yuva + Karakter + İpliklik + Diken + Pusula) | bekliyor | – |
+| 05 — Modular refactor | ✓ tamamlandı | c7e75f8 |
+| 06 — Rogue infrastructure (Yuva + Karakter + İpliklik + Diken + Pusula) | ✓ tamamlandı | c38873c |
 | 07 — Söğüt Eşiği (D1) | ✓ tamamlandı | dd7d4ca |
-| 08 — Karanlık İğne (D2) | bekliyor | – |
-| 09 — Yıldız Geçidi (D3) | bekliyor | – |
+| 08 — Karanlık İğne (D2) | ✓ tamamlandı | 4272163 |
+| 09 — Yıldız Geçidi (D3) + Mum Modu + UX polish | ✓ tamamlandı | <merge-SHA> |
 | 10 — Polish + Hediye + a11y + deploy | bekliyor | – |

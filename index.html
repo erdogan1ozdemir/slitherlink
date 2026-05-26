@@ -450,7 +450,7 @@ const idbStore={
 /* =========================================================================
    5) AYARLAR
    ========================================================================= */
-const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true};
+const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true,mumModu:false};
 let settings=Object.assign({},DEFAULT_SETTINGS,store.get(KEYS.settings,{}));
 function saveSettings(){store.set(KEYS.settings,settings);}
 
@@ -481,6 +481,7 @@ const TOGGLE_DEFS=[
   {k:"fade",        t:"Tamamlananı soluklaştır", d:"Çizgisi biten sayıyı soluklaştır"},
   {k:"errors",      t:"Hataları kırmızı göster", d:"Fazla/yanlış çizgide sayıyı kırmızı yap"},
   {k:"haptics",     t:"Titreşim",                d:"Dokununca küçük titreşim (destekleyen cihazda)"},
+  {k:"mumModu",     t:"Mum Modu (Rogue)",        d:"Rogue koşusunda süre baskısı: 10dk + her kat +90s"},
 ];
 
 const HOW_CONTENT={
@@ -614,10 +615,11 @@ function startGame(puzzle,context,restore){
        vState=Array.from({length:P.R},()=>Array(P.C+1).fill(0));hints=0;elapsed=0;}
   $("hintsUsed").textContent=hints;
   $("gameTitle").textContent = ctx.mode==="journey" ? levelParams(ctx.levelIndex).title : (ctx.mode==="rogue" ? (getRealm(ctx.realmId)?.name||"Rogue") : "Serbest");
-  applyHintVisibility();applyUndoVisibility();render();startTimer();showScreen("s-game");
+  applyHintVisibility();applyUndoVisibility();applyNewBtnVisibility();render();startTimer();showScreen("s-game");
 }
 function applyHintVisibility(){$("hintBtn").classList.toggle("hidden",!settings.hints);}
 function applyUndoVisibility(){const v=settings.undoButtons!==false;$("undoBtn").classList.toggle("hidden",!v);$("redoBtn").classList.toggle("hidden",!v);}
+function applyNewBtnVisibility(){$("newBtn").classList.toggle("hidden",ctx.mode==="rogue");}
 
 /* cizim */
 function geom(){const R=P.R,C=P.C;const S=Math.max(34,Math.min(70,Math.floor(560/Math.max(R,C))));
@@ -731,6 +733,12 @@ function startRogueRun(realmId){
         if(n.type==="chest"&&rng()<0.5)n.type="locked-chest";
       });
     }
+    // Mum Modu: süre baskısı
+    if(settings.mumModu){
+      activeRun.candleMode=true;
+      activeRun.timeRemaining=600; // 10 dakika
+      activeRun.candleTickAt=Date.now();
+    }
     store.set(KEYS.rogueRun,activeRun);
     meta.totalStats.runs=(meta.totalStats.runs||0)+1;saveMeta();
   }
@@ -751,6 +759,27 @@ function renderRogueMap(run){
 
   const livesHtml=`<span style="color:var(--bad);">${"♥".repeat(run.lives.current)}</span><span style="color:var(--faint);">${"♥".repeat(run.lives.max-run.lives.current)}</span>`;
 
+  // Floor labels (sol kenarda): GİRİŞ / 2 · Pervaz / ... / BİTİŞ
+  const floorLabels={};
+  run.mapGraph.nodes.forEach(n=>{
+    if(!floorLabels[n.floor]){
+      const fc=realm.floorConfig&&realm.floorConfig[n.floor];
+      const isStart=n.floor===0;
+      const isEnd=n.floor===run.mapGraph.floors-1;
+      const name=(fc&&fc.floorName)||"";
+      const tag=isStart?"GİRİŞ":(isEnd?"BİTİŞ ☠":(""+(n.floor+1)));
+      floorLabels[n.floor]={floor:n.floor,tag,name,isEdge:isStart||isEnd};
+    }
+  });
+  const labelsHtml=Object.values(floorLabels).map(l=>{
+    const y=cy(l.floor);
+    const tagColor=l.isEdge?"var(--accent)":"var(--muted)";
+    return `
+      <text x="14" y="${y-4}" font-family="var(--font-mono)" font-size="8" fill="${tagColor}" letter-spacing="2">${l.tag}</text>
+      <text x="14" y="${y+8}" font-family="var(--font-serif)" font-size="10" font-style="italic" fill="var(--ink-dim)">${l.name}</text>
+    `;
+  }).join("");
+
   const svg=`
     <svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;">
       ${run.mapGraph.edges.map(([a,b])=>{
@@ -763,22 +792,27 @@ function renderRogueMap(run){
         const fill=isCur?"var(--ink)":(isVis?"var(--panel-2)":"var(--bg)");
         const stroke=isCur?"var(--accent)":(isAcc?"var(--accent)":"var(--hairline-2)");
         const txt=isCur?"var(--bg)":(isVis||isAcc?"var(--accent)":"var(--muted)");
+        const op=(isCur||isVis||isAcc)?1:0.4;
         return `
           ${isCur?`<circle cx="${cx(n.col)}" cy="${cy(n.floor)}" r="22" fill="none" stroke="var(--accent)" stroke-opacity=".25" stroke-width="6"/>`:""}
-          <g data-node-id="${n.id}" data-accessible="${isAcc&&!isCur?"1":"0"}" style="cursor:${isAcc&&!isCur?"pointer":"default"};">
+          <g data-node-id="${n.id}" data-accessible="${isAcc&&!isCur?"1":"0"}" style="cursor:${isAcc&&!isCur?"pointer":"default"};" opacity="${op}">
             <circle cx="${cx(n.col)}" cy="${cy(n.floor)}" r="16" fill="${fill}" stroke="${stroke}" stroke-width="1.2"/>
             <text x="${cx(n.col)}" y="${cy(n.floor)+1}" text-anchor="middle" dominant-baseline="central" font-family="var(--font-serif)" font-size="14" font-weight="600" fill="${txt}">${glyph[n.type]||"?"}</text>
           </g>
         `;
       }).join("")}
+      ${labelsHtml}
     </svg>
   `;
 
+  const candleHtml=run.candleMode?`<div style="font-family:var(--font-mono);font-size:11px;color:var(--bad);">🕯 ${Math.floor((run.timeRemaining||0)/60)}:${((run.timeRemaining||0)%60).toString().padStart(2,"0")}</div>`:"";
+
   $("rogueMapTitle").textContent=realm.name;
   $("rogueMapContent").innerHTML=`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0 16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0 16px;gap:10px;flex-wrap:wrap;">
       <div>${livesHtml}</div>
       <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);">KAT ${run.floor+1}/${run.mapGraph.floors}</div>
+      ${candleHtml}
       <div style="font-family:var(--font-mono);font-size:12px;color:var(--accent);">◇ ${run.relics.length}</div>
     </div>
     <div style="background:var(--panel);border:1px solid var(--hairline);border-radius:18px;padding:14px;">
@@ -787,7 +821,7 @@ function renderRogueMap(run){
     ${run.ended?`
       <div style="text-align:center;padding:20px;">
         <div style="font-family:var(--font-serif);font-style:italic;font-size:18px;color:var(--accent);">
-          ${run.endReason==="cleared"?"İplik tamamlandı":"İplik koptu"}
+          ${run.endReason==="cleared"?"İplik tamamlandı":(run.endReason==="timeout"?"Mum söndü":"İplik koptu")}
         </div>
         <button class="bigbtn" id="rogueNewBtn" style="margin-top:14px;">Yeni Koşu</button>
       </div>
@@ -807,11 +841,30 @@ function renderRogueMap(run){
 function handleRogueNode(nodeId){
   let run=store.get(KEYS.rogueRun,null);
   if(!run||run.ended)return;
+  const prevFloor=run.floor;
   run=moveTo(run,nodeId);
   store.set(KEYS.rogueRun,run);
   const node=rogueCurrentNode(run);
+  // Mum Modu: node tipi süre tüketir + floor change bonus
+  if(run.candleMode){
+    const costs={puzzle:60,elite:120,rest:0,event:30,chest:0,"locked-chest":0,boss:0};
+    run.timeRemaining=Math.max(0,(run.timeRemaining||0)-(costs[node.type]||0));
+    if(node.floor>prevFloor)run.timeRemaining+=90;
+    if(run.timeRemaining<=0){
+      run.ended=true;run.endReason="timeout";run.timeRemaining=0;
+      store.set(KEYS.rogueRun,run);
+      renderRogueMap(run);
+      return;
+    }
+    store.set(KEYS.rogueRun,run);
+  }
   if(node.type==="puzzle"||node.type==="elite"||node.type==="boss"){
-    // Start a puzzle in rogue context
+    // Resume mid-puzzle if same node
+    if(run.midPuzzle&&run.midPuzzle.ctx&&run.midPuzzle.ctx.nodeId===nodeId){
+      startGame(run.midPuzzle.puzzle,run.midPuzzle.ctx,run.midPuzzle);
+      return;
+    }
+    // Start a fresh puzzle in rogue context
     const realm=getRealm(run.realmId);
     const floorCfg=realm&&realm.floorConfig&&realm.floorConfig[node.floor];
     const size=floorCfg?floorCfg.sizes[0]:5;
@@ -990,6 +1043,17 @@ function applyEventEffect(run,ev,choice){
       saveMeta();
       checkAllRelicsSeenInRun(run);
     }
+  }else if(e.type==="stardust"){
+    meta.currencies.stardust=(meta.currencies.stardust||0)+(e.amount||1);
+    saveMeta();
+  }else if(e.type==="chance-bead-or-damage"){
+    if(Math.random()<(e.chance||0.5)){
+      meta.currencies.bead=(meta.currencies.bead||0)+(e.beadAmount||1);
+      saveMeta();
+    }else{
+      run.lives.current=Math.max(0,run.lives.current-1);
+      if(run.lives.current===0){run.ended=true;run.endReason="no-lives";}
+    }
   }
 }
 
@@ -1050,6 +1114,29 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
       const node=run.mapGraph.nodes.find(n=>n.id===ctx.nodeId);
       meta.currencies.thread=(meta.currencies.thread||0)+(node&&node.type==="elite"?5:3);
       if(node&&node.type==="boss"){
+        // Multi-stage boss handling (e.g. Yıldız İplikçisi 3 aşama)
+        const realmForBoss=getRealm(run.realmId);
+        if(realmForBoss&&realmForBoss.bossMultiStage&&realmForBoss.bossMultiStage>1){
+          if(!run.bossStage)run.bossStage=1;
+          if(run.bossStage<realmForBoss.bossMultiStage){
+            run.bossStage++;
+            run.midPuzzle=null;
+            store.set(KEYS.rogueRun,run);
+            const cfg=realmForBoss.floorConfig[node.floor];
+            const stageSize=cfg.sizes[0]+run.bossStage-1;
+            const stageKeep=Math.max(0.40,cfg.keep-0.05*(run.bossStage-1));
+            const stageRng=mulberry32(hashSeed(run.seed+"-"+ctx.nodeId+"-stage"+run.bossStage));
+            setTimeout(()=>{
+              $("winOverlay").classList.remove("show");
+              startGame(makePuzzle(stageSize,stageSize,stageKeep,stageRng),{mode:"rogue",realmId:run.realmId,nodeId:ctx.nodeId,runRef:true,bossStage:run.bossStage});
+            },1200);
+            $("winTime").textContent=fmt(elapsed);$("winHints").textContent=hints;
+            setTimeout(()=>{$("winOverlay").classList.add("show");burst();},420);
+            return;
+          }
+          // Final stage cleared
+          run.bossStage=null;
+        }
         winRun(run);
         meta.currencies.bead=(meta.currencies.bead||0)+1;
         if(!meta.realms[run.realmId])meta.realms[run.realmId]={};
@@ -1074,12 +1161,16 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
             if(!meta.realms["yildiz-gecidi"])meta.realms["yildiz-gecidi"]={};
             meta.realms["yildiz-gecidi"].unlocked=true;
           }
+        }else if(run.realmId==="yildiz-gecidi"){
+          if(run.lives.current>=2)achievementUnlock("clear_with_lives:yildiz-gecidi:2");
+          if(!run.wasResumed)achievementUnlock("single_session_clear:yildiz-gecidi");
         }
         // Speed clear achievement
         if(run.realmId==="karanlik-igne"&&elapsed<900){
           achievementUnlock("speed_clear:karanlik-igne:900");
         }
       }
+      run.midPuzzle=null; // puzzle cleared, clear mid-puzzle snapshot
       saveMeta();
       store.set(KEYS.rogueRun,run);
     }
@@ -1122,7 +1213,15 @@ function stopTimer(){if(timerId)clearInterval(timerId);timerId=null;}
 
 /* otomatik kayit */
 function snapshot(){return {puzzle:P,ctx,hState,vState,hints,elapsed};}
-function autosave(){if(solved)return;store.set(ctx.mode==="journey"?KEYS.jrnCur:KEYS.freeCur,snapshot());}
+function autosave(){
+  if(solved)return;
+  if(ctx.mode==="rogue"){
+    const run=store.get(KEYS.rogueRun,null);
+    if(run){run.midPuzzle=snapshot();store.set(KEYS.rogueRun,run);}
+  }else{
+    store.set(ctx.mode==="journey"?KEYS.jrnCur:KEYS.freeCur,snapshot());
+  }
+}
 function loadResume(key){const s=store.get(key,null);if(!s||!s.puzzle)return null;return s;}
 
 /* =========================================================================
@@ -1133,11 +1232,14 @@ function showScreen(id){document.querySelectorAll(".screen").forEach(s=>s.classL
 function renderHome(){
   const g=$("greet");if(g)g.textContent=CONFIG.greet.replace("{name}",CONFIG.name);
   const freeResume=loadResume(KEYS.freeCur), jrnResume=loadResume(KEYS.jrnCur);
+  const rogueRunRaw=store.get(KEYS.rogueRun,null);
+  const rogueResume=rogueRunRaw&&!rogueRunRaw.ended?rogueRunRaw:null;
+  const rogueRealmName=rogueResume?((REALMS[rogueResume.realmId]&&REALMS[rogueResume.realmId].name)||rogueResume.realmId):"";
   const prog=journeyProgress();
   const cards=[
     {id:"free",emo:"✦",h:"Serbest Oyun",p:"Boyut, yoğunluk ve seed seç",resume:freeResume},
     {id:"journey",emo:"⬢",h:"Yolculuk",p:prog.unlocked+" / "+TOTAL_LEVELS+" bölüm açıldı",resume:jrnResume},
-    {id:"rogue",emo:"☠",h:"Rogue Modu",p:"Yuva'na git, bir diyar seç"},
+    {id:"rogue",emo:"☠",h:"Rogue Modu",p:rogueResume?("yarım koşu · "+rogueRealmName):"Yuva'na git, bir diyar seç",resume:rogueResume},
   ];
   $("homeCards").innerHTML=cards.map(c=>`
     <div class="card ${c.locked?'locked':''}" data-card="${c.id}">
@@ -1214,6 +1316,16 @@ function renderYuva(){
         <span style="float:right;color:var(--muted);">›</span>
         <b style="font-family:var(--font-serif);font-weight:600;display:block;color:var(--ink);">Diken Sözleşmesi</b>
         <span style="font-family:var(--font-body);font-weight:400;font-size:12px;color:var(--muted);">Zorluk modifier'ları</span>
+      </button>
+      <button class="opt" data-yuva-nav="how" style="background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);text-align:left;padding:14px 18px;">
+        <span style="float:right;color:var(--muted);">›</span>
+        <b style="font-family:var(--font-serif);font-weight:600;display:block;color:var(--ink);">Nasıl Oynanır</b>
+        <span style="font-family:var(--font-body);font-weight:400;font-size:12px;color:var(--muted);">Kurallar + Rogue detay</span>
+      </button>
+      <button class="opt" data-yuva-nav="backup" style="background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);text-align:left;padding:14px 18px;">
+        <span style="float:right;color:var(--muted);">›</span>
+        <b style="font-family:var(--font-serif);font-weight:600;display:block;color:var(--ink);">Yedek Kodu</b>
+        <span style="font-family:var(--font-body);font-weight:400;font-size:12px;color:var(--muted);">İlerlemeni dışa aktar / yükle</span>
       </button>
     </div>
   `;
@@ -1305,10 +1417,13 @@ function setupYuvaListeners(){
       if(where==="karakter"){renderKarakter();showScreen("s-karakter");}
       else if(where==="ipliklik"){renderIpliklik();showScreen("s-ipliklik");}
       else if(where==="diken"){renderDiken();showScreen("s-diken");}
+      else if(where==="how"){openHow();}
+      else if(where==="backup"){renderToggles();$("settingsOverlay").classList.add("show");}
     }
   });
 }
 setupYuvaListeners();
+$("yuvaSettings")?.addEventListener("click",()=>{renderToggles();$("settingsOverlay").classList.add("show");});
 
 /* free setup */
 const SIZE_OPTS=[4,5,6,7,9,12];
@@ -1404,7 +1519,15 @@ $("winMsg").textContent=CONFIG.winMsg;
 
 $("startBtn").addEventListener("click",()=>{$("startOverlay").classList.remove("show");renderHome();showScreen("s-home");});
 $("homeCards").addEventListener("click",e=>{const c=e.target.closest("[data-card]");if(!c)return;const id=c.dataset.card;
-  if(id==="rogue"){renderYuva();showScreen("s-yuva");return;}
+  if(id==="rogue"){
+    const rr=store.get(KEYS.rogueRun,null);
+    if(rr&&!rr.ended){
+      rr.wasResumed=true;
+      store.set(KEYS.rogueRun,rr);
+      renderRogueMap(rr);showScreen("s-rogue-map");return;
+    }
+    renderYuva();showScreen("s-yuva");return;
+  }
   if(id==="free"){const r=loadResume(KEYS.freeCur);if(r)startGame(r.puzzle,r.ctx,r);else{renderSetup();showScreen("s-setup");}}
   if(id==="journey"){const r=loadResume(KEYS.jrnCur);if(r)startGame(r.puzzle,r.ctx,r);else{renderJourney();showScreen("s-journey");}}
 });

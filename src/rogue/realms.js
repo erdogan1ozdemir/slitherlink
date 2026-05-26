@@ -55,6 +55,26 @@ export const REALMS={
     bossIntro:"uyandırırsan zaman daralır. ipucu sayısı +1 sayar.",
     unlockedByDefault:false,
   },
+  "yildiz-gecidi":{
+    id:"yildiz-gecidi",
+    name:"Yıldız Geçidi",
+    intro:"gece, yıldız, ay, rüya. epik final.",
+    accent:"--accent-cool",
+    floors:5,
+    floorConfig:[
+      {sizes:[6,6],keep:0.65,nodes:["puzzle"],floorName:"Buzlu Pencere"},
+      {sizes:[7,7],keep:0.60,nodes:["elite","event","chest"],floorName:"Kuyruklu Yıldız"},
+      {sizes:[7,7],keep:0.55,nodes:["puzzle","elite","event"],floorName:"Düş Eşiği"},
+      {sizes:[8,8],keep:0.52,nodes:["rest","chest","event"],floorName:"Ay Saati"},
+      {sizes:[9,9],keep:0.50,nodes:["boss"],floorName:"Yıldız İplikçisi"},
+    ],
+    relicPool:["yildiz-tozu","ay-muhru","gece-pusulasi","kuyruklu-yildiz","dus-ipligi","yildizsayar"],
+    eventPool:["sonmus-yildiz","ay-seni-taniyor","dus-parcasi","kar-tanesi","buzlu-cam","gece-patikasi"],
+    bossName:"Yıldız İplikçisi",
+    bossIntro:"yıldızlar arası ipliği tek hatayla koparır. üç aşama.",
+    unlockedByDefault:false,
+    bossMultiStage:3,
+  },
 };
 
 export function getRealm(id){return REALMS[id];}
