@@ -191,6 +191,7 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
       </div>
       <div class="cards" id="homeCards"></div>
       <p class="foot-note">Tek ve kapalı bir çember çiz. Her sayı, etrafındaki çizgi adedini söyler.</p>
+      <div style="text-align:center;padding:0 24px 8px;"><button id="howBtn" class="opt" style="background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);">Nasıl Oynanır?</button></div>
     </div>
   </section>
 
@@ -244,6 +245,7 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
   <div class="sheet">
     <h2>Ayarlar</h2>
     <div id="toggleList"></div>
+    <div style="padding:14px 0 0;"><button id="howBtnSettings" class="opt" style="width:100%;background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);">Nasıl Oynanır?</button></div>
     <p class="foot-note" style="text-align:left;padding:14px 0 0;">
       iPhone'da tam ekran: Safari'de paylaş butonu → "Ana Ekrana Ekle". Oyun uygulama gibi tam ekran açılır.</p>
   </div>
@@ -424,7 +426,25 @@ const HOW_CONTENT={
       <li><b>Yıldız Tozu</b> — Diken Sözleşmesi koşularından, kozmetik için</li>
     </ul>
   `,
-  backup:"",
+  backup:`
+    <h3>Yedek Kodu</h3>
+    <p class="quote">Tüm emeğin bir kodda. Kopyala, sakla, gerektiğinde geri yükle.</p>
+    <h4>Ne işe yarar?</h4>
+    <p>Tarayıcı geçmişini temizlesen, telefonun bozulsa, yeni bir cihaza geçsen — tüm ilerlemen kaybolmaz. Yedek kodunu kopyalayıp Notes/Mail/Drive'a kaydedersin; istediğin zaman geri yükleyebilirsin.</p>
+    <h4>Üretme</h4>
+    <p>Ayarlar → <b>Yedek Kodu Üret</b>. Açılan modalda uzun bir kod görünür (~5-50KB). "Kopyala" butonuna bas, istediğin yere yapıştır.</p>
+    <h4>Yükleme</h4>
+    <p>Ayarlar → <b>Yedek Yükle</b>. Açılan modale kodu yapıştır, "Yükle" de. <b>Mevcut tüm ilerlemenin üzerine yazılır</b> — önce mevcudunu yedeklemeyi unutma.</p>
+    <h4>Kod neyi içerir?</h4>
+    <ul>
+      <li>Ayarlar (toggle'lar)</li>
+      <li>Yolculuk ilerlemesi + en iyi süreler</li>
+      <li>Yarım kalan oyunlar (Serbest + Yolculuk + Rogue)</li>
+      <li>Rogue meta progress (İplik, Boncuk, talent'ler, achievement'lar, Pusula Yıldızları)</li>
+    </ul>
+    <h4>Güvenli mi?</h4>
+    <p>Kod base64 ile şifrelenmiştir, sadece bu uygulama tanır. Başka kimse okuyamaz ya da değiştiremez. Kaybolursa veri kaybı dışında risk yok.</p>
+  `,
 };
 
 function renderHowTab(tab){
@@ -766,6 +786,12 @@ $("gameSettings").addEventListener("click",()=>{renderToggles();$("settingsOverl
 $("settingsOverlay").addEventListener("click",e=>{if(e.target.id==="settingsOverlay")$("settingsOverlay").classList.remove("show");});
 $("winHome").addEventListener("click",()=>{$("winOverlay").classList.remove("show");renderHome();showScreen("s-home");});
 $("winNext").addEventListener("click",()=>{$("winOverlay").classList.remove("show");if(ctx.mode==="journey")startJourney(ctx.levelIndex+1);else startFree();});
+function openHow(){renderHowTab("rules");$("howTabs").querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("sel",i===0));$("howOverlay").classList.add("show");}
+$("howBtn")?.addEventListener("click",openHow);
+$("howBtnSettings")?.addEventListener("click",()=>{$("settingsOverlay").classList.remove("show");setTimeout(openHow,260);});
+$("howTabs").addEventListener("click",e=>{const t=e.target.closest(".tab");if(!t)return;$("howTabs").querySelectorAll(".tab").forEach(x=>x.classList.toggle("sel",x===t));renderHowTab(t.dataset.tab);});
+$("howOverlay").addEventListener("click",e=>{if(e.target.id==="howOverlay")$("howOverlay").classList.remove("show");});
+
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&$("s-game").classList.contains("active"))autosave();});
 window.addEventListener("pagehide",()=>{if($("s-game").classList.contains("active"))autosave();});
 
