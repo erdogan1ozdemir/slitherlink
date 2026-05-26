@@ -4,7 +4,7 @@
 - [x] Task 2: Yuva ⚙ handler + Yuva settings buttons
 - [x] Task 3: Rogue Map floor labels (GİRİŞ / BİTİŞ + isim)
 - [x] Task 4: Home Rogue Modu kartına resume pill
-- [ ] Task 5: Game "Yeni" butonu rogue'da gizle + mid-puzzle save/resume
+- [x] Task 5: Game "Yeni" butonu rogue'da gizle + mid-puzzle save/resume
 ## Phase B - D3 content
 - [ ] Task 6: realms.js — yildiz-gecidi
 - [ ] Task 7: relics.js — 6 D3 relic
