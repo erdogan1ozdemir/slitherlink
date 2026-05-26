@@ -79,8 +79,8 @@ body{
 .card .meta h3{margin:0;font-size:18px;font-weight:600;font-family:var(--font-serif);line-height:1.1;}
 .card .meta p{margin:3px 0 0;color:var(--muted);font-size:13px;}
 .card .go{color:var(--muted);font-size:20px;}
-.resume-pill{display:inline-block;margin-top:8px;background:var(--ink);color:var(--bg);
-  font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;}
+.resume-pill{display:inline-block;margin-top:9px;background:var(--ink);color:var(--bg);
+  font-family:var(--font-mono);font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.08em;text-transform:uppercase;}
 
 /* board */
 .board-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:6px 14px;}
@@ -101,7 +101,7 @@ svg{width:100%;height:auto;display:block;touch-action:manipulation;}
 .chip{background:var(--panel);border:1px solid var(--hairline);border-radius:999px;padding:6px 13px;font-family:var(--font-mono);font-weight:700;font-size:12px;display:flex;gap:8px;align-items:center;font-variant-numeric:tabular-nums;}
 .chip small{color:var(--muted);font-weight:500;font-size:9px;letter-spacing:.22em;text-transform:uppercase;font-family:var(--font-mono);}
 .controls{display:flex;gap:10px;justify-content:center;padding:14px 16px calc(8px + var(--safe-b));}
-.controls button{font-family:"Karla";font-weight:700;font-size:14px;padding:12px 16px;border-radius:14px;border:1px solid var(--hairline);cursor:pointer;flex:1;max-width:150px;}
+.controls button{font-family:var(--font-body);font-weight:700;font-size:14px;padding:13px 16px;border-radius:14px;border:1px solid var(--hairline);cursor:pointer;flex:1;max-width:150px;letter-spacing:.01em;}
 .btn-primary{background:var(--ink);color:var(--bg);border:none!important;}
 .btn-ghost{background:var(--panel);color:var(--ink);}
 .controls button:active{transform:translateY(2px);}
@@ -116,7 +116,7 @@ svg{width:100%;height:auto;display:block;touch-action:manipulation;}
 input[type=range]{flex:1;accent-color:var(--ink);}
 .seedrow{display:flex;gap:8px;margin-top:8px;}
 .seedrow input[type=text]{flex:1;background:var(--panel);border:1px solid var(--hairline);color:var(--ink);border-radius:12px;padding:11px 14px;font-family:"Karla";font-size:15px;}
-.bigbtn{width:100%;background:var(--ink);color:var(--bg);border:none;border-radius:16px;padding:16px;font-family:"Karla";font-weight:700;font-size:16px;margin-top:24px;cursor:pointer;}
+.bigbtn{width:100%;background:var(--ink);color:var(--bg);border:none;border-radius:18px;padding:18px;font-family:var(--font-body);font-weight:700;font-size:16px;margin-top:28px;cursor:pointer;letter-spacing:.02em;}
 .bigbtn:active{transform:scale(.99);}
 .level-list{display:flex;flex-direction:column;gap:10px;margin-top:8px;}
 .floor-h{font-family:var(--font-serif);font-style:italic;font-weight:400;font-size:15px;color:var(--accent);margin:22px 0 6px;letter-spacing:0;}
@@ -156,7 +156,7 @@ input[type=range]{flex:1;accent-color:var(--ink);}
 .modal .stat b{display:block;font-size:22px;font-family:var(--font-serif);font-weight:500;}
 .modal .stat small{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
 .modal .row{display:flex;gap:10px;margin-top:6px;}
-.modal button{flex:1;border-radius:14px;padding:13px;font-family:"Karla";font-weight:700;font-size:14px;cursor:pointer;border:1px solid var(--hairline);}
+.modal button{flex:1;border-radius:14px;padding:13px;font-family:var(--font-body);font-weight:700;font-size:14px;cursor:pointer;border:1px solid var(--hairline);}
 canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
 .foot-note{text-align:center;color:var(--muted);font-size:12px;font-style:italic;font-family:"Fraunces",serif;padding:8px 24px;line-height:1.5;}
 </style>
