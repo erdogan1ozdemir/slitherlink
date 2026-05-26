@@ -355,6 +355,9 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
 import {hashSeed, mulberry32} from "./src/core/rng.js";
 import {makePuzzle} from "./src/core/generator.js";
 import {lineCount as _lineCount, decided as _decided, validateLoop} from "./src/core/checker.js";
+import {startRun, moveTo, loseLife, winRun, currentNode as rogueCurrentNode} from "./src/rogue/engine.js";
+import {generateMap, nextAccessibleNodes} from "./src/rogue/map.js";
+import {STUB_REALM} from "./src/rogue/stub-realm.js";
 
 /* =========================================================================
    0) PWA — service worker register + persistent storage
@@ -383,7 +386,7 @@ const CONFIG = {
    2) DEPOLAMA (otomatik kayit / devam)  - localStorage, guvenli sarmalanmis
    ========================================================================= */
 const KEYS={settings:"cember:settings",freeCur:"cember:free:current",
-  jrnProg:"cember:journey:progress",jrnCur:"cember:journey:current",stats:"cember:stats",meta:"cember:meta"};
+  jrnProg:"cember:journey:progress",jrnCur:"cember:journey:current",stats:"cember:stats",meta:"cember:meta",rogueRun:"cember:rogue:run"};
 const META_DEFAULTS={
   version:1,
   hasSeenIntro:false,
@@ -769,6 +772,159 @@ function renderHome(){
       <div class="go">${c.locked?'🔒':'›'}</div>
     </div>`).join("");
 }
+
+/* =========================================================================
+   ROGUE — Yuva / Karakter / İpliklik / Diken render fonksiyonları
+   ========================================================================= */
+function renderYuva(){
+  const realms=[
+    {id:STUB_REALM.id,name:STUB_REALM.name,intro:STUB_REALM.intro,unlocked:true,accent:"--accent-warm"},
+    {id:"sogut-esigi",name:"Söğüt Eşiği",intro:"Yakında — Plan 07'de gelecek",unlocked:false,accent:"--accent-warm"},
+    {id:"karanlik-igne",name:"Karanlık İğne",intro:"Yakında — Plan 08'de gelecek",unlocked:false,accent:"--accent"},
+  ];
+  const activeRun=store.get(KEYS.rogueRun,null);
+  const totalRuns=meta.totalStats.runs;
+  const totalSolves=meta.totalStats.solves;
+  const html=`
+    <div style="text-align:center;padding:18px 0 4px;">
+      <svg width="80" height="60" viewBox="0 0 80 60" style="display:inline-block;">
+        <!-- Jedi silueti (oturmuş, kuyruk kıvrık) -->
+        <ellipse cx="40" cy="46" rx="20" ry="8" fill="var(--panel)"/>
+        <path d="M28 46 Q26 30 32 22 Q36 18 42 20 Q48 22 50 30 Q52 38 50 46 Z" fill="none" stroke="var(--accent)" stroke-width="1.2"/>
+        <path d="M28 24 L32 18 L34 22 Z M50 24 L54 18 L52 22 Z" fill="none" stroke="var(--accent)" stroke-width="1"/>
+        <circle cx="36" cy="28" r="1" fill="var(--accent)"/>
+        <circle cx="44" cy="28" r="1" fill="var(--accent)"/>
+        <path d="M58 44 Q66 38 64 30" fill="none" stroke="var(--accent)" stroke-width="1.2" opacity=".6"/>
+      </svg>
+      <div style="font-family:var(--font-serif);font-style:italic;font-size:14px;color:var(--ink-dim);margin-top:6px;">
+        ${activeRun?"koşu yarıda kaldı":"yeni bir iplik bekler"}
+      </div>
+    </div>
+    <div class="cards" style="margin-top:18px;">
+      ${realms.map(r=>`
+        <div class="card ${r.unlocked?'':'locked'}" data-realm="${r.id}" data-unlocked="${r.unlocked}">
+          <div class="emo" style="color:var(${r.accent});">◇</div>
+          <div class="meta">
+            <h3>${r.name}</h3>
+            <p>${r.intro}</p>
+          </div>
+          <div class="go">${r.unlocked?'›':'◌'}</div>
+        </div>
+      `).join("")}
+    </div>
+    <div style="text-align:center;font-family:var(--font-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);padding:18px 0 14px;">
+      ${totalRuns} koşu · ${totalSolves} çözüm
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;padding:0 4px;">
+      <button class="opt" data-yuva-nav="karakter" style="background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);text-align:left;padding:14px 18px;">
+        <span style="float:right;color:var(--muted);">›</span>
+        <b style="font-family:var(--font-serif);font-weight:600;display:block;color:var(--ink);">Karakter</b>
+        <span style="font-family:var(--font-body);font-weight:400;font-size:12px;color:var(--muted);">Jedi'nin kartı</span>
+      </button>
+      <button class="opt" data-yuva-nav="ipliklik" style="background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);text-align:left;padding:14px 18px;">
+        <span style="float:right;color:var(--muted);">›</span>
+        <b style="font-family:var(--font-serif);font-weight:600;display:block;color:var(--ink);">İpliklik</b>
+        <span style="font-family:var(--font-body);font-weight:400;font-size:12px;color:var(--muted);">Kalıcı geliştirmeler</span>
+      </button>
+      <button class="opt" data-yuva-nav="diken" style="background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);text-align:left;padding:14px 18px;">
+        <span style="float:right;color:var(--muted);">›</span>
+        <b style="font-family:var(--font-serif);font-weight:600;display:block;color:var(--ink);">Diken Sözleşmesi</b>
+        <span style="font-family:var(--font-body);font-weight:400;font-size:12px;color:var(--muted);">Zorluk modifier'ları</span>
+      </button>
+    </div>
+  `;
+  $("yuvaContent").innerHTML=html;
+}
+
+function renderKarakter(){
+  const stats=meta.totalStats;
+  const html=`
+    <div style="text-align:center;padding:24px 0 18px;">
+      <svg width="120" height="100" viewBox="0 0 120 100">
+        <!-- Daha detaylı Jedi avatarı -->
+        <ellipse cx="60" cy="80" rx="30" ry="10" fill="var(--panel)"/>
+        <path d="M40 78 Q36 50 46 38 Q54 32 60 34 Q66 32 74 38 Q84 50 80 78 Z" fill="var(--panel-2)" stroke="var(--accent)" stroke-width="1.4"/>
+        <path d="M40 40 L46 28 L50 38 Z M80 40 L74 28 L70 38 Z" fill="var(--panel-2)" stroke="var(--accent)" stroke-width="1.2"/>
+        <circle cx="52" cy="50" r="2" fill="var(--accent)"/>
+        <circle cx="68" cy="50" r="2" fill="var(--accent)"/>
+        <path d="M58 56 L60 60 L62 56" fill="none" stroke="var(--accent)" stroke-width="1"/>
+        <!-- bıyıklar -->
+        <line x1="40" y1="56" x2="52" y2="56" stroke="var(--accent)" stroke-width=".8" opacity=".5"/>
+        <line x1="68" y1="56" x2="80" y2="56" stroke="var(--accent)" stroke-width=".8" opacity=".5"/>
+        <!-- kuyruk -->
+        <path d="M88 76 Q104 64 98 48" fill="none" stroke="var(--accent)" stroke-width="1.4" opacity=".7"/>
+      </svg>
+      <div style="font-family:var(--font-serif);font-style:italic;font-size:15px;color:var(--ink-dim);margin-top:10px;line-height:1.5;">
+        Jedi<br><span style="font-size:12px;color:var(--muted);">Norveç orman kedisi · dişi · sessiz ortağın</span>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 4px;">
+      ${[
+        ["Toplam koşu", stats.runs],
+        ["Çözüm", stats.solves],
+        ["Toplam süre", Math.floor(stats.time/60)+"dk"],
+        ["İpucu", stats.hintsUsed],
+        ["İplik", meta.currencies.thread],
+        ["Boncuk", meta.currencies.bead],
+      ].map(([k,v])=>`
+        <div style="background:var(--panel);border:1px solid var(--hairline);border-radius:14px;padding:14px;text-align:center;">
+          <div style="font-family:var(--font-serif);font-weight:500;font-size:24px;color:var(--ink);">${v}</div>
+          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:4px;">${k}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+  $("karakterContent").innerHTML=html;
+}
+
+function renderIpliklik(){
+  $("ipliklikContent").innerHTML=`
+    <div style="text-align:center;padding:48px 24px;">
+      <div style="font-family:var(--font-serif);font-style:italic;color:var(--accent);font-size:18px;margin-bottom:8px;">İpliklik</div>
+      <p style="font-family:var(--font-serif);font-style:italic;color:var(--ink-dim);line-height:1.6;">
+        koşulardan kazanılan iplik burada<br>kalıcı yetenekler olarak örülür.
+      </p>
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:18px;">
+        Yakında — Plan 07
+      </div>
+    </div>
+  `;
+}
+
+function renderDiken(){
+  $("dikenContent").innerHTML=`
+    <div style="text-align:center;padding:48px 24px;">
+      <div style="font-family:var(--font-serif);font-style:italic;color:var(--accent);font-size:18px;margin-bottom:8px;">Diken Sözleşmesi</div>
+      <p style="font-family:var(--font-serif);font-style:italic;color:var(--ink-dim);line-height:1.6;">
+        kendi zorluğunu seç.<br>her iz, koşu sonunda daha çok ödül.
+      </p>
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:18px;">
+        Yakında — Plan 09
+      </div>
+    </div>
+  `;
+}
+
+// Yuva navigation handler
+function setupYuvaListeners(){
+  $("yuvaContent").addEventListener("click",e=>{
+    const realmCard=e.target.closest("[data-realm]");
+    if(realmCard){
+      if(realmCard.dataset.unlocked==="false")return;
+      const realmId=realmCard.dataset.realm;
+      startRogueRun(realmId);
+      return;
+    }
+    const navBtn=e.target.closest("[data-yuva-nav]");
+    if(navBtn){
+      const where=navBtn.dataset.yuvaNav;
+      if(where==="karakter"){renderKarakter();showScreen("s-karakter");}
+      else if(where==="ipliklik"){renderIpliklik();showScreen("s-ipliklik");}
+      else if(where==="diken"){renderDiken();showScreen("s-diken");}
+    }
+  });
+}
+setupYuvaListeners();
 
 /* free setup */
 const SIZE_OPTS=[4,5,6,7,9,12];
