@@ -109,8 +109,10 @@ svg{width:100%;height:auto;display:block;touch-action:manipulation;}
 .clue.tile-yanki{fill:var(--accent-cool,#99A3B0);font-style:italic;}
 .clue.tile-kayan{fill:var(--good,#8FA39A);}
 .edge-line{stroke:var(--line);stroke-width:5.5;stroke-linecap:round;}
+.edge-line.wrong{stroke:var(--bad);}
 .edge-hit{stroke:transparent;cursor:pointer;}
 .ex{stroke:var(--muted);stroke-width:2.4;stroke-linecap:round;opacity:.55;}
+.ex.wrong{stroke:var(--bad);opacity:.9;}
 .seg-appear{animation:pop .14s ease-out;}
 @keyframes pop{from{opacity:0}to{opacity:1}}
 @keyframes pawTrail {
@@ -234,8 +236,9 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
       <div class="section-label">Tahta boyutu</div>
       <div class="chips" id="sizeChips"></div>
       <div class="section-label">İpucu yoğunluğu <span id="densVal" style="color:var(--ink)"></span></div>
+      <div style="font-size:11px;color:var(--muted);font-style:italic;padding:0 0 6px;font-family:var(--font-serif);">düşük yoğunlukta birden fazla çözüm olabilir</div>
       <div class="slider-row"><span style="color:var(--muted);font-size:12px">Az</span>
-        <input type="range" id="density" min="0" max="90" value="70">
+        <input type="range" id="density" min="35" max="90" value="70">
         <span style="color:var(--muted);font-size:12px">Çok</span></div>
       <div class="section-label">Seed (rastgelelik) — boş bırak = rastgele</div>
       <div class="seedrow"><input type="text" id="seedInput" placeholder="örn. merve-01" autocapitalize="off" autocomplete="off">
@@ -253,8 +256,12 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
 
   <!-- GAME -->
   <section class="screen" id="s-game">
-    <div class="topbar"><button class="iconbtn" data-back aria-label="Geri">‹</button><div class="ttl" id="gameTitle">Bulmaca</div>
-      <button class="iconbtn" id="gameSettings" aria-label="Ayarlar">⚙</button></div>
+    <div class="topbar">
+      <button class="iconbtn" data-back aria-label="Geri">‹</button>
+      <div class="ttl" id="gameTitle">Bulmaca</div>
+      <button class="iconbtn" id="gameNewBtn" aria-label="Yeni bulmaca" title="Yeni bulmaca">✦</button>
+      <button class="iconbtn" id="gameSettings" aria-label="Ayarlar">⚙</button>
+    </div>
     <div class="gamebar">
       <div class="chip"><small>Süre</small><span id="timer">0:00</span></div>
       <div class="chip" id="hintChip"><small>İpucu</small><span id="hintsUsed">0</span></div>
@@ -264,8 +271,8 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
       <button class="btn-ghost" id="undoBtn" title="Geri al" aria-label="Geri al">↶</button>
       <button class="btn-ghost" id="redoBtn" title="İleri al" aria-label="İleri al">↷</button>
       <button class="btn-ghost" id="resetBtn" title="Temizle" aria-label="Tahtayı temizle">↺</button>
+      <button class="btn-ghost" id="checkBtn" title="Kontrol et" aria-label="Kontrol et">✓</button>
       <button class="btn-ghost hidden" id="hintBtn" aria-label="İpucu al">💡 İpucu</button>
-      <button class="btn-primary" id="newBtn" aria-label="Yeni bulmaca">✦ Yeni</button>
     </div>
   </section>
 
@@ -298,7 +305,11 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
 
   <!-- ROGUE MAP -->
   <section class="screen" id="s-rogue-map">
-    <div class="topbar"><button class="iconbtn" data-back aria-label="Geri">‹</button><div class="ttl" id="rogueMapTitle">Koşu</div></div>
+    <div class="topbar">
+      <button class="iconbtn" data-back aria-label="Geri">‹</button>
+      <div class="ttl" id="rogueMapTitle">Koşu</div>
+      <button class="iconbtn" id="rogueMapHelp" aria-label="Sembol açıklaması" title="Sembol açıklaması">?</button>
+    </div>
     <div class="scroll"><div id="rogueMapContent"></div></div>
   </section>
 </div>
@@ -381,6 +392,27 @@ import {TILE_TYPES, applyTiles, revealTile, tickKayanTiles} from "./src/rogue/ti
 import {THORNS, getThorn, totalIzScore as thornsIzScore, applyThornsToRun, rewardMultiplier as thornsRewardMult} from "./src/rogue/thorns.js";
 import {KEEPSAKES, allUnlockedKeepsakes, checkAutoUnlock as checkKeepsakeUnlock} from "./src/rogue/keepsakes.js";
 import {todaySeed, todayDate, hasPlayedToday as todayHasPlayed, recordResult as recordDaily, getLeaderboard as getDailyLB} from "./src/rogue/daily.js";
+
+/* =========================================================================
+   0) ONE-TIME RESET (v3 cache bust + clean state)
+   ========================================================================= */
+(function(){
+  const RESET_FLAG="cember:reset:v3";
+  try{
+    if(!localStorage.getItem(RESET_FLAG)){
+      const toRemove=[];
+      for(let i=0;i<localStorage.length;i++){
+        const k=localStorage.key(i);
+        if(k&&k.startsWith("cember:"))toRemove.push(k);
+      }
+      toRemove.forEach(k=>localStorage.removeItem(k));
+      if(typeof indexedDB!=="undefined"){
+        try{indexedDB.deleteDatabase("cember-db");}catch(e){}
+      }
+      localStorage.setItem(RESET_FLAG,"done");
+    }
+  }catch(e){}
+})();
 
 /* =========================================================================
    0) PWA — service worker register + persistent storage
@@ -622,6 +654,7 @@ let P=null,hState=null,vState=null,solved=false,hints=0;
 let elapsed=0,timerId=null,timerBase=0;
 let ctx={mode:"free",levelIndex:null};
 let undoStack=[],redoStack=[];
+let wrongSet=null;
 const $=id=>document.getElementById(id);
 const boardEl=$("board");
 
@@ -639,7 +672,7 @@ function startGame(puzzle,context,restore){
 }
 function applyHintVisibility(){$("hintBtn").classList.toggle("hidden",!settings.hints);}
 function applyUndoVisibility(){const v=settings.undoButtons!==false;$("undoBtn").classList.toggle("hidden",!v);$("redoBtn").classList.toggle("hidden",!v);}
-function applyNewBtnVisibility(){$("newBtn").classList.toggle("hidden",ctx.mode==="rogue");}
+function applyNewBtnVisibility(){$("gameNewBtn").classList.toggle("hidden",ctx.mode==="rogue");}
 
 /* cizim */
 function geom(){const R=P.R,C=P.C;const S=Math.max(34,Math.min(70,Math.floor(560/Math.max(R,C))));
@@ -688,9 +721,25 @@ function render(){
     }
     boardEl.appendChild(t);
   }
-  function seg(x1,y1,x2,y2,st){if(st===1){const l=document.createElementNS(NS,"line");l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);l.setAttribute("class","edge-line seg-appear");boardEl.appendChild(l);}else if(st===2){const mx=(x1+x2)/2,my=(y1+y2)/2,s=g.S*0.13;for(const[a,b,cc,dd]of[[-s,-s,s,s],[-s,s,s,-s]]){const l=document.createElementNS(NS,"line");l.setAttribute("x1",mx+a);l.setAttribute("y1",my+b);l.setAttribute("x2",mx+cc);l.setAttribute("y2",my+dd);l.setAttribute("class","ex");boardEl.appendChild(l);}}}
-  for(let r=0;r<=g.R;r++)for(let c=0;c<g.C;c++)seg(dx(c),dy(r),dx(c+1),dy(r),hState[r][c]);
-  for(let r=0;r<g.R;r++)for(let c=0;c<=g.C;c++)seg(dx(c),dy(r),dx(c),dy(r+1),vState[r][c]);
+  function seg(x1,y1,x2,y2,st,k,r,c){
+    const isWrong=wrongSet&&wrongSet.has(k+":"+r+":"+c);
+    if(st===1){
+      const l=document.createElementNS(NS,"line");
+      l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);
+      l.setAttribute("class","edge-line seg-appear"+(isWrong?" wrong":""));
+      boardEl.appendChild(l);
+    }else if(st===2){
+      const mx=(x1+x2)/2,my=(y1+y2)/2,s=g.S*0.13;
+      for(const[a,b,cc,dd]of[[-s,-s,s,s],[-s,s,s,-s]]){
+        const l=document.createElementNS(NS,"line");
+        l.setAttribute("x1",mx+a);l.setAttribute("y1",my+b);l.setAttribute("x2",mx+cc);l.setAttribute("y2",my+dd);
+        l.setAttribute("class","ex"+(isWrong?" wrong":""));
+        boardEl.appendChild(l);
+      }
+    }
+  }
+  for(let r=0;r<=g.R;r++)for(let c=0;c<g.C;c++)seg(dx(c),dy(r),dx(c+1),dy(r),hState[r][c],"h",r,c);
+  for(let r=0;r<g.R;r++)for(let c=0;c<=g.C;c++)seg(dx(c),dy(r),dx(c),dy(r+1),vState[r][c],"v",r,c);
   for(let r=0;r<=g.R;r++)for(let c=0;c<=g.C;c++){const ci=document.createElementNS(NS,"circle");ci.setAttribute("cx",dx(c));ci.setAttribute("cy",dy(r));ci.setAttribute("r",g.S*0.06);ci.setAttribute("class","dotc");boardEl.appendChild(ci);}
   const hw=g.S*0.5;
   function hit(x1,y1,x2,y2,k,r,c){const l=document.createElementNS(NS,"line");l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);l.setAttribute("class","edge-hit");l.setAttribute("stroke-width",hw);l.addEventListener("click",()=>toggle(k,r,c));boardEl.appendChild(l);}
@@ -716,6 +765,25 @@ function applyAutoXAround(r,c){
     autoXAfterClue(r+dr,c+dc);
   }
 }
+function vertexDeg(r,c){
+  let d=0;
+  if(c>0&&hState[r][c-1]===1)d++;
+  if(c<P.C&&hState[r][c]===1)d++;
+  if(r>0&&vState[r-1][c]===1)d++;
+  if(r<P.R&&vState[r][c]===1)d++;
+  return d;
+}
+function applyCornerAutoX(){
+  if(!settings.autoX||!P)return;
+  for(let r=0;r<=P.R;r++)for(let c=0;c<=P.C;c++){
+    if(vertexDeg(r,c)===2){
+      if(c>0&&hState[r][c-1]===0)hState[r][c-1]=2;
+      if(c<P.C&&hState[r][c]===0)hState[r][c]=2;
+      if(r>0&&vState[r-1][c]===0)vState[r-1][c]=2;
+      if(r<P.R&&vState[r][c]===0)vState[r][c]=2;
+    }
+  }
+}
 function snapshotState(){
   return {h:hState.map(row=>row.slice()),v:vState.map(row=>row.slice())};
 }
@@ -733,6 +801,7 @@ function toggle(k,r,c){
   if(settings.autoX){
     if(k==="h"){applyAutoXAround(r,c);applyAutoXAround(r,c+1);}
     else{applyAutoXAround(r,c);applyAutoXAround(r+1,c);}
+    applyCornerAutoX();
   }
   // Kayan tile tick — bir hamlede tüm kayan tile'ların sayacı azalır
   if(P.tiles){tickKayanTiles(P,Math.random);}
@@ -749,6 +818,25 @@ function redo(){
   undoStack.push(snapshotState());
   restoreState(redoStack.pop());
   buzz(6);render();autosave();
+}
+function runCheck(){
+  if(!P||solved)return;
+  wrongSet=new Set();
+  for(let r=0;r<=P.R;r++)for(let c=0;c<P.C;c++){
+    const s=hState[r][c],sol=P.solH[r][c];
+    if((s===1&&sol===0)||(s===2&&sol===1))wrongSet.add("h:"+r+":"+c);
+  }
+  for(let r=0;r<P.R;r++)for(let c=0;c<=P.C;c++){
+    const s=vState[r][c],sol=P.solV[r][c];
+    if((s===1&&sol===0)||(s===2&&sol===1))wrongSet.add("v:"+r+":"+c);
+  }
+  const wrongs=wrongSet.size;
+  render();
+  const t=$("gameTitle"),old=t.textContent,oldColor=t.style.color;
+  t.textContent=wrongs===0?"✓ doğru gidiyorsun":`✗ ${wrongs} hatalı kenar`;
+  t.style.color=wrongs===0?"var(--good)":"var(--bad)";
+  setTimeout(()=>{t.textContent=old;t.style.color=oldColor;},2700);
+  setTimeout(()=>{wrongSet=null;if(P&&!solved)render();},3000);
 }
 // lineCount + decided delegated to ./src/core/checker.js (state-bound wrappers)
 const lineCount=(r,c)=>_lineCount(hState,vState,r,c);
@@ -936,8 +1024,9 @@ function renderRogueMap(run){
         return `
           ${isCur?`<circle cx="${cx(n.col)}" cy="${cy(n.floor)}" r="22" fill="none" stroke="var(--accent)" stroke-opacity=".25" stroke-width="6"/>`:""}
           <g data-node-id="${n.id}" data-accessible="${isAcc&&!isCur?"1":"0"}" style="cursor:${isAcc&&!isCur?"pointer":"default"};" opacity="${op}">
-            <circle cx="${cx(n.col)}" cy="${cy(n.floor)}" r="16" fill="${fill}" stroke="${stroke}" stroke-width="1.2"/>
-            <text x="${cx(n.col)}" y="${cy(n.floor)+1}" text-anchor="middle" dominant-baseline="central" font-family="var(--font-serif)" font-size="14" font-weight="600" fill="${txt}">${glyph[n.type]||"?"}</text>
+            <circle cx="${cx(n.col)}" cy="${cy(n.floor)}" r="26" fill="transparent" stroke="none" pointer-events="all"/>
+            <circle cx="${cx(n.col)}" cy="${cy(n.floor)}" r="16" fill="${fill}" stroke="${stroke}" stroke-width="1.2" pointer-events="none"/>
+            <text x="${cx(n.col)}" y="${cy(n.floor)+1}" text-anchor="middle" dominant-baseline="central" font-family="var(--font-serif)" font-size="14" font-weight="600" fill="${txt}" pointer-events="none">${glyph[n.type]||"?"}</text>
           </g>
         `;
       }).join("")}
@@ -945,15 +1034,41 @@ function renderRogueMap(run){
     </svg>
   `;
 
-  const candleHtml=run.candleMode?`<div style="font-family:var(--font-mono);font-size:11px;color:var(--bad);">🕯 ${Math.floor((run.timeRemaining||0)/60)}:${((run.timeRemaining||0)%60).toString().padStart(2,"0")}</div>`:"";
+  const candleHtml=run.candleMode?`<div style="font-family:var(--font-mono);font-size:13px;color:var(--bad);">🕯 ${Math.floor((run.timeRemaining||0)/60)}:${((run.timeRemaining||0)%60).toString().padStart(2,"0")}</div>`:"";
+
+  const legendHtml=`
+    <div id="rogueMapLegend" style="display:none;background:var(--panel-2);border:1px solid var(--hairline);border-radius:14px;padding:14px;margin-bottom:12px;">
+      <div style="font-family:var(--font-mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;">harita sembolleri</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        ${[
+          ["◇","Bulmaca","Standart bulmaca, çözünce relic seçeneği"],
+          ["☆","Elit","Zor bulmaca, daha iyi ödül"],
+          ["⬚","Sandık","Bulmaca yok, bir relic seç"],
+          ["⚿","Kilitli Sandık","Bronz Anahtar gerekir"],
+          ["◐","Dinlenme","+1 can yenilenir"],
+          ["?","Olay","Metin + 2-3 seçim"],
+          ["☠","Patron","Kat sonu büyük bulmaca"],
+        ].map(([gly,n,d])=>`
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="color:var(--accent);font-family:var(--font-serif);font-size:20px;min-width:22px;text-align:center;">${gly}</span>
+            <div style="flex:1;">
+              <div style="font-family:var(--font-serif);font-weight:600;font-size:13px;color:var(--ink);">${n}</div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.35;font-family:var(--font-serif);font-style:italic;">${d}</div>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
 
   $("rogueMapTitle").textContent=realm.name;
   $("rogueMapContent").innerHTML=`
+    ${legendHtml}
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0 16px;gap:10px;flex-wrap:wrap;">
       <div>${livesHtml}</div>
-      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);">KAT ${run.floor+1}/${run.mapGraph.floors}</div>
+      <div style="font-family:var(--font-mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);">KAT ${run.floor+1}/${run.mapGraph.floors}</div>
       ${candleHtml}
-      <div style="font-family:var(--font-mono);font-size:12px;color:var(--accent);">◇ ${run.relics.length}</div>
+      <div style="font-family:var(--font-mono);font-size:14px;color:var(--accent);">◇ ${run.relics.length}</div>
     </div>
     <div style="background:var(--panel);border:1px solid var(--hairline);border-radius:18px;padding:14px;">
       ${svg}
@@ -967,13 +1082,13 @@ function renderRogueMap(run){
       </div>
     `:""}
   `;
-  // Bind node clicks
-  $("rogueMapContent").querySelectorAll("[data-node-id]").forEach(g=>{
-    g.addEventListener("click",()=>{
-      if(g.dataset.accessible!=="1")return;
-      handleRogueNode(g.dataset.nodeId);
-    });
-  });
+  // Bind node clicks (delegated on container — single listener, iOS SVG-safe)
+  const mapEl=$("rogueMapContent");
+  mapEl.onclick=e=>{
+    const g=e.target.closest("[data-node-id]");
+    if(!g||g.dataset.accessible!=="1")return;
+    handleRogueNode(g.dataset.nodeId);
+  };
   const newBtn=$("rogueNewBtn");
   if(newBtn)newBtn.addEventListener("click",()=>{store.del(KEYS.rogueRun);renderYuva();showScreen("s-yuva");});
 }
@@ -1650,8 +1765,8 @@ function renderKarakter(){
         ["YILDIZ TOZU",meta.currencies.stardust||0,"var(--accent-cool)"],
       ].map(([k,v,c])=>`
         <div style="background:var(--panel);border:1px solid var(--hairline);border-radius:10px;padding:8px 6px;text-align:center;">
-          <div style="font-family:var(--font-serif);font-weight:500;font-size:18px;color:${c};line-height:1;">${v}</div>
-          <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:.18em;color:var(--muted);margin-top:3px;">${k}</div>
+          <div style="font-family:var(--font-serif);font-weight:500;font-size:20px;color:${c};line-height:1;">${v}</div>
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;color:var(--muted);margin-top:3px;">${k}</div>
         </div>
       `).join("")}
     </div>
@@ -1659,7 +1774,7 @@ function renderKarakter(){
 
   // 3. Compact stats grid — 3 cols × 2 rows
   const statsHtml=`
-    <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);padding:0 4px 6px;">istatistik</div>
+    <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);padding:0 4px 6px;">istatistik</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:0 4px 14px;">
       ${[
         ["KOŞU",stats.runs||0],
@@ -1670,8 +1785,8 @@ function renderKarakter(){
         ["EN UZAK",farthestFloor||"-"],
       ].map(([k,v])=>`
         <div style="background:var(--panel);border:1px solid var(--hairline);border-radius:10px;padding:9px 4px;text-align:center;">
-          <div style="font-family:var(--font-serif);font-weight:500;font-size:16px;color:var(--ink);line-height:1;">${v}</div>
-          <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:.16em;color:var(--muted);margin-top:3px;">${k}</div>
+          <div style="font-family:var(--font-serif);font-weight:500;font-size:18px;color:var(--ink);line-height:1;">${v}</div>
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.16em;color:var(--muted);margin-top:3px;">${k}</div>
         </div>
       `).join("")}
     </div>
@@ -1682,16 +1797,16 @@ function renderKarakter(){
     <div style="display:flex;align-items:center;gap:10px;background:var(--panel-2);border:1px solid var(--accent);border-radius:12px;padding:10px 12px;margin-bottom:14px;">
       <div style="width:38px;height:38px;border-radius:10px;background:var(--bg);border:1px solid var(--hairline);display:grid;place-items:center;color:var(--accent);font-family:var(--font-serif);font-size:18px;flex-shrink:0;">${starterRelic.glyph}</div>
       <div style="flex:1;min-width:0;">
-        <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;">yanında başla</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;">yanında başla</div>
         <div style="font-family:var(--font-serif);font-weight:600;font-size:13px;color:var(--ink);margin-top:1px;line-height:1.2;">${starterRelic.name}</div>
       </div>
-      <button id="starterChangeBtn" style="background:transparent;border:none;color:var(--muted);font-family:var(--font-mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:6px 8px;">değiş ›</button>
+      <button id="starterChangeBtn" style="background:transparent;border:none;color:var(--muted);font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:6px 8px;">değiş ›</button>
     </div>
   `:`
     <button id="starterSelectBtn" style="display:flex;align-items:center;gap:10px;width:100%;background:var(--panel);border:1px dashed var(--hairline);border-radius:12px;padding:10px 12px;margin-bottom:14px;cursor:pointer;text-align:left;">
       <div style="width:38px;height:38px;border-radius:10px;background:var(--bg);border:1px solid var(--hairline);display:grid;place-items:center;color:var(--muted);font-family:var(--font-serif);font-size:18px;flex-shrink:0;">+</div>
       <div style="flex:1;">
-        <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase;">yanında başla</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;">yanında başla</div>
         <div style="font-family:var(--font-serif);font-style:italic;color:var(--ink-dim);font-size:12px;margin-top:1px;">koleksiyondan bir relic seç</div>
       </div>
     </button>
@@ -1700,8 +1815,8 @@ function renderKarakter(){
   // 5. Boncuk Dizimi — 3 slots inline + small "koleksiyon" link
   const charmsHtml=`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:0 2px 6px;">
-      <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);">boncuk dizimi · ${equipped.length}/3</div>
-      <button id="charmsLibBtn" style="background:transparent;border:none;color:var(--accent);font-family:var(--font-mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:0;">koleksiyon ›</button>
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);">boncuk dizimi · ${equipped.length}/3</div>
+      <button id="charmsLibBtn" style="background:transparent;border:none;color:var(--accent);font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:0;">koleksiyon ›</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:14px;">
       ${[0,1,2].map(i=>{
@@ -1714,7 +1829,7 @@ function renderKarakter(){
               <div style="font-family:var(--font-serif);font-weight:600;font-size:11px;color:var(--ink);margin-top:4px;line-height:1.15;">${c.name}</div>
             `:`
               <div style="color:var(--muted);font-family:var(--font-serif);font-size:18px;opacity:.35;line-height:1;">+</div>
-              <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin-top:4px;">boş</div>
+              <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin-top:4px;">boş</div>
             `}
           </div>
         `;
@@ -1724,7 +1839,7 @@ function renderKarakter(){
 
   // 6. Hediye Boncukları — 4-col grid (2 rows for 8 items)
   const keepsakesHtml=`
-    <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);padding:0 2px 6px;">hediye boncukları · ${unlockedKeepsakes.length}/${Object.keys(KEEPSAKES).length}</div>
+    <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);padding:0 2px 6px;">hediye boncukları · ${unlockedKeepsakes.length}/${Object.keys(KEEPSAKES).length}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;padding-bottom:8px;">
       ${Object.values(KEEPSAKES).map(k=>{
         const owned=!!unlockedKeepsakes.find(u=>u.id===k.id);
@@ -1744,12 +1859,7 @@ function renderKarakter(){
   const sel=$("starterSelectBtn")||$("starterChangeBtn");
   if(sel)sel.addEventListener("click",openStarterPicker);
   $("karakterContent").querySelectorAll("[data-charm-slot]").forEach(el=>{
-    el.addEventListener("click",()=>{
-      const i=+el.dataset.charmSlot;
-      const eq=(meta.charms?.equipped||[])[i];
-      if(eq){unequipCharm(meta,eq);saveMeta();renderKarakter();}
-      else{openCharmsLibrary();}
-    });
+    el.addEventListener("click",()=>openCharmsLibrary());
   });
   $("charmsLibBtn")?.addEventListener("click",openCharmsLibrary);
 }
@@ -1847,11 +1957,11 @@ function renderIpliklik(){
   const html=`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--panel-2);border:1px solid var(--hairline);border-radius:14px;margin:0 4px 14px;">
       <div>
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);">iplik bakiyesi</div>
-        <div style="font-family:var(--font-serif);font-weight:500;font-size:28px;color:var(--ink);line-height:1;margin-top:2px;">${balance}</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);">iplik bakiyesi</div>
+        <div style="font-family:var(--font-serif);font-weight:500;font-size:30px;color:var(--ink);line-height:1;margin-top:2px;">${balance}</div>
       </div>
       <div style="text-align:right;">
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;">açık</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;">açık</div>
         <div style="font-family:var(--font-serif);font-weight:500;font-size:18px;color:var(--ink-dim);line-height:1;margin-top:4px;">${unlockedCount}/${total}</div>
       </div>
     </div>
@@ -1893,11 +2003,11 @@ function renderDiken(){
   const html=`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--panel-2);border:1px solid var(--hairline);border-radius:14px;margin:0 4px 12px;">
       <div>
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);">toplam iz</div>
-        <div style="font-family:var(--font-serif);font-weight:500;font-size:28px;color:var(--ink);line-height:1;margin-top:2px;">${iz}</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);">toplam iz</div>
+        <div style="font-family:var(--font-serif);font-weight:500;font-size:30px;color:var(--ink);line-height:1;margin-top:2px;">${iz}</div>
       </div>
       <div style="text-align:right;">
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;">ödül çarpanı</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;">ödül çarpanı</div>
         <div style="font-family:var(--font-serif);font-weight:500;font-size:22px;color:${mult>=2?'var(--accent)':'var(--ink-dim)'};line-height:1;margin-top:3px;">×${mult.toFixed(1)}</div>
       </div>
     </div>
@@ -1913,7 +2023,7 @@ function renderDiken(){
             <div style="flex:1;min-width:0;">
               <div style="display:flex;align-items:baseline;gap:8px;">
                 <div style="font-family:var(--font-serif);font-weight:600;font-size:13px;color:var(--ink);line-height:1.2;">${t.name}</div>
-                ${active?`<span style="font-family:var(--font-mono);font-size:8.5px;color:var(--accent);letter-spacing:.16em;text-transform:uppercase;">+${rank} iz</span>`:''}
+                ${active?`<span style="font-family:var(--font-mono);font-size:10px;color:var(--accent);letter-spacing:.16em;text-transform:uppercase;">+${rank} iz</span>`:''}
               </div>
               <div style="color:var(--muted);font-size:11px;margin-top:1px;font-family:var(--font-serif);font-style:italic;line-height:1.3;">${t.desc}</div>
             </div>
@@ -1975,10 +2085,10 @@ const PRESETS=[
   {n:"Kolay",size:5,dens:80},{n:"Orta",size:7,dens:68},{n:"Zor",size:9,dens:58},
   {n:"Uzman",size:12,dens:50},{n:"Rastgele",rand:true},
 ];
-let setupSize=7,setupDens=70;
+let setupSize=7,setupDens=70,setupActivePreset=-1;
 function renderSetup(){
   $("sizeChips").innerHTML=SIZE_OPTS.map(s=>`<div class="opt ${s===setupSize?'sel':''}" data-size="${s}">${s}×${s}</div>`).join("");
-  $("presetChips").innerHTML=PRESETS.map((p,i)=>`<div class="opt" data-preset="${i}">${p.n}</div>`).join("");
+  $("presetChips").innerHTML=PRESETS.map((p,i)=>`<div class="opt ${setupActivePreset===i?'sel':''}" data-preset="${i}">${p.n}</div>`).join("");
   $("density").value=setupDens;$("densVal").textContent="%"+setupDens;
 }
 function startFree(){
@@ -2101,17 +2211,21 @@ document.querySelectorAll("[data-back]").forEach(b=>b.addEventListener("click",e
     renderHome();showScreen("s-home");
   }
 }));
-$("sizeChips").addEventListener("click",e=>{const o=e.target.closest("[data-size]");if(!o)return;setupSize=+o.dataset.size;renderSetup();});
-$("presetChips").addEventListener("click",e=>{const o=e.target.closest("[data-preset]");if(!o)return;const p=PRESETS[+o.dataset.preset];if(p.rand){setupSize=SIZE_OPTS[(Math.random()*SIZE_OPTS.length)|0];setupDens=40+((Math.random()*45)|0);}else{setupSize=p.size;setupDens=p.dens;}renderSetup();});
-$("density").addEventListener("input",e=>{setupDens=+e.target.value;$("densVal").textContent="%"+setupDens;});
+$("sizeChips").addEventListener("click",e=>{const o=e.target.closest("[data-size]");if(!o)return;setupSize=+o.dataset.size;setupActivePreset=-1;renderSetup();});
+$("presetChips").addEventListener("click",e=>{const o=e.target.closest("[data-preset]");if(!o)return;const idx=+o.dataset.preset;const p=PRESETS[idx];if(p.rand){setupSize=SIZE_OPTS[(Math.random()*SIZE_OPTS.length)|0];setupDens=40+((Math.random()*45)|0);}else{setupSize=p.size;setupDens=p.dens;}setupActivePreset=idx;renderSetup();});
+$("density").addEventListener("input",e=>{setupDens=+e.target.value;$("densVal").textContent="%"+setupDens;if(setupActivePreset!==-1){setupActivePreset=-1;$("presetChips").innerHTML=PRESETS.map((p,i)=>`<div class="opt ${setupActivePreset===i?'sel':''}" data-preset="${i}">${p.n}</div>`).join("");}});
 $("seedRand").addEventListener("click",()=>{$("seedInput").value="merve-"+(Math.floor(Math.random()*900)+100);});
 $("startFreeBtn").addEventListener("click",startFree);
 $("levelList").addEventListener("click",e=>{const l=e.target.closest("[data-level]");if(!l||l.dataset.level==="")return;startJourney(+l.dataset.level);});
 $("journeyReset").addEventListener("click",()=>{if(confirm("Yolculuk ilerlemesi sıfırlansın mı?")){store.del(KEYS.jrnProg);store.del(KEYS.jrnCur);renderJourney();}});
-$("newBtn").addEventListener("click",()=>{if(ctx.mode==="journey")startJourney(ctx.levelIndex);else startFree();});
+$("gameNewBtn").addEventListener("click",()=>{
+  if(!confirm("Yeni bulmaca başlatılsın mı? Mevcut ilerleme kaybolacak."))return;
+  if(ctx.mode==="journey")startJourney(ctx.levelIndex);else startFree();
+});
 $("undoBtn").addEventListener("click",undo);
 $("redoBtn").addEventListener("click",redo);
 $("resetBtn").addEventListener("click",resetBoard);
+$("checkBtn").addEventListener("click",runCheck);
 $("hintBtn").addEventListener("click",hint);
 function updateUndoRedoButtons(){
   $("undoBtn").disabled=!undoStack.length||solved;
@@ -2119,6 +2233,7 @@ function updateUndoRedoButtons(){
 }
 $("homeSettings").addEventListener("click",()=>{renderToggles();$("settingsOverlay").classList.add("show");});
 $("gameSettings").addEventListener("click",()=>{renderToggles();$("settingsOverlay").classList.add("show");});
+$("rogueMapHelp")?.addEventListener("click",()=>{const l=$("rogueMapLegend");if(l)l.style.display=l.style.display==="none"?"block":"none";});
 $("settingsOverlay").addEventListener("click",e=>{if(e.target.id==="settingsOverlay")$("settingsOverlay").classList.remove("show");});
 $("winHome").addEventListener("click",()=>{$("winOverlay").classList.remove("show");renderHome();showScreen("s-home");});
 $("winNext").addEventListener("click",()=>{
