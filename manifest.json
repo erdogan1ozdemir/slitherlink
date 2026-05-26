@@ -1,0 +1,22 @@
+{
+  "name": "Slitherlink — Yarim için",
+  "short_name": "Slitherlink",
+  "description": "Noktaları birleştir, tek bir kapalı döngü oluştur.",
+  "lang": "tr",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0c",
+  "theme_color": "#0a0a0c",
+  "categories": ["games", "puzzles"],
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

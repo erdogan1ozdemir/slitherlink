@@ -84,7 +84,7 @@ Her plan tamamlanınca:
 |------|-------|--------|
 | 01 — Sessiz İplik tokens | ✓ tamamlandı | f7d25f3 |
 | 02 — Quick fixes + Slitherlink QoL + How-to-play + Backup code | ✓ tamamlandı | 11911ac |
-| 03 — PWA setup | bekliyor | – |
+| 03 — PWA setup | ✓ tamamlandı | 04470bf |
 | 04 — Persistence v2 | bekliyor | – |
 | 05 — Modular refactor | bekliyor | – |
 | 06 — Rogue infrastructure (Yuva + Karakter + İpliklik + Diken + Pusula) | bekliyor | – |
