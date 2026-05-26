@@ -420,7 +420,21 @@ function toggle(k,r,c){
 }
 function lineCount(r,c){return (hState[r][c]===1)+(hState[r+1][c]===1)+(vState[r][c]===1)+(vState[r][c+1]===1);}
 function decided(r,c){return [hState[r][c],hState[r+1][c],vState[r][c],vState[r][c+1]].every(s=>s!==0);}
-function updateClueStates(){boardEl.querySelectorAll("text.clue").forEach(t=>{const r=+t.dataset.r,c=+t.dataset.c,n=P.clue[r][c],lc=lineCount(r,c);t.classList.remove("done","err");if(settings.errors&&(lc>n||(decided(r,c)&&lc!==n)))t.classList.add("err");else if(settings.fade&&lc===n)t.classList.add("done");});}
+function updateClueStates(){
+  boardEl.querySelectorAll("text.clue").forEach(t=>{
+    const r=+t.dataset.r,c=+t.dataset.c,n=P.clue[r][c],lc=lineCount(r,c);
+    t.classList.remove("done","err");
+    const mode=settings.autoCheckMode||"mistakes-only";
+    let isErr=false;
+    if(mode==="live"){
+      isErr=(lc>n)||(decided(r,c)&&lc!==n);
+    }else if(mode==="mistakes-only"){
+      isErr=(lc>n)||(decided(r,c)&&lc!==n);
+    }
+    if(settings.errors&&isErr)t.classList.add("err");
+    else if(settings.fade&&lc===n)t.classList.add("done");
+  });
+}
 
 /* kazanma */
 function checkWin(){const R=P.R,C=P.C;
