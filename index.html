@@ -359,6 +359,39 @@ const TOGGLE_DEFS=[
   {k:"haptics",t:"Titreşim",                d:"Dokununca küçük titreşim (destekleyen cihazda)"},
 ];
 
+const HOW_CONTENT={
+  rules:`
+    <h3>Çember Kuralları</h3>
+    <p class="quote">Tek ve kapalı bir çember çiz. İplikten kaybolma.</p>
+    <ul>
+      <li>Noktalardan oluşan ızgaranın kenarlarına çizgi çekersin.</li>
+      <li>Hücredeki sayı, o hücrenin etrafındaki çizgi adedini söyler (0-3).</li>
+      <li>Tüm çizilen kenarlar <b>tek ve kapalı</b> bir döngü oluşturmalı.</li>
+      <li>Çizgiler kesişemez, dallanamaz.</li>
+    </ul>
+    <h4>Üç durum</h4>
+    <p>Bir kenara dokun → <b>boş</b> → <b>çizgi</b> → <b>çarpı</b> → boş. Çarpı senin "burada kesin çizgi yok" notun; çözümü etkilemez, akıl yürütmene yardım eder.</p>
+    <h4>Kazanma</h4>
+    <p>Tüm gösterilen sayılar tatmin olduğunda + tüm çizgili kenarlar tek bir kapalı döngü oluşturduğunda kazandın.</p>
+  `,
+  modes:`
+    <h3>Üç Mod</h3>
+    <h4>Serbest Oyun ✦</h4>
+    <p>Boyut (4×4–12×12), ipucu yoğunluğu (%0–%90) ve seed'i sen seçersin. Aynı seed her zaman aynı bulmacayı verir — favoriler için.</p>
+    <h4>Yolculuk ⬢</h4>
+    <p>30 bölümlük lineer kampanya. Zorluk kademeli artar. Her bölümün en iyi süresi tutulur. Yarım kalan bölüm "Devam et" rozetiyle açılır.</p>
+    <h4>Rogue Modu ☠</h4>
+    <p>Sessiz İplik'in en derin modu. Üç diyar, dallanan haritalar, eşyalar, canlar, ve koşular arası kalıcı geliştirme. (Detay için "Rogue" sekmesi.)</p>
+  `,
+  rogue:"",
+  meta:"",
+  backup:"",
+};
+
+function renderHowTab(tab){
+  $("howBody").innerHTML=HOW_CONTENT[tab]||"";
+}
+
 /* =========================================================================
    6) YOLCULUK (level / dungeon iskeleti) - deterministik uretim
    ========================================================================= */
