@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Sessiz İplik palette -->
+  <rect width="512" height="512" fill="#0a0a0c"/>
+  <!-- Tek çember + ipliklik motifi -->
+  <g stroke="#EDEAE3" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M 140 180 L 140 332 L 256 332 L 256 256 L 372 256 L 372 180 Z"/>
+  </g>
+  <!-- Taupe vertex dots -->
+  <g fill="#A89B8B">
+    <circle cx="140" cy="180" r="9"/>
+    <circle cx="140" cy="332" r="9"/>
+    <circle cx="256" cy="332" r="9"/>
+    <circle cx="256" cy="256" r="9"/>
+    <circle cx="372" cy="256" r="9"/>
+    <circle cx="372" cy="180" r="9"/>
+  </g>
+</svg>
