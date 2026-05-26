@@ -106,6 +106,18 @@ svg{width:100%;height:auto;display:block;touch-action:manipulation;}
 .ex{stroke:var(--muted);stroke-width:2.4;stroke-linecap:round;opacity:.55;}
 .seg-appear{animation:pop .14s ease-out;}
 @keyframes pop{from{opacity:0}to{opacity:1}}
+@keyframes pawTrail {
+  0% { opacity: 0; transform: translateX(-30px) translateY(8px) rotate(-12deg); }
+  20% { opacity: 0.7; }
+  100% { opacity: 0; transform: translateX(110px) translateY(-4px) rotate(8deg); }
+}
+.paw-trail { position: absolute; left: 50%; top: 50%; margin-left: -70px; margin-top: -20px; pointer-events: none; }
+.paw-trail svg { animation: pawTrail 2.4s ease-in-out 1; opacity: 0; }
+.paw-trail .paw + .paw { margin-left: 8px; }
+.paw-trail .paw:nth-child(1) svg { animation-delay: 0s; }
+.paw-trail .paw:nth-child(2) svg { animation-delay: 0.18s; }
+.paw-trail .paw:nth-child(3) svg { animation-delay: 0.36s; }
+.paw-trail .paw:nth-child(4) svg { animation-delay: 0.54s; }
 
 /* game hud */
 .gamebar{display:flex;gap:8px;justify-content:center;padding:4px 16px 2px;}
@@ -1228,6 +1240,36 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
   const showNext=(ctx.mode==="journey"&&ctx.levelIndex+1<TOTAL_LEVELS)||ctx.mode==="rogue";
   next.style.display=showNext?"block":"none";
   setTimeout(()=>{$("winOverlay").classList.add("show");burst();},420);
+  setTimeout(()=>{showPawTrail();},900);
+}
+
+function showPawTrail(){
+  // Realm-specific accent color
+  let color="#A89B8B"; // default taupe
+  if(ctx.mode==="rogue"&&ctx.realmId){
+    if(ctx.realmId==="sogut-esigi")color="#B89F8A";
+    else if(ctx.realmId==="yildiz-gecidi")color="#99A3B0";
+  }
+  const modal=document.querySelector("#winOverlay .modal");
+  if(!modal)return;
+  const old=modal.querySelector(".paw-trail");
+  if(old)old.remove();
+  const trail=document.createElement("div");
+  trail.className="paw-trail";
+  trail.innerHTML=[0,1,2,3].map(()=>`
+    <span class="paw" style="display:inline-block;">
+      <svg width="14" height="14" viewBox="0 0 14 14">
+        <ellipse cx="3" cy="5" rx="1.3" ry="1.8" fill="${color}"/>
+        <ellipse cx="6" cy="3" rx="1.3" ry="1.8" fill="${color}"/>
+        <ellipse cx="9" cy="3" rx="1.3" ry="1.8" fill="${color}"/>
+        <ellipse cx="12" cy="5" rx="1.3" ry="1.8" fill="${color}"/>
+        <ellipse cx="7.5" cy="9.5" rx="3" ry="2.5" fill="${color}"/>
+      </svg>
+    </span>
+  `).join("");
+  modal.style.position="relative";
+  modal.appendChild(trail);
+  setTimeout(()=>trail.remove(),2800);
 }
 
 /* ipucu / temizle */
