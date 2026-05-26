@@ -218,7 +218,7 @@ export const ACHIEVEMENTS={
  *   - event_chain:<id>:<chainId>
  */
 export function emit(triggerId, meta, onUnlock){
-  if(meta.achievements[triggerId])return false; // not the achievement id but trigger
+  // No early return — iterate and let per-achievement guard handle duplicates
   for(const ach of Object.values(ACHIEVEMENTS)){
     if(ach.trigger!==triggerId)continue;
     if(meta.achievements[ach.id])continue;
