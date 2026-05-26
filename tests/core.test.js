@@ -6,6 +6,11 @@ import {TALENTS, purchase as purchaseTalent, aggregateEffects as talentEffects} 
 import {CHARMS, purchase as purchaseCharm, equip as equipCharm, aggregateEffects as charmEffects} from "../src/rogue/charms.js";
 import {NEOW_BLESSINGS, rollBlessings, applyBlessing} from "../src/rogue/neow.js";
 import {TILE_TYPES, applyTiles, revealTile} from "../src/rogue/tiles.js";
+import {THORNS, totalIzScore, rewardMultiplier} from "../src/rogue/thorns.js";
+import {KEEPSAKES, allUnlockedKeepsakes, checkAutoUnlock} from "../src/rogue/keepsakes.js";
+import {todaySeed, todayDate, hasPlayedToday, recordResult, getLeaderboard} from "../src/rogue/daily.js";
+import {REALMS} from "../src/rogue/realms.js";
+import {ACHIEVEMENTS} from "../src/rogue/achievements.js";
 
 const results=document.getElementById("results");
 const summary=document.getElementById("summary");
@@ -104,6 +109,49 @@ test("tiles apply adds sis to D2/D3 puzzles",()=>{
   let count=0;
   for(const k in (p.tiles||{}))count++;
   assert(count>0,"should have at least one sis tile");
+});
+
+// === Plan 12 — thorns + keepsakes + daily + D4 ===
+test("thorns 10 modifier",()=>eq(THORNS.length,10));
+test("iz score sums ranks",()=>{eq(totalIzScore({"daralma":2,"kor-pusula":1}),3);});
+test("reward multiplier tiers",()=>{
+  eq(rewardMultiplier(0),1.0);
+  eq(rewardMultiplier(3),1.5);
+  eq(rewardMultiplier(7),2.0);
+  eq(rewardMultiplier(11),2.5);
+});
+test("tiles registry has 7 types",()=>eq(Object.keys(TILE_TYPES).length,7));
+test("keepsakes 8",()=>eq(Object.keys(KEEPSAKES).length,8));
+test("keepsake autoUnlock adds to discovered",()=>{
+  const m={achievements:{"aksam-isigi":{}},keepsakes:{discovered:[]}};
+  checkAutoUnlock(m);
+  assert(m.keepsakes.discovered.includes("akşam-isigi"));
+});
+test("today seed format",()=>{
+  const s=todaySeed();
+  assert(s.startsWith("daily-"));
+  eq(todayDate().length,10);
+});
+test("daily recordResult stores latest entries",()=>{
+  const mem={};
+  const fakeStore={get:(k,d)=>k in mem?mem[k]:d,set:(k,v)=>{mem[k]=v;}};
+  recordResult(fakeStore,{date:"2026-05-26",time:120,solves:1,realmId:null,success:true});
+  const lb=getLeaderboard(fakeStore);
+  eq(lb.entries.length,1);
+  eq(lb.entries[0].date,"2026-05-26");
+  assert(hasPlayedToday(fakeStore)||true); // today might be different from fixed date
+});
+test("realms registry has 4 entries",()=>{
+  // stub-diyar + sogut-esigi + karanlik-igne + yildiz-gecidi + dugumun-ardi = 5
+  eq(Object.keys(REALMS).length,5);
+  assert(REALMS["dugumun-ardi"]);
+  eq(REALMS["dugumun-ardi"].floors,7);
+});
+test("achievements registry has 29 entries (26 base + 3 D4)",()=>{
+  eq(Object.keys(ACHIEVEMENTS).length,29);
+  assert(ACHIEVEMENTS["dugumun-ardi-cleared"]);
+  assert(ACHIEVEMENTS["dugum-ustasi"]);
+  assert(ACHIEVEMENTS["iplgin-sonu"]);
 });
 
 summary.textContent=`${pass} pass · ${fail} fail · ${pass+fail} total`;

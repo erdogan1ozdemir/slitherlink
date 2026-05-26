@@ -25,5 +25,5 @@
 - [x] Task 12: D4 achievement (3 ach)
 
 ## Final
-- [ ] Task 13: tests/core.test.js genişlet
+- [x] Task 13: tests/core.test.js genişlet
 - [ ] Task 14: Final + merge + push
