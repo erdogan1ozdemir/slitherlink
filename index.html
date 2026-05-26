@@ -357,7 +357,10 @@ import {makePuzzle} from "./src/core/generator.js";
 import {lineCount as _lineCount, decided as _decided, validateLoop} from "./src/core/checker.js";
 import {startRun, moveTo, loseLife, winRun, currentNode as rogueCurrentNode} from "./src/rogue/engine.js";
 import {generateMap, nextAccessibleNodes} from "./src/rogue/map.js";
-import {STUB_REALM} from "./src/rogue/stub-realm.js";
+import {REALMS, getRealm, isRealmUnlocked} from "./src/rogue/realms.js";
+import {RELICS, getRelic, rollRelicOffer, hasRelic} from "./src/rogue/relics.js";
+import {EVENTS, getEvent, rollEvent} from "./src/rogue/events.js";
+import {ACHIEVEMENTS, emit as emitAchievement, getAchievement, unlockedCount as achUnlocked, totalCount as achTotal} from "./src/rogue/achievements.js";
 
 /* =========================================================================
    0) PWA — service worker register + persistent storage
@@ -610,7 +613,7 @@ function startGame(puzzle,context,restore){
   else{hState=Array.from({length:P.R+1},()=>Array(P.C).fill(0));
        vState=Array.from({length:P.R},()=>Array(P.C+1).fill(0));hints=0;elapsed=0;}
   $("hintsUsed").textContent=hints;
-  $("gameTitle").textContent = ctx.mode==="journey" ? levelParams(ctx.levelIndex).title : (ctx.mode==="rogue" ? STUB_REALM.name : "Serbest");
+  $("gameTitle").textContent = ctx.mode==="journey" ? levelParams(ctx.levelIndex).title : (ctx.mode==="rogue" ? (getRealm(ctx.realmId)?.name||"Rogue") : "Serbest");
   applyHintVisibility();applyUndoVisibility();render();startTimer();showScreen("s-game");
 }
 function applyHintVisibility(){$("hintBtn").classList.toggle("hidden",!settings.hints);}
@@ -718,7 +721,8 @@ function startRogueRun(realmId){
   let activeRun=store.get(KEYS.rogueRun,null);
   if(!activeRun||activeRun.realmId!==realmId||activeRun.ended){
     const seed="rogue-"+realmId+"-"+Date.now();
-    activeRun=startRun({realmId,seed,config:{floors:STUB_REALM.floors}});
+    const realm=getRealm(realmId);
+    activeRun=startRun({realmId,seed,config:{floors:realm.floors}});
     store.set(KEYS.rogueRun,activeRun);
     meta.totalStats.runs=(meta.totalStats.runs||0)+1;saveMeta();
   }
@@ -727,7 +731,7 @@ function startRogueRun(realmId){
 }
 
 function renderRogueMap(run){
-  const realm=STUB_REALM; // future: realm registry lookup
+  const realm=getRealm(run.realmId)||REALMS["stub-diyar"];
   const W=380,H=420;
   const cx=c=>40+c*((W-80)/2);
   const cy=f=>40+f*((H-80)/(run.mapGraph.floors-1));
@@ -800,14 +804,178 @@ function handleRogueNode(nodeId){
   const node=rogueCurrentNode(run);
   if(node.type==="puzzle"||node.type==="elite"||node.type==="boss"){
     // Start a puzzle in rogue context
-    const size=node.type==="boss"?STUB_REALM.bossPuzzleSize:STUB_REALM.defaultPuzzleSize;
-    const keep=node.type==="boss"?STUB_REALM.bossPuzzleKeep:STUB_REALM.defaultPuzzleKeep;
+    const realm=getRealm(run.realmId);
+    const floorCfg=realm&&realm.floorConfig&&realm.floorConfig[node.floor];
+    const size=floorCfg?floorCfg.sizes[0]:5;
+    const keep=floorCfg?floorCfg.keep:0.75;
     const rng=mulberry32(hashSeed(run.seed+"-"+nodeId));
     startGame(makePuzzle(size,size,keep,rng),{mode:"rogue",realmId:run.realmId,nodeId,runRef:true});
+  }else if(node.type==="chest"){
+    openChestModal(run,node);
+  }else if(node.type==="event"){
+    openEventModal(run,node);
+  }else if(node.type==="rest"){
+    run.lives.current=Math.min(run.lives.max,run.lives.current+1);
+    store.set(KEYS.rogueRun,run);
+    renderRogueMap(run);
   }else{
-    // Stub: non-puzzle nodes auto-pass for v1
     renderRogueMap(run);
   }
+}
+
+function openChestModal(run,node){
+  const realm=getRealm(run.realmId);
+  let h=2166136261>>>0;const s=run.seed+"-chest-"+node.id;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}
+  const rng=mulberry32(h>>>0);
+  const offers=rollRelicOffer(realm.relicPool||[],3,rng).filter(r=>!run.relics.includes(r.id));
+  if(!offers.length){renderRogueMap(run);return;}
+  const html=`
+    <h2>Sandık</h2>
+    <p>Üç ışıltı, bir seçim. Seçtiğin koşunun sonuna kadar seninle.</p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin:14px 0;">
+      ${offers.map(r=>`
+        <button class="opt" data-relic="${r.id}" style="text-align:left;padding:14px;background:var(--panel);border:1px solid var(--hairline);">
+          <div style="display:flex;align-items:baseline;gap:10px;">
+            <span style="color:var(--accent);font-family:var(--font-serif);font-size:22px;">${r.glyph}</span>
+            <b style="font-family:var(--font-serif);font-weight:600;color:var(--ink);">${r.name}</b>
+            <span style="margin-left:auto;font-family:var(--font-mono);font-size:9px;color:${r.rarity==='nadir'?'var(--accent)':'var(--muted)'};letter-spacing:.18em;text-transform:uppercase;">${r.rarity}</span>
+          </div>
+          <div style="color:var(--muted);font-size:12.5px;margin-top:4px;font-family:var(--font-serif);font-style:italic;">${r.desc}</div>
+        </button>
+      `).join("")}
+      <button class="opt" data-relic="" style="background:transparent;border:1px dashed var(--hairline);color:var(--muted);">Geç (relic alma)</button>
+    </div>
+  `;
+  openRogueModal(html,e=>{
+    const btn=e.target.closest("[data-relic]");
+    if(!btn)return;
+    const relicId=btn.dataset.relic;
+    if(relicId){
+      run.relics.push(relicId);
+      if(!meta.realms[run.realmId])meta.realms[run.realmId]={};
+      meta.realms[run.realmId].knownRelics=Array.from(new Set([...(meta.realms[run.realmId].knownRelics||[]),relicId]));
+      saveMeta();
+      checkAllRelicsSeenInRun(run);
+    }
+    store.set(KEYS.rogueRun,run);
+    closeRogueModal();
+    renderRogueMap(run);
+  });
+}
+
+function openEventModal(run,node){
+  const realm=getRealm(run.realmId);
+  let h=2166136261>>>0;const s=run.seed+"-event-"+node.id;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}
+  const rng=mulberry32(h>>>0);
+  const ev=rollEvent(realm.eventPool||[],rng);
+  if(!ev){renderRogueMap(run);return;}
+  // Track for achievement chain
+  if(!run.eventLog)run.eventLog=[];
+  if(!meta.realms[run.realmId])meta.realms[run.realmId]={};
+  meta.realms[run.realmId].seenEvents=Array.from(new Set([...(meta.realms[run.realmId].seenEvents||[]),ev.id]));
+  saveMeta();
+  const html=`
+    <h2>${ev.title}</h2>
+    <p>${ev.text}</p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin:14px 0;">
+      ${ev.choices.map((c,i)=>`
+        <button class="opt" data-choice="${i}" style="text-align:left;padding:14px;background:${c.tone==='risk'?'var(--panel-2)':'var(--panel)'};border:1px solid ${c.tone==='risk'?'var(--bad)':'var(--hairline)'};">
+          <div style="display:flex;align-items:baseline;gap:10px;">
+            <span style="font-family:var(--font-mono);font-size:9px;color:${c.tone==='risk'?'var(--bad)':(c.tone==='safe'?'var(--accent)':'var(--muted)')};letter-spacing:.18em;text-transform:uppercase;">${c.tone==='risk'?'risk':(c.tone==='safe'?'güven':'geç')}</span>
+          </div>
+          <div style="font-family:var(--font-body);font-weight:700;color:var(--ink);margin-top:4px;">${c.text}</div>
+          <div style="color:var(--muted);font-size:12px;margin-top:3px;font-family:var(--font-serif);font-style:italic;">${c.result}</div>
+        </button>
+      `).join("")}
+    </div>
+  `;
+  openRogueModal(html,e=>{
+    const btn=e.target.closest("[data-choice]");
+    if(!btn)return;
+    const choice=ev.choices[+btn.dataset.choice];
+    run.eventLog.push({eventId:ev.id,choiceIdx:+btn.dataset.choice});
+    applyEventEffect(run,ev,choice);
+    store.set(KEYS.rogueRun,run);
+    closeRogueModal();
+    renderRogueMap(run);
+  });
+}
+
+function applyEventEffect(run,ev,choice){
+  const e=choice.effect;
+  if(!e||e.type==="none")return;
+  if(e.type==="heal"){
+    run.lives.current=Math.min(run.lives.max,run.lives.current+(e.amount||1));
+  }else if(e.type==="thread"){
+    meta.currencies.thread=(meta.currencies.thread||0)+(e.amount||1);
+    saveMeta();
+  }else if(e.type==="bead"){
+    meta.currencies.bead=(meta.currencies.bead||0)+(e.amount||1);
+    saveMeta();
+  }else if(e.type==="chance-damage"){
+    if(Math.random()<(e.chance||0.5)){
+      run.lives.current=Math.max(0,run.lives.current-(e.amount||1));
+      if(run.lives.current===0){run.ended=true;run.endReason="no-lives";}
+    }
+  }else if(e.type==="relic-offer"){
+    const realm=getRealm(run.realmId);
+    const rng=mulberry32(Date.now()&0xffffffff);
+    const offer=rollRelicOffer(realm.relicPool||[],e.count||1,rng).filter(r=>!run.relics.includes(r.id));
+    if(offer.length){
+      run.relics.push(offer[0].id);
+      if(!meta.realms[run.realmId])meta.realms[run.realmId]={};
+      meta.realms[run.realmId].knownRelics=Array.from(new Set([...(meta.realms[run.realmId].knownRelics||[]),offer[0].id]));
+      saveMeta();
+      checkAllRelicsSeenInRun(run);
+    }
+  }
+}
+
+function checkAllRelicsSeenInRun(run){
+  const realm=getRealm(run.realmId);
+  if(!realm||!realm.relicPool)return;
+  const pool=new Set(realm.relicPool);
+  const seen=new Set(run.relics);
+  for(const id of pool)if(!seen.has(id))return;
+  achievementUnlock("all_relics_seen_in_run:"+run.realmId);
+}
+
+function achievementUnlock(triggerId){
+  const ach=emitAchievement(triggerId,meta,a=>{
+    showAchievementToast(a);
+  });
+  if(ach){saveMeta();}
+}
+
+function showAchievementToast(ach){
+  const t=document.createElement("div");
+  t.style.cssText="position:fixed;top:calc(var(--safe-t,0px) + 16px);left:50%;transform:translateX(-50%);z-index:200;background:var(--panel-2);border:1px solid var(--accent);border-radius:14px;padding:12px 18px;color:var(--ink);font-family:var(--font-body);max-width:340px;box-shadow:0 8px 24px rgba(0,0,0,.5);";
+  t.innerHTML=`<div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;">başarım açıldı</div><div style="font-family:var(--font-serif);font-weight:600;font-size:16px;margin-top:4px;">${ach.title}</div><div style="font-style:italic;font-size:12.5px;color:var(--ink-dim);margin-top:2px;">${ach.body}</div>`;
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.transition="opacity .6s, transform .6s";t.style.opacity="0";t.style.transform="translateX(-50%) translateY(-20px)";},2800);
+  setTimeout(()=>t.remove(),3500);
+}
+
+let _rogueModalHandler=null;
+function openRogueModal(html,onClick){
+  let overlay=$("rogueModal");
+  if(!overlay){
+    overlay=document.createElement("div");
+    overlay.id="rogueModal";
+    overlay.className="overlay center";
+    overlay.innerHTML='<div class="modal" id="rogueModalBody" style="max-width:420px;width:calc(100% - 32px);text-align:left;"></div>';
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click",e=>{if(e.target.id==="rogueModal")closeRogueModal();});
+  }
+  $("rogueModalBody").innerHTML=html;
+  if(_rogueModalHandler)$("rogueModalBody").removeEventListener("click",_rogueModalHandler);
+  _rogueModalHandler=onClick;
+  $("rogueModalBody").addEventListener("click",_rogueModalHandler);
+  overlay.classList.add("show");
+}
+function closeRogueModal(){
+  const o=$("rogueModal");
+  if(o)o.classList.remove("show");
 }
 
 function win(){solved=true;stopTimer();buzz([16,40,24]);
