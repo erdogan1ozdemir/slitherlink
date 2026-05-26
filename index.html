@@ -760,6 +760,25 @@ function applyAutoXAround(r,c){
     autoXAfterClue(r+dr,c+dc);
   }
 }
+function vertexDeg(r,c){
+  let d=0;
+  if(c>0&&hState[r][c-1]===1)d++;
+  if(c<P.C&&hState[r][c]===1)d++;
+  if(r>0&&vState[r-1][c]===1)d++;
+  if(r<P.R&&vState[r][c]===1)d++;
+  return d;
+}
+function applyCornerAutoX(){
+  if(!settings.autoX||!P)return;
+  for(let r=0;r<=P.R;r++)for(let c=0;c<=P.C;c++){
+    if(vertexDeg(r,c)===2){
+      if(c>0&&hState[r][c-1]===0)hState[r][c-1]=2;
+      if(c<P.C&&hState[r][c]===0)hState[r][c]=2;
+      if(r>0&&vState[r-1][c]===0)vState[r-1][c]=2;
+      if(r<P.R&&vState[r][c]===0)vState[r][c]=2;
+    }
+  }
+}
 function snapshotState(){
   return {h:hState.map(row=>row.slice()),v:vState.map(row=>row.slice())};
 }
@@ -777,6 +796,7 @@ function toggle(k,r,c){
   if(settings.autoX){
     if(k==="h"){applyAutoXAround(r,c);applyAutoXAround(r,c+1);}
     else{applyAutoXAround(r,c);applyAutoXAround(r+1,c);}
+    applyCornerAutoX();
   }
   // Kayan tile tick — bir hamlede tüm kayan tile'ların sayacı azalır
   if(P.tiles){tickKayanTiles(P,Math.random);}
