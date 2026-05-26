@@ -19,17 +19,24 @@
    Tema renkleri --bg, --line, --accent degiskenlerinden yonetilir.
    ========================================================================= */
 :root{
-  --bg:#0b0b0d;
-  --panel:#141418;
-  --panel-2:#1c1c22;
-  --line:#ededf2;      /* cember rengi */
-  --ink:#ededf2;
-  --muted:#8a8a93;
-  --dim:#3a3a42;
-  --accent:#c9c9d2;    /* gri vurgu */
-  --good:#9fb0a6;
-  --bad:#d98a86;
-  --border:rgba(255,255,255,.08);
+  /* Sessiz İplik — design tokens (cf. Sliterhlink Claude design/tokens.jsx) */
+  --bg:#0a0a0c;
+  --bg-warm:#0d0c0e;
+  --panel:#15151a;
+  --panel-2:#1d1d23;
+  --hairline:rgba(237,234,227,.08);
+  --hairline-2:rgba(237,234,227,.14);
+  --ink:#EDEAE3;
+  --ink-dim:rgba(237,234,227,.62);
+  --line:#EDEAE3;          /* cember/iplik rengi — ink ile aynı */
+  --muted:#7a7a82;
+  --faint:#3a3a42;
+  --accent:#A89B8B;         /* taupe — default (Karanlık İğne) */
+  --accent-warm:#B89F8A;    /* Söğüt Eşiği için sıcak nudge */
+  --accent-cool:#99A3B0;    /* Yıldız Geçidi için gümüş-mavi */
+  --accent-dim:rgba(168,155,139,.20);
+  --bad:#C97A6F;
+  --good:#8FA39A;
   --safe-t:env(safe-area-inset-top,0px);
   --safe-b:env(safe-area-inset-bottom,0px);
 }
