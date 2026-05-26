@@ -17,7 +17,7 @@
 - [x] Task 8: Puzzle render her saniye timeRemaining tick
 
 ## Phase E — Daily
-- [ ] Task 9: daily.js (seed + local leaderboard)
+- [x] Task 9: daily.js (seed + local leaderboard)
 - [ ] Task 10: Ana menü "Günün Çemberi" kartı + flow
 
 ## Phase F — 4. diyar
