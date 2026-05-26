@@ -3,7 +3,7 @@
 ## Phase A — Bug fixes
 - [x] Task 1: Branch + log
 - [x] Task 2: SW v3 + one-time reset (Phase A.2)
-- [ ] Task 3: Rogue map click bug fix (Phase A.1)
+- [x] Task 3: Rogue map click bug fix (Phase A.1)
 - [ ] Task 4: Preset stuck fix + active pill (Phase A.3)
 
 ## Phase B — UX

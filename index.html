@@ -957,8 +957,9 @@ function renderRogueMap(run){
         return `
           ${isCur?`<circle cx="${cx(n.col)}" cy="${cy(n.floor)}" r="22" fill="none" stroke="var(--accent)" stroke-opacity=".25" stroke-width="6"/>`:""}
           <g data-node-id="${n.id}" data-accessible="${isAcc&&!isCur?"1":"0"}" style="cursor:${isAcc&&!isCur?"pointer":"default"};" opacity="${op}">
-            <circle cx="${cx(n.col)}" cy="${cy(n.floor)}" r="16" fill="${fill}" stroke="${stroke}" stroke-width="1.2"/>
-            <text x="${cx(n.col)}" y="${cy(n.floor)+1}" text-anchor="middle" dominant-baseline="central" font-family="var(--font-serif)" font-size="14" font-weight="600" fill="${txt}">${glyph[n.type]||"?"}</text>
+            <circle cx="${cx(n.col)}" cy="${cy(n.floor)}" r="26" fill="transparent" stroke="none" pointer-events="all"/>
+            <circle cx="${cx(n.col)}" cy="${cy(n.floor)}" r="16" fill="${fill}" stroke="${stroke}" stroke-width="1.2" pointer-events="none"/>
+            <text x="${cx(n.col)}" y="${cy(n.floor)+1}" text-anchor="middle" dominant-baseline="central" font-family="var(--font-serif)" font-size="14" font-weight="600" fill="${txt}" pointer-events="none">${glyph[n.type]||"?"}</text>
           </g>
         `;
       }).join("")}
@@ -988,13 +989,13 @@ function renderRogueMap(run){
       </div>
     `:""}
   `;
-  // Bind node clicks
-  $("rogueMapContent").querySelectorAll("[data-node-id]").forEach(g=>{
-    g.addEventListener("click",()=>{
-      if(g.dataset.accessible!=="1")return;
-      handleRogueNode(g.dataset.nodeId);
-    });
-  });
+  // Bind node clicks (delegated on container — single listener, iOS SVG-safe)
+  const mapEl=$("rogueMapContent");
+  mapEl.onclick=e=>{
+    const g=e.target.closest("[data-node-id]");
+    if(!g||g.dataset.accessible!=="1")return;
+    handleRogueNode(g.dataset.nodeId);
+  };
   const newBtn=$("rogueNewBtn");
   if(newBtn)newBtn.addEventListener("click",()=>{store.del(KEYS.rogueRun);renderYuva();showScreen("s-yuva");});
 }
