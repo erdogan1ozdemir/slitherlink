@@ -245,7 +245,11 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
   <div class="sheet">
     <h2>Ayarlar</h2>
     <div id="toggleList"></div>
-    <div style="padding:14px 0 0;"><button id="howBtnSettings" class="opt" style="width:100%;background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);">Nasıl Oynanır?</button></div>
+    <div style="padding:14px 0 0;display:flex;flex-direction:column;gap:8px;">
+      <button id="howBtnSettings" class="opt" style="width:100%;background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);">Nasıl Oynanır?</button>
+      <button id="backupExportBtn" class="opt" style="width:100%;background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);">Yedek Kodu Üret</button>
+      <button id="backupImportBtn" class="opt" style="width:100%;background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);">Yedek Yükle</button>
+    </div>
     <p class="foot-note" style="text-align:left;padding:14px 0 0;">
       iPhone'da tam ekran: Safari'de paylaş butonu → "Ana Ekrana Ekle". Oyun uygulama gibi tam ekran açılır.</p>
   </div>
@@ -807,6 +811,8 @@ $("howOverlay").addEventListener("click",e=>{if(e.target.id==="howOverlay")$("ho
 $("backupOverlay").addEventListener("click",e=>{if(e.target.id==="backupOverlay")$("backupOverlay").classList.remove("show");});
 $("backupAction").addEventListener("click",handleBackupAction);
 $("backupCancel").addEventListener("click",()=>$("backupOverlay").classList.remove("show"));
+$("backupExportBtn")?.addEventListener("click",openBackupExport);
+$("backupImportBtn")?.addEventListener("click",openBackupImport);
 
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&$("s-game").classList.contains("active"))autosave();});
 window.addEventListener("pagehide",()=>{if($("s-game").classList.contains("active"))autosave();});
