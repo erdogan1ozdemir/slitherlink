@@ -80,7 +80,7 @@ Her plan tamamlanınca:
 
 | Plan | Durum | Commit |
 |------|-------|--------|
-| 01 — Sessiz İplik tokens | yazıldı, exec hazır | – |
+| 01 — Sessiz İplik tokens | ✓ tamamlandı | fddf52f |
 | 02 — PWA | bekliyor | – |
 | 03 — Persistence v2 | bekliyor | – |
 | 04 — Modular refactor | bekliyor | – |
