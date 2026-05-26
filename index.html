@@ -747,6 +747,17 @@ function startRogueRun(realmId){
     if(meta.permanentStarters&&meta.permanentStarters[0]&&!activeRun.relics.includes(meta.permanentStarters[0])){
       activeRun.relics.push(meta.permanentStarters[0]);
     }
+    // Talent effects (İpliklik)
+    const tEff=talentEffects(meta);
+    if(tEff.bonusLife){
+      activeRun.lives.max+=tEff.bonusLife;
+      activeRun.lives.current+=tEff.bonusLife;
+    }
+    activeRun.bonusHints=tEff.bonusHint||0;
+    activeRun.firstHintFree=tEff.firstHintFree;
+    activeRun.chestExtraOffer=tEff.chestExtraOffer||0;
+    activeRun.restBonusHeal=tEff.restBonusHeal||0;
+    activeRun.bossBonusThread=tEff.bossBonusThread||0;
     store.set(KEYS.rogueRun,activeRun);
     meta.totalStats.runs=(meta.totalStats.runs||0)+1;saveMeta();
     achievementUnlock("run_started");
@@ -885,7 +896,8 @@ function handleRogueNode(nodeId){
   }else if(node.type==="event"){
     openEventModal(run,node);
   }else if(node.type==="rest"){
-    run.lives.current=Math.min(run.lives.max,run.lives.current+1);
+    const heal=1+(run.restBonusHeal||0);
+    run.lives.current=Math.min(run.lives.max,run.lives.current+heal);
     store.set(KEYS.rogueRun,run);
     renderRogueMap(run);
   }else{
@@ -911,7 +923,8 @@ function openChestModal(run,node){
     });
     return;
   }
-  const offers=rollRelicOffer(realm.relicPool||[],3,rng).filter(r=>!run.relics.includes(r.id));
+  const offerCount=3+(run.chestExtraOffer||0);
+  const offers=rollRelicOffer(realm.relicPool||[],offerCount,rng).filter(r=>!run.relics.includes(r.id));
   if(!offers.length){renderRogueMap(run);return;}
   const html=`
     <h2>Sandık</h2>
@@ -1150,6 +1163,7 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
         }
         winRun(run);
         meta.currencies.bead=(meta.currencies.bead||0)+1;
+        if(run.bossBonusThread)meta.currencies.thread=(meta.currencies.thread||0)+run.bossBonusThread;
         if(!meta.realms[run.realmId])meta.realms[run.realmId]={};
         meta.realms[run.realmId].compassStars=Math.min(5,(meta.realms[run.realmId].compassStars||0)+1);
         meta.realms[run.realmId].timesCleared=(meta.realms[run.realmId].timesCleared||0)+1;
@@ -1214,7 +1228,18 @@ function hint(){
   if(!cand.length)return;
   const[k,r,c]=cand[(Math.random()*cand.length)|0];
   (k==="h"?hState:vState)[r][c]=1;
-  hints++;$("hintsUsed").textContent=hints;render();autosave();checkWin();
+  // İpliklik talent "Sezgi": ilk hint ücretsiz — sayılmaz
+  let freeHint=false;
+  if(ctx.mode==="rogue"){
+    const run=store.get(KEYS.rogueRun,null);
+    if(run&&run.firstHintFree&&!run.firstHintUsed){
+      freeHint=true;
+      run.firstHintUsed=true;
+      store.set(KEYS.rogueRun,run);
+    }
+  }
+  if(!freeHint)hints++;
+  $("hintsUsed").textContent=hints;render();autosave();checkWin();
 }
 function resetBoard(){
   undoStack.push(snapshotState());
