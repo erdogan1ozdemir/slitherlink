@@ -12,7 +12,7 @@ const DEFAULTS={
  */
 export function startRun({realmId, seed, config={}}){
   const cfg={...DEFAULTS,...config};
-  const map=generateMap(seed,{floors:cfg.floors,maxWidth:3});
+  const map=generateMap(seed,{floors:cfg.floors,maxWidth:cfg.maxWidth||3,floorConfig:cfg.floorConfig});
   const startNode=map.nodes.find(n=>n.floor===0);
   return {
     realmId,
