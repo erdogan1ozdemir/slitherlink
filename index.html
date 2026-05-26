@@ -1764,8 +1764,8 @@ function renderKarakter(){
         ["YILDIZ TOZU",meta.currencies.stardust||0,"var(--accent-cool)"],
       ].map(([k,v,c])=>`
         <div style="background:var(--panel);border:1px solid var(--hairline);border-radius:10px;padding:8px 6px;text-align:center;">
-          <div style="font-family:var(--font-serif);font-weight:500;font-size:18px;color:${c};line-height:1;">${v}</div>
-          <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:.18em;color:var(--muted);margin-top:3px;">${k}</div>
+          <div style="font-family:var(--font-serif);font-weight:500;font-size:20px;color:${c};line-height:1;">${v}</div>
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;color:var(--muted);margin-top:3px;">${k}</div>
         </div>
       `).join("")}
     </div>
@@ -1773,7 +1773,7 @@ function renderKarakter(){
 
   // 3. Compact stats grid — 3 cols × 2 rows
   const statsHtml=`
-    <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);padding:0 4px 6px;">istatistik</div>
+    <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);padding:0 4px 6px;">istatistik</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:0 4px 14px;">
       ${[
         ["KOŞU",stats.runs||0],
@@ -1784,8 +1784,8 @@ function renderKarakter(){
         ["EN UZAK",farthestFloor||"-"],
       ].map(([k,v])=>`
         <div style="background:var(--panel);border:1px solid var(--hairline);border-radius:10px;padding:9px 4px;text-align:center;">
-          <div style="font-family:var(--font-serif);font-weight:500;font-size:16px;color:var(--ink);line-height:1;">${v}</div>
-          <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:.16em;color:var(--muted);margin-top:3px;">${k}</div>
+          <div style="font-family:var(--font-serif);font-weight:500;font-size:18px;color:var(--ink);line-height:1;">${v}</div>
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.16em;color:var(--muted);margin-top:3px;">${k}</div>
         </div>
       `).join("")}
     </div>
@@ -1796,16 +1796,16 @@ function renderKarakter(){
     <div style="display:flex;align-items:center;gap:10px;background:var(--panel-2);border:1px solid var(--accent);border-radius:12px;padding:10px 12px;margin-bottom:14px;">
       <div style="width:38px;height:38px;border-radius:10px;background:var(--bg);border:1px solid var(--hairline);display:grid;place-items:center;color:var(--accent);font-family:var(--font-serif);font-size:18px;flex-shrink:0;">${starterRelic.glyph}</div>
       <div style="flex:1;min-width:0;">
-        <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;">yanında başla</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;">yanında başla</div>
         <div style="font-family:var(--font-serif);font-weight:600;font-size:13px;color:var(--ink);margin-top:1px;line-height:1.2;">${starterRelic.name}</div>
       </div>
-      <button id="starterChangeBtn" style="background:transparent;border:none;color:var(--muted);font-family:var(--font-mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:6px 8px;">değiş ›</button>
+      <button id="starterChangeBtn" style="background:transparent;border:none;color:var(--muted);font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:6px 8px;">değiş ›</button>
     </div>
   `:`
     <button id="starterSelectBtn" style="display:flex;align-items:center;gap:10px;width:100%;background:var(--panel);border:1px dashed var(--hairline);border-radius:12px;padding:10px 12px;margin-bottom:14px;cursor:pointer;text-align:left;">
       <div style="width:38px;height:38px;border-radius:10px;background:var(--bg);border:1px solid var(--hairline);display:grid;place-items:center;color:var(--muted);font-family:var(--font-serif);font-size:18px;flex-shrink:0;">+</div>
       <div style="flex:1;">
-        <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase;">yanında başla</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;">yanında başla</div>
         <div style="font-family:var(--font-serif);font-style:italic;color:var(--ink-dim);font-size:12px;margin-top:1px;">koleksiyondan bir relic seç</div>
       </div>
     </button>
@@ -1814,8 +1814,8 @@ function renderKarakter(){
   // 5. Boncuk Dizimi — 3 slots inline + small "koleksiyon" link
   const charmsHtml=`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:0 2px 6px;">
-      <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);">boncuk dizimi · ${equipped.length}/3</div>
-      <button id="charmsLibBtn" style="background:transparent;border:none;color:var(--accent);font-family:var(--font-mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:0;">koleksiyon ›</button>
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);">boncuk dizimi · ${equipped.length}/3</div>
+      <button id="charmsLibBtn" style="background:transparent;border:none;color:var(--accent);font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:0;">koleksiyon ›</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:14px;">
       ${[0,1,2].map(i=>{
@@ -1828,7 +1828,7 @@ function renderKarakter(){
               <div style="font-family:var(--font-serif);font-weight:600;font-size:11px;color:var(--ink);margin-top:4px;line-height:1.15;">${c.name}</div>
             `:`
               <div style="color:var(--muted);font-family:var(--font-serif);font-size:18px;opacity:.35;line-height:1;">+</div>
-              <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin-top:4px;">boş</div>
+              <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin-top:4px;">boş</div>
             `}
           </div>
         `;
@@ -1838,7 +1838,7 @@ function renderKarakter(){
 
   // 6. Hediye Boncukları — 4-col grid (2 rows for 8 items)
   const keepsakesHtml=`
-    <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);padding:0 2px 6px;">hediye boncukları · ${unlockedKeepsakes.length}/${Object.keys(KEEPSAKES).length}</div>
+    <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);padding:0 2px 6px;">hediye boncukları · ${unlockedKeepsakes.length}/${Object.keys(KEEPSAKES).length}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;padding-bottom:8px;">
       ${Object.values(KEEPSAKES).map(k=>{
         const owned=!!unlockedKeepsakes.find(u=>u.id===k.id);
@@ -1961,11 +1961,11 @@ function renderIpliklik(){
   const html=`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--panel-2);border:1px solid var(--hairline);border-radius:14px;margin:0 4px 14px;">
       <div>
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);">iplik bakiyesi</div>
-        <div style="font-family:var(--font-serif);font-weight:500;font-size:28px;color:var(--ink);line-height:1;margin-top:2px;">${balance}</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);">iplik bakiyesi</div>
+        <div style="font-family:var(--font-serif);font-weight:500;font-size:30px;color:var(--ink);line-height:1;margin-top:2px;">${balance}</div>
       </div>
       <div style="text-align:right;">
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;">açık</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;">açık</div>
         <div style="font-family:var(--font-serif);font-weight:500;font-size:18px;color:var(--ink-dim);line-height:1;margin-top:4px;">${unlockedCount}/${total}</div>
       </div>
     </div>
@@ -2007,11 +2007,11 @@ function renderDiken(){
   const html=`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--panel-2);border:1px solid var(--hairline);border-radius:14px;margin:0 4px 12px;">
       <div>
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);">toplam iz</div>
-        <div style="font-family:var(--font-serif);font-weight:500;font-size:28px;color:var(--ink);line-height:1;margin-top:2px;">${iz}</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);">toplam iz</div>
+        <div style="font-family:var(--font-serif);font-weight:500;font-size:30px;color:var(--ink);line-height:1;margin-top:2px;">${iz}</div>
       </div>
       <div style="text-align:right;">
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;">ödül çarpanı</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;">ödül çarpanı</div>
         <div style="font-family:var(--font-serif);font-weight:500;font-size:22px;color:${mult>=2?'var(--accent)':'var(--ink-dim)'};line-height:1;margin-top:3px;">×${mult.toFixed(1)}</div>
       </div>
     </div>
@@ -2027,7 +2027,7 @@ function renderDiken(){
             <div style="flex:1;min-width:0;">
               <div style="display:flex;align-items:baseline;gap:8px;">
                 <div style="font-family:var(--font-serif);font-weight:600;font-size:13px;color:var(--ink);line-height:1.2;">${t.name}</div>
-                ${active?`<span style="font-family:var(--font-mono);font-size:8.5px;color:var(--accent);letter-spacing:.16em;text-transform:uppercase;">+${rank} iz</span>`:''}
+                ${active?`<span style="font-family:var(--font-mono);font-size:10px;color:var(--accent);letter-spacing:.16em;text-transform:uppercase;">+${rank} iz</span>`:''}
               </div>
               <div style="color:var(--muted);font-size:11px;margin-top:1px;font-family:var(--font-serif);font-style:italic;line-height:1.3;">${t.desc}</div>
             </div>
