@@ -95,3 +95,4 @@ Her plan tamamlanınca:
 | 11 — Gap fillers (İpliklik + Charms + Pati izi + Neow + Sis) | ✓ tamamlandı | d2ef0c9 |
 | 12 — Diken + 6 tile + Hediye + Mum tick + Daily + 4. diyar | ✓ tamamlandı | d76ab97 |
 | 13 — Bug fix + UX + cache reset | ✓ tamamlandı | 49aed30 |
+| 14 — Rogue overhaul (sequential lock + map + content) | ✓ tamamlandı | c5af63a |
