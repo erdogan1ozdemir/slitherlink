@@ -751,6 +751,27 @@ function renderRogueMap(run){
 
   const livesHtml=`<span style="color:var(--bad);">${"♥".repeat(run.lives.current)}</span><span style="color:var(--faint);">${"♥".repeat(run.lives.max-run.lives.current)}</span>`;
 
+  // Floor labels (sol kenarda): GİRİŞ / 2 · Pervaz / ... / BİTİŞ
+  const floorLabels={};
+  run.mapGraph.nodes.forEach(n=>{
+    if(!floorLabels[n.floor]){
+      const fc=realm.floorConfig&&realm.floorConfig[n.floor];
+      const isStart=n.floor===0;
+      const isEnd=n.floor===run.mapGraph.floors-1;
+      const name=(fc&&fc.floorName)||"";
+      const tag=isStart?"GİRİŞ":(isEnd?"BİTİŞ ☠":(""+(n.floor+1)));
+      floorLabels[n.floor]={floor:n.floor,tag,name,isEdge:isStart||isEnd};
+    }
+  });
+  const labelsHtml=Object.values(floorLabels).map(l=>{
+    const y=cy(l.floor);
+    const tagColor=l.isEdge?"var(--accent)":"var(--muted)";
+    return `
+      <text x="14" y="${y-4}" font-family="var(--font-mono)" font-size="8" fill="${tagColor}" letter-spacing="2">${l.tag}</text>
+      <text x="14" y="${y+8}" font-family="var(--font-serif)" font-size="10" font-style="italic" fill="var(--ink-dim)">${l.name}</text>
+    `;
+  }).join("");
+
   const svg=`
     <svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;">
       ${run.mapGraph.edges.map(([a,b])=>{
@@ -763,14 +784,16 @@ function renderRogueMap(run){
         const fill=isCur?"var(--ink)":(isVis?"var(--panel-2)":"var(--bg)");
         const stroke=isCur?"var(--accent)":(isAcc?"var(--accent)":"var(--hairline-2)");
         const txt=isCur?"var(--bg)":(isVis||isAcc?"var(--accent)":"var(--muted)");
+        const op=(isCur||isVis||isAcc)?1:0.4;
         return `
           ${isCur?`<circle cx="${cx(n.col)}" cy="${cy(n.floor)}" r="22" fill="none" stroke="var(--accent)" stroke-opacity=".25" stroke-width="6"/>`:""}
-          <g data-node-id="${n.id}" data-accessible="${isAcc&&!isCur?"1":"0"}" style="cursor:${isAcc&&!isCur?"pointer":"default"};">
+          <g data-node-id="${n.id}" data-accessible="${isAcc&&!isCur?"1":"0"}" style="cursor:${isAcc&&!isCur?"pointer":"default"};" opacity="${op}">
             <circle cx="${cx(n.col)}" cy="${cy(n.floor)}" r="16" fill="${fill}" stroke="${stroke}" stroke-width="1.2"/>
             <text x="${cx(n.col)}" y="${cy(n.floor)+1}" text-anchor="middle" dominant-baseline="central" font-family="var(--font-serif)" font-size="14" font-weight="600" fill="${txt}">${glyph[n.type]||"?"}</text>
           </g>
         `;
       }).join("")}
+      ${labelsHtml}
     </svg>
   `;
 
