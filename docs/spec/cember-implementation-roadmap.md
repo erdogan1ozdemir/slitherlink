@@ -92,4 +92,4 @@ Her plan tamamlanınca:
 | 08 — Karanlık İğne (D2) | ✓ tamamlandı | 4272163 |
 | 09 — Yıldız Geçidi (D3) + Mum Modu + UX polish | ✓ tamamlandı | a7b7fdf |
 | 10 — Polish + meta ach + permanent starter + a11y + Vercel deploy | ✓ tamamlandı | 17ca9fa |
-| 11 — Gap fillers (İpliklik + Charms + Pati izi + Neow + Sis) | ✓ tamamlandı | <SHA-pending> |
+| 11 — Gap fillers (İpliklik + Charms + Pati izi + Neow + Sis) | ✓ tamamlandı | d2ef0c9 |
