@@ -101,11 +101,24 @@ svg{width:100%;height:auto;display:block;touch-action:manipulation;}
 .clue{font-family:var(--font-body);font-weight:700;text-anchor:middle;dominant-baseline:central;fill:var(--ink);transition:fill .18s,opacity .18s;font-variant-numeric:tabular-nums;}
 .clue.done{fill:var(--ink);opacity:.22;}
 .clue.err{fill:var(--bad);}
+.clue.sis-hidden{fill:var(--accent);font-style:italic;opacity:.7;}
 .edge-line{stroke:var(--line);stroke-width:5.5;stroke-linecap:round;}
 .edge-hit{stroke:transparent;cursor:pointer;}
 .ex{stroke:var(--muted);stroke-width:2.4;stroke-linecap:round;opacity:.55;}
 .seg-appear{animation:pop .14s ease-out;}
 @keyframes pop{from{opacity:0}to{opacity:1}}
+@keyframes pawTrail {
+  0% { opacity: 0; transform: translateX(-30px) translateY(8px) rotate(-12deg); }
+  20% { opacity: 0.7; }
+  100% { opacity: 0; transform: translateX(110px) translateY(-4px) rotate(8deg); }
+}
+.paw-trail { position: absolute; left: 50%; top: 50%; margin-left: -70px; margin-top: -20px; pointer-events: none; }
+.paw-trail svg { animation: pawTrail 2.4s ease-in-out 1; opacity: 0; }
+.paw-trail .paw + .paw { margin-left: 8px; }
+.paw-trail .paw:nth-child(1) svg { animation-delay: 0s; }
+.paw-trail .paw:nth-child(2) svg { animation-delay: 0.18s; }
+.paw-trail .paw:nth-child(3) svg { animation-delay: 0.36s; }
+.paw-trail .paw:nth-child(4) svg { animation-delay: 0.54s; }
 
 /* game hud */
 .gamebar{display:flex;gap:8px;justify-content:center;padding:4px 16px 2px;}
@@ -364,6 +377,10 @@ import {REALMS, getRealm, isRealmUnlocked} from "./src/rogue/realms.js";
 import {RELICS, getRelic, rollRelicOffer, hasRelic} from "./src/rogue/relics.js";
 import {EVENTS, getEvent, rollEvent} from "./src/rogue/events.js";
 import {ACHIEVEMENTS, emit as emitAchievement, getAchievement, unlockedCount as achUnlocked, totalCount as achTotal} from "./src/rogue/achievements.js";
+import {TALENTS, isUnlocked as isTalentUnlocked, canAfford as canAffordTalent, purchase as purchaseTalent, aggregateEffects as talentEffects} from "./src/rogue/talents.js";
+import {CHARMS, isUnlocked as isCharmUnlocked, isEquipped as isCharmEquipped, canAfford as canAffordCharm, purchase as purchaseCharm, equip as equipCharm, unequip as unequipCharm, aggregateEffects as charmEffects} from "./src/rogue/charms.js";
+import {NEOW_BLESSINGS, rollBlessings as neowBlessings, applyBlessing as applyNeowBlessing} from "./src/rogue/neow.js";
+import {TILE_TYPES, applyTiles, revealTile} from "./src/rogue/tiles.js";
 
 /* =========================================================================
    0) PWA — service worker register + persistent storage
@@ -634,8 +651,28 @@ function render(){
   const dx=c=>g.pad+c*g.S,dy=r=>g.pad+r*g.S;
   for(let r=0;r<g.R;r++)for(let c=0;c<g.C;c++){if(P.clue[r][c]<0)continue;
     const t=document.createElementNS(NS,"text");t.setAttribute("x",dx(c)+g.S/2);t.setAttribute("y",dy(r)+g.S/2+1);
-    t.setAttribute("class","clue");t.setAttribute("font-size",g.S*0.42);t.textContent=P.clue[r][c];
-    t.dataset.r=r;t.dataset.c=c;boardEl.appendChild(t);}
+    const tile=P.tiles&&P.tiles[r+","+c];
+    const hidden=tile&&tile.type==="sis"&&!tile.revealed;
+    t.setAttribute("class",hidden?"clue sis-hidden":"clue");
+    t.setAttribute("font-size",g.S*0.42);
+    t.textContent=hidden?"?":P.clue[r][c];
+    t.dataset.r=r;t.dataset.c=c;
+    if(hidden){
+      t.style.cursor="pointer";
+      const rr=r,cc=c;
+      t.addEventListener("click",ev=>{
+        ev.stopPropagation();
+        tile.revealed=true;
+        render();
+        setTimeout(()=>{
+          if(P.tiles&&P.tiles[rr+","+cc]){
+            P.tiles[rr+","+cc].revealed=false;
+            render();
+          }
+        },3000);
+      });
+    }
+    boardEl.appendChild(t);}
   function seg(x1,y1,x2,y2,st){if(st===1){const l=document.createElementNS(NS,"line");l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);l.setAttribute("class","edge-line seg-appear");boardEl.appendChild(l);}else if(st===2){const mx=(x1+x2)/2,my=(y1+y2)/2,s=g.S*0.13;for(const[a,b,cc,dd]of[[-s,-s,s,s],[-s,s,s,-s]]){const l=document.createElementNS(NS,"line");l.setAttribute("x1",mx+a);l.setAttribute("y1",my+b);l.setAttribute("x2",mx+cc);l.setAttribute("y2",my+dd);l.setAttribute("class","ex");boardEl.appendChild(l);}}}
   for(let r=0;r<=g.R;r++)for(let c=0;c<g.C;c++)seg(dx(c),dy(r),dx(c+1),dy(r),hState[r][c]);
   for(let r=0;r<g.R;r++)for(let c=0;c<=g.C;c++)seg(dx(c),dy(r),dx(c),dy(r+1),vState[r][c]);
@@ -724,7 +761,8 @@ function checkWin(){
    ========================================================================= */
 function startRogueRun(realmId){
   let activeRun=store.get(KEYS.rogueRun,null);
-  if(!activeRun||activeRun.realmId!==realmId||activeRun.ended){
+  const wasNewRun=!activeRun||activeRun.realmId!==realmId||activeRun.ended;
+  if(wasNewRun){
     const seed="rogue-"+realmId+"-"+Date.now();
     const realm=getRealm(realmId);
     activeRun=startRun({realmId,seed,config:{floors:realm.floors}});
@@ -746,12 +784,68 @@ function startRogueRun(realmId){
     if(meta.permanentStarters&&meta.permanentStarters[0]&&!activeRun.relics.includes(meta.permanentStarters[0])){
       activeRun.relics.push(meta.permanentStarters[0]);
     }
+    // Talent effects (İpliklik)
+    const tEff=talentEffects(meta);
+    if(tEff.bonusLife){
+      activeRun.lives.max+=tEff.bonusLife;
+      activeRun.lives.current+=tEff.bonusLife;
+    }
+    activeRun.bonusHints=tEff.bonusHint||0;
+    activeRun.firstHintFree=tEff.firstHintFree;
+    activeRun.chestExtraOffer=tEff.chestExtraOffer||0;
+    activeRun.restBonusHeal=tEff.restBonusHeal||0;
+    activeRun.bossBonusThread=tEff.bossBonusThread||0;
+    // Charm effects (Boncuk Dizimi) — merged into run flags
+    const cEff=charmEffects(meta);
+    activeRun.bonusHints=(activeRun.bonusHints||0)+cEff.bonusHint;
+    activeRun.restBonusHeal=(activeRun.restBonusHeal||0)+cEff.restBonusHeal;
+    activeRun.eventExtraChoice=cEff.eventExtraChoice||0;
+    activeRun.bonusUndo=cEff.bonusUndo||0;
+    activeRun.mapPreview=cEff.mapPreview||false;
+    activeRun.visitedThread=cEff.visitedThread||0;
     store.set(KEYS.rogueRun,activeRun);
     meta.totalStats.runs=(meta.totalStats.runs||0)+1;saveMeta();
     achievementUnlock("run_started");
   }
+  // Yuva Fısıltısı (Neow) — yeni koşularda armağan modal'ı
+  if(wasNewRun){
+    const neowSeed=activeRun.seed+"-neow";
+    let h=2166136261>>>0;for(let i=0;i<neowSeed.length;i++){h^=neowSeed.charCodeAt(i);h=Math.imul(h,16777619);}
+    const neowRng=mulberry32(h>>>0);
+    const blessings=neowBlessings(neowRng,3);
+    openNeowModal(activeRun,blessings,()=>{
+      store.set(KEYS.rogueRun,activeRun);
+      renderRogueMap(activeRun);
+      showScreen("s-rogue-map");
+    });
+    return;
+  }
   renderRogueMap(activeRun);
   showScreen("s-rogue-map");
+}
+
+function openNeowModal(run,blessings,after){
+  const html=`
+    <h2>Yuva Fısıltısı</h2>
+    <p>Jedi uyanıyor. Bir armağan seç — koşuna seninle gelir.</p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin:14px 0;">
+      ${blessings.map(b=>`
+        <button class="opt" data-bless="${b.id}" style="text-align:left;padding:13px 14px;background:var(--panel);border:1px solid var(--hairline);">
+          <div style="font-family:var(--font-serif);font-weight:600;font-size:15px;color:var(--ink);">${b.name}</div>
+          <div style="color:var(--muted);font-size:12.5px;margin-top:3px;font-family:var(--font-serif);font-style:italic;">${b.desc}</div>
+        </button>
+      `).join("")}
+    </div>
+  `;
+  openRogueModal(html,e=>{
+    const btn=e.target.closest("[data-bless]");
+    if(!btn)return;
+    const b=blessings.find(x=>x.id===btn.dataset.bless);
+    applyNeowBlessing(run,meta,b);
+    saveMeta();
+    closeRogueModal();
+    if(after)after();
+  });
 }
 
 function renderRogueMap(run){
@@ -851,6 +945,11 @@ function handleRogueNode(nodeId){
   if(!run||run.ended)return;
   const prevFloor=run.floor;
   run=moveTo(run,nodeId);
+  // Charm: Pati İzi — her visited node'dan +1 iplik
+  if(run.visitedThread){
+    meta.currencies.thread=(meta.currencies.thread||0)+run.visitedThread;
+    saveMeta();
+  }
   store.set(KEYS.rogueRun,run);
   const node=rogueCurrentNode(run);
   // Mum Modu: node tipi süre tüketir + floor change bonus
@@ -878,13 +977,17 @@ function handleRogueNode(nodeId){
     const size=floorCfg?floorCfg.sizes[0]:5;
     const keep=floorCfg?floorCfg.keep:0.75;
     const rng=mulberry32(hashSeed(run.seed+"-"+nodeId));
-    startGame(makePuzzle(size,size,keep,rng),{mode:"rogue",realmId:run.realmId,nodeId,runRef:true});
+    const puzzle=makePuzzle(size,size,keep,rng);
+    // Sis constraint tile — D2/D3'te %22 yoğunluk
+    applyTiles(puzzle,run.realmId,mulberry32(hashSeed(run.seed+"-"+nodeId+"-tiles")),0.22);
+    startGame(puzzle,{mode:"rogue",realmId:run.realmId,nodeId,runRef:true});
   }else if(node.type==="chest"||node.type==="locked-chest"){
     openChestModal(run,node);
   }else if(node.type==="event"){
     openEventModal(run,node);
   }else if(node.type==="rest"){
-    run.lives.current=Math.min(run.lives.max,run.lives.current+1);
+    const heal=1+(run.restBonusHeal||0);
+    run.lives.current=Math.min(run.lives.max,run.lives.current+heal);
     store.set(KEYS.rogueRun,run);
     renderRogueMap(run);
   }else{
@@ -910,7 +1013,8 @@ function openChestModal(run,node){
     });
     return;
   }
-  const offers=rollRelicOffer(realm.relicPool||[],3,rng).filter(r=>!run.relics.includes(r.id));
+  const offerCount=3+(run.chestExtraOffer||0);
+  const offers=rollRelicOffer(realm.relicPool||[],offerCount,rng).filter(r=>!run.relics.includes(r.id));
   if(!offers.length){renderRogueMap(run);return;}
   const html=`
     <h2>Sandık</h2>
@@ -1149,6 +1253,7 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
         }
         winRun(run);
         meta.currencies.bead=(meta.currencies.bead||0)+1;
+        if(run.bossBonusThread)meta.currencies.thread=(meta.currencies.thread||0)+run.bossBonusThread;
         if(!meta.realms[run.realmId])meta.realms[run.realmId]={};
         meta.realms[run.realmId].compassStars=Math.min(5,(meta.realms[run.realmId].compassStars||0)+1);
         meta.realms[run.realmId].timesCleared=(meta.realms[run.realmId].timesCleared||0)+1;
@@ -1199,6 +1304,36 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
   const showNext=(ctx.mode==="journey"&&ctx.levelIndex+1<TOTAL_LEVELS)||ctx.mode==="rogue";
   next.style.display=showNext?"block":"none";
   setTimeout(()=>{$("winOverlay").classList.add("show");burst();},420);
+  setTimeout(()=>{showPawTrail();},900);
+}
+
+function showPawTrail(){
+  // Realm-specific accent color
+  let color="#A89B8B"; // default taupe
+  if(ctx.mode==="rogue"&&ctx.realmId){
+    if(ctx.realmId==="sogut-esigi")color="#B89F8A";
+    else if(ctx.realmId==="yildiz-gecidi")color="#99A3B0";
+  }
+  const modal=document.querySelector("#winOverlay .modal");
+  if(!modal)return;
+  const old=modal.querySelector(".paw-trail");
+  if(old)old.remove();
+  const trail=document.createElement("div");
+  trail.className="paw-trail";
+  trail.innerHTML=[0,1,2,3].map(()=>`
+    <span class="paw" style="display:inline-block;">
+      <svg width="14" height="14" viewBox="0 0 14 14">
+        <ellipse cx="3" cy="5" rx="1.3" ry="1.8" fill="${color}"/>
+        <ellipse cx="6" cy="3" rx="1.3" ry="1.8" fill="${color}"/>
+        <ellipse cx="9" cy="3" rx="1.3" ry="1.8" fill="${color}"/>
+        <ellipse cx="12" cy="5" rx="1.3" ry="1.8" fill="${color}"/>
+        <ellipse cx="7.5" cy="9.5" rx="3" ry="2.5" fill="${color}"/>
+      </svg>
+    </span>
+  `).join("");
+  modal.style.position="relative";
+  modal.appendChild(trail);
+  setTimeout(()=>trail.remove(),2800);
 }
 
 /* ipucu / temizle */
@@ -1213,7 +1348,18 @@ function hint(){
   if(!cand.length)return;
   const[k,r,c]=cand[(Math.random()*cand.length)|0];
   (k==="h"?hState:vState)[r][c]=1;
-  hints++;$("hintsUsed").textContent=hints;render();autosave();checkWin();
+  // İpliklik talent "Sezgi": ilk hint ücretsiz — sayılmaz
+  let freeHint=false;
+  if(ctx.mode==="rogue"){
+    const run=store.get(KEYS.rogueRun,null);
+    if(run&&run.firstHintFree&&!run.firstHintUsed){
+      freeHint=true;
+      run.firstHintUsed=true;
+      store.set(KEYS.rogueRun,run);
+    }
+  }
+  if(!freeHint)hints++;
+  $("hintsUsed").textContent=hints;render();autosave();checkWin();
 }
 function resetBoard(){
   undoStack.push(snapshotState());
@@ -1418,12 +1564,97 @@ function renderKarakter(){
     </div>
   `;
 
-  const fullHtml=existingHtml+`<div style="margin-top:16px;padding:0 4px;">${starterHtml}</div>`;
+  const charmsHtml=`
+    <div style="margin-top:18px;padding:0 4px;">
+      <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">boncuk dizimi · ${(meta.charms?.equipped||[]).length}/3</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        ${[0,1,2].map(i=>{
+          const eq=(meta.charms?.equipped||[])[i];
+          const c=eq?CHARMS[eq]:null;
+          return `
+            <div data-charm-slot="${i}" style="background:${c?'var(--panel-2)':'var(--panel)'};border:1px ${c?'solid var(--accent)':'dashed var(--hairline)'};border-radius:12px;padding:14px 8px;text-align:center;cursor:pointer;min-height:88px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+              ${c?`
+                <div style="color:var(--accent);font-family:var(--font-serif);font-size:22px;">${c.glyph}</div>
+                <div style="font-family:var(--font-serif);font-weight:600;font-size:11.5px;color:var(--ink);margin-top:4px;line-height:1.2;">${c.name}</div>
+              `:`
+                <div style="color:var(--muted);font-family:var(--font-serif);font-size:20px;opacity:.4;">+</div>
+                <div style="font-family:var(--font-mono);font-size:8.5px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin-top:4px;">boş</div>
+              `}
+            </div>
+          `;
+        }).join("")}
+      </div>
+      <button class="opt" id="charmsLibBtn" style="margin-top:10px;width:100%;background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);">Boncuk Koleksiyonu</button>
+    </div>
+  `;
+
+  const fullHtml=existingHtml+`<div style="margin-top:16px;padding:0 4px;">${starterHtml}</div>`+charmsHtml;
   $("karakterContent").innerHTML=fullHtml;
 
   // Handler
   const sel=$("starterSelectBtn")||$("starterChangeBtn");
   if(sel)sel.addEventListener("click",openStarterPicker);
+  // Charm slot handlers
+  $("karakterContent").querySelectorAll("[data-charm-slot]").forEach(el=>{
+    el.addEventListener("click",()=>{
+      const i=+el.dataset.charmSlot;
+      const eq=(meta.charms?.equipped||[])[i];
+      if(eq){
+        unequipCharm(meta,eq);
+        saveMeta();
+        renderKarakter();
+      }else{
+        openCharmsLibrary();
+      }
+    });
+  });
+  $("charmsLibBtn")?.addEventListener("click",openCharmsLibrary);
+}
+
+function openCharmsLibrary(){
+  const html=`
+    <h2>Boncuk Koleksiyonu</h2>
+    <p>Boncuk: <b>${meta.currencies.bead||0}</b> · Açık: ${(meta.charms?.unlocked||[]).length}/${Object.keys(CHARMS).length} · Dizili: ${(meta.charms?.equipped||[]).length}/3</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin:14px 0;max-height:55dvh;overflow-y:auto;">
+      ${Object.values(CHARMS).map(c=>{
+        const owned=isCharmUnlocked(meta,c.id);
+        const eq=isCharmEquipped(meta,c.id);
+        const afford=canAffordCharm(meta,c.id);
+        let action;
+        if(eq){
+          action=`<button class="opt" data-charm-act="unequip" data-charm="${c.id}" style="background:var(--panel-2);color:var(--accent);border:1px solid var(--accent);font-size:11px;">Çıkar</button>`;
+        }else if(owned){
+          const slotFull=(meta.charms?.equipped||[]).length>=3;
+          action=`<button class="opt" data-charm-act="equip" data-charm="${c.id}" ${slotFull?'disabled':''} style="background:${slotFull?'var(--panel)':'var(--ink)'};color:${slotFull?'var(--muted)':'var(--bg)'};border:none;font-size:11px;">${slotFull?'slot dolu':'Diz'}</button>`;
+        }else{
+          action=`<button class="opt" data-charm-act="buy" data-charm="${c.id}" ${afford?'':'disabled'} style="background:${afford?'var(--ink)':'var(--panel-2)'};color:${afford?'var(--bg)':'var(--muted)'};border:1px solid ${afford?'var(--ink)':'var(--hairline)'};font-family:var(--font-mono);font-size:11px;">${c.cost} Boncuk</button>`;
+        }
+        return `
+          <div style="background:${eq?'var(--panel-2)':'var(--panel)'};border:1px solid ${eq?'var(--accent)':'var(--hairline)'};border-radius:12px;padding:11px 14px;display:flex;align-items:center;gap:12px;">
+            <span style="color:${owned?'var(--accent)':'var(--muted)'};font-family:var(--font-serif);font-size:22px;">${c.glyph}</span>
+            <div style="flex:1;">
+              <div style="font-family:var(--font-serif);font-weight:600;font-size:14px;color:var(--ink);">${c.name}</div>
+              <div style="color:var(--muted);font-size:12px;margin-top:2px;font-family:var(--font-serif);font-style:italic;">${c.desc}</div>
+            </div>
+            ${action}
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+  openRogueModal(html,e=>{
+    const btn=e.target.closest("[data-charm-act]");
+    if(!btn)return;
+    const id=btn.dataset.charm;const act=btn.dataset.charmAct;
+    let changed=false;
+    if(act==="buy")changed=purchaseCharm(meta,id);
+    else if(act==="equip")changed=equipCharm(meta,id);
+    else if(act==="unequip")changed=unequipCharm(meta,id);
+    if(changed){
+      saveMeta();
+      openCharmsLibrary(); // re-render
+    }
+  });
 }
 
 function openStarterPicker(){
@@ -1467,17 +1698,43 @@ function openStarterPicker(){
 }
 
 function renderIpliklik(){
-  $("ipliklikContent").innerHTML=`
-    <div style="text-align:center;padding:48px 24px;">
-      <div style="font-family:var(--font-serif);font-style:italic;color:var(--accent);font-size:18px;margin-bottom:8px;">İpliklik</div>
-      <p style="font-family:var(--font-serif);font-style:italic;color:var(--ink-dim);line-height:1.6;">
-        koşulardan kazanılan iplik burada<br>kalıcı yetenekler olarak örülür.
-      </p>
-      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:18px;">
-        Yakında — Plan 07
-      </div>
+  const html=`
+    <div style="text-align:center;padding:16px 0 8px;">
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--accent);">iplik bakiyesi</div>
+      <div style="font-family:var(--font-serif);font-size:32px;font-weight:500;color:var(--ink);margin-top:2px;">${meta.currencies.thread||0}</div>
+    </div>
+    <p style="text-align:center;font-family:var(--font-serif);font-style:italic;color:var(--ink-dim);font-size:13px;padding:0 18px 8px;line-height:1.5;">
+      koşulardan kazanılan iplik burada<br>kalıcı yetenekler olarak örülür.
+    </p>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:8px 4px;">
+      ${Object.values(TALENTS).map(t=>{
+        const owned=isTalentUnlocked(meta,t.id);
+        const afford=canAffordTalent(meta,t.id);
+        return `
+          <div style="background:${owned?'var(--panel-2)':'var(--panel)'};border:1px solid ${owned?'var(--accent)':'var(--hairline)'};border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;">
+            <div style="flex:1;">
+              <div style="font-family:var(--font-serif);font-weight:600;font-size:15px;color:var(--ink);">${t.name}</div>
+              <div style="color:var(--muted);font-size:12.5px;margin-top:3px;font-family:var(--font-serif);font-style:italic;">${t.desc}</div>
+            </div>
+            ${owned?
+              `<span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);">açıldı</span>`:
+              `<button class="opt" data-talent="${t.id}" ${afford?"":"disabled"} style="background:${afford?'var(--ink)':'var(--panel-2)'};color:${afford?'var(--bg)':'var(--muted)'};border:1px solid ${afford?'var(--ink)':'var(--hairline)'};font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;padding:8px 12px;">${t.cost} İplik</button>`
+            }
+          </div>
+        `;
+      }).join("")}
     </div>
   `;
+  $("ipliklikContent").innerHTML=html;
+  $("ipliklikContent").querySelectorAll("[data-talent]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const id=btn.dataset.talent;
+      if(purchaseTalent(meta,id)){
+        saveMeta();
+        renderIpliklik();
+      }
+    });
+  });
 }
 
 function renderDiken(){
