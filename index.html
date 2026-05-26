@@ -741,6 +741,7 @@ function startRogueRun(realmId){
     }
     store.set(KEYS.rogueRun,activeRun);
     meta.totalStats.runs=(meta.totalStats.runs||0)+1;saveMeta();
+    achievementUnlock("run_started");
   }
   renderRogueMap(activeRun);
   showScreen("s-rogue-map");
@@ -1106,6 +1107,8 @@ function closeRogueModal(){
 
 function win(){solved=true;stopTimer();buzz([16,40,24]);
   meta.totalStats.solves=(meta.totalStats.solves||0)+1;saveMeta();
+  // Solve milestones
+  [10,100].forEach(n=>{if(meta.totalStats.solves===n)achievementUnlock("solve_count:"+n);});
   if(ctx.mode==="journey"){const p=journeyProgress();p.unlocked=Math.max(p.unlocked,ctx.levelIndex+1);
     const bt=p.times[ctx.levelIndex];if(bt==null||elapsed<bt)p.times[ctx.levelIndex]=elapsed;store.set(KEYS.jrnProg,p);store.del(KEYS.jrnCur);}
   else if(ctx.mode==="rogue"){
@@ -1150,6 +1153,14 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
         if(run.eventLog&&run.eventLog.some(e=>e.eventId==="yagmur-basladi"&&e.choiceIdx===0)){
           achievementUnlock("event_chain:"+run.realmId+":yagmur-shelter-and-clear");
         }
+        // Cross-realm meta checks
+        const clearedCount=Object.values(meta.realms||{}).filter(r=>r&&r.timesCleared>0).length;
+        if(clearedCount>=3)achievementUnlock("realms_cleared_all");
+        const defeatedCount=Object.values(meta.realms||{}).filter(r=>r&&r.defeatedBosses>0).length;
+        if(defeatedCount>=3)achievementUnlock("bosses_defeated_all");
+        // Koleksiyoncu: her diyardan >=3 relic
+        const realmIds=["sogut-esigi","karanlik-igne","yildiz-gecidi"];
+        if(realmIds.every(id=>(meta.realms[id]?.knownRelics||[]).length>=3))achievementUnlock("relics_per_realm:3");
         // Unlock next realm
         if(run.realmId==="sogut-esigi"){
           if(!meta.realms["karanlik-igne"])meta.realms["karanlik-igne"]={};
@@ -1330,6 +1341,12 @@ function renderYuva(){
     </div>
   `;
   $("yuvaContent").innerHTML=html;
+  // Saklı: Jedi'yi gör — rastgele aktif olur (%3)
+  const jediEl=$("yuvaContent").querySelector("svg");
+  if(jediEl&&Math.random()<0.03){
+    jediEl.style.cursor="pointer";
+    jediEl.addEventListener("click",()=>achievementUnlock("jedi_tap"),{once:true});
+  }
 }
 
 function renderKarakter(){
@@ -1696,6 +1713,27 @@ function handleBackupAction(){
     }else{alert("Yükleme başarısız. Kod formatı doğru ama içerik tanınamadı.");}
   }
 }
+
+// Days streak tracking
+(function checkDaysStreak(){
+  const today=new Date().toISOString().slice(0,10);
+  if(!meta.daysStreak)meta.daysStreak={dates:[],last:null};
+  if(meta.daysStreak.last!==today){
+    meta.daysStreak.dates=(meta.daysStreak.dates||[]).concat([today]);
+    // Sadece son 30 günü tut
+    meta.daysStreak.dates=meta.daysStreak.dates.slice(-30);
+    meta.daysStreak.last=today;
+    saveMeta();
+  }
+  const uniqueDays=new Set(meta.daysStreak.dates).size;
+  if(uniqueDays>=7)achievementUnlock("days_streak:7");
+})();
+
+// Saatin Kedisi (saklı) — gece 3-4 arası
+(function checkNightCat(){
+  const hr=new Date().getHours();
+  if(hr>=3&&hr<4)achievementUnlock("played_in_hour:3");
+})();
 
 renderHome();
 </script>
