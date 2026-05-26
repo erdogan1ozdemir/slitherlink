@@ -733,6 +733,12 @@ function startRogueRun(realmId){
         if(n.type==="chest"&&rng()<0.5)n.type="locked-chest";
       });
     }
+    // Mum Modu: süre baskısı
+    if(settings.mumModu){
+      activeRun.candleMode=true;
+      activeRun.timeRemaining=600; // 10 dakika
+      activeRun.candleTickAt=Date.now();
+    }
     store.set(KEYS.rogueRun,activeRun);
     meta.totalStats.runs=(meta.totalStats.runs||0)+1;saveMeta();
   }
@@ -799,11 +805,14 @@ function renderRogueMap(run){
     </svg>
   `;
 
+  const candleHtml=run.candleMode?`<div style="font-family:var(--font-mono);font-size:11px;color:var(--bad);">🕯 ${Math.floor((run.timeRemaining||0)/60)}:${((run.timeRemaining||0)%60).toString().padStart(2,"0")}</div>`:"";
+
   $("rogueMapTitle").textContent=realm.name;
   $("rogueMapContent").innerHTML=`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0 16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0 16px;gap:10px;flex-wrap:wrap;">
       <div>${livesHtml}</div>
       <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);">KAT ${run.floor+1}/${run.mapGraph.floors}</div>
+      ${candleHtml}
       <div style="font-family:var(--font-mono);font-size:12px;color:var(--accent);">◇ ${run.relics.length}</div>
     </div>
     <div style="background:var(--panel);border:1px solid var(--hairline);border-radius:18px;padding:14px;">
@@ -812,7 +821,7 @@ function renderRogueMap(run){
     ${run.ended?`
       <div style="text-align:center;padding:20px;">
         <div style="font-family:var(--font-serif);font-style:italic;font-size:18px;color:var(--accent);">
-          ${run.endReason==="cleared"?"İplik tamamlandı":"İplik koptu"}
+          ${run.endReason==="cleared"?"İplik tamamlandı":(run.endReason==="timeout"?"Mum söndü":"İplik koptu")}
         </div>
         <button class="bigbtn" id="rogueNewBtn" style="margin-top:14px;">Yeni Koşu</button>
       </div>
@@ -832,9 +841,23 @@ function renderRogueMap(run){
 function handleRogueNode(nodeId){
   let run=store.get(KEYS.rogueRun,null);
   if(!run||run.ended)return;
+  const prevFloor=run.floor;
   run=moveTo(run,nodeId);
   store.set(KEYS.rogueRun,run);
   const node=rogueCurrentNode(run);
+  // Mum Modu: node tipi süre tüketir + floor change bonus
+  if(run.candleMode){
+    const costs={puzzle:60,elite:120,rest:0,event:30,chest:0,"locked-chest":0,boss:0};
+    run.timeRemaining=Math.max(0,(run.timeRemaining||0)-(costs[node.type]||0));
+    if(node.floor>prevFloor)run.timeRemaining+=90;
+    if(run.timeRemaining<=0){
+      run.ended=true;run.endReason="timeout";run.timeRemaining=0;
+      store.set(KEYS.rogueRun,run);
+      renderRogueMap(run);
+      return;
+    }
+    store.set(KEYS.rogueRun,run);
+  }
   if(node.type==="puzzle"||node.type==="elite"||node.type==="boss"){
     // Resume mid-puzzle if same node
     if(run.midPuzzle&&run.midPuzzle.ctx&&run.midPuzzle.ctx.nodeId===nodeId){

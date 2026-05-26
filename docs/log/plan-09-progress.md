@@ -13,7 +13,7 @@
 - [x] Task 10: Boss callback — D3 boss multi-stage handling
 ## Phase C - Mum Modu
 - [x] Task 11: Settings'e mumModu toggle
-- [ ] Task 12: Rogue HUD mum + timer + node cost
+- [x] Task 12: Rogue HUD mum + timer + node cost
 - [ ] Task 13: Timer tick + run end on timeout
 ## Finalize
 - [ ] Task 14: Final + merge + push
