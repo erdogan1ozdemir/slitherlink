@@ -378,6 +378,7 @@ import {EVENTS, getEvent, rollEvent} from "./src/rogue/events.js";
 import {ACHIEVEMENTS, emit as emitAchievement, getAchievement, unlockedCount as achUnlocked, totalCount as achTotal} from "./src/rogue/achievements.js";
 import {TALENTS, isUnlocked as isTalentUnlocked, canAfford as canAffordTalent, purchase as purchaseTalent, aggregateEffects as talentEffects} from "./src/rogue/talents.js";
 import {CHARMS, isUnlocked as isCharmUnlocked, isEquipped as isCharmEquipped, canAfford as canAffordCharm, purchase as purchaseCharm, equip as equipCharm, unequip as unequipCharm, aggregateEffects as charmEffects} from "./src/rogue/charms.js";
+import {NEOW_BLESSINGS, rollBlessings as neowBlessings, applyBlessing as applyNeowBlessing} from "./src/rogue/neow.js";
 
 /* =========================================================================
    0) PWA — service worker register + persistent storage
@@ -738,7 +739,8 @@ function checkWin(){
    ========================================================================= */
 function startRogueRun(realmId){
   let activeRun=store.get(KEYS.rogueRun,null);
-  if(!activeRun||activeRun.realmId!==realmId||activeRun.ended){
+  const wasNewRun=!activeRun||activeRun.realmId!==realmId||activeRun.ended;
+  if(wasNewRun){
     const seed="rogue-"+realmId+"-"+Date.now();
     const realm=getRealm(realmId);
     activeRun=startRun({realmId,seed,config:{floors:realm.floors}});
@@ -783,8 +785,45 @@ function startRogueRun(realmId){
     meta.totalStats.runs=(meta.totalStats.runs||0)+1;saveMeta();
     achievementUnlock("run_started");
   }
+  // Yuva Fısıltısı (Neow) — yeni koşularda armağan modal'ı
+  if(wasNewRun){
+    const neowSeed=activeRun.seed+"-neow";
+    let h=2166136261>>>0;for(let i=0;i<neowSeed.length;i++){h^=neowSeed.charCodeAt(i);h=Math.imul(h,16777619);}
+    const neowRng=mulberry32(h>>>0);
+    const blessings=neowBlessings(neowRng,3);
+    openNeowModal(activeRun,blessings,()=>{
+      store.set(KEYS.rogueRun,activeRun);
+      renderRogueMap(activeRun);
+      showScreen("s-rogue-map");
+    });
+    return;
+  }
   renderRogueMap(activeRun);
   showScreen("s-rogue-map");
+}
+
+function openNeowModal(run,blessings,after){
+  const html=`
+    <h2>Yuva Fısıltısı</h2>
+    <p>Jedi uyanıyor. Bir armağan seç — koşuna seninle gelir.</p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin:14px 0;">
+      ${blessings.map(b=>`
+        <button class="opt" data-bless="${b.id}" style="text-align:left;padding:13px 14px;background:var(--panel);border:1px solid var(--hairline);">
+          <div style="font-family:var(--font-serif);font-weight:600;font-size:15px;color:var(--ink);">${b.name}</div>
+          <div style="color:var(--muted);font-size:12.5px;margin-top:3px;font-family:var(--font-serif);font-style:italic;">${b.desc}</div>
+        </button>
+      `).join("")}
+    </div>
+  `;
+  openRogueModal(html,e=>{
+    const btn=e.target.closest("[data-bless]");
+    if(!btn)return;
+    const b=blessings.find(x=>x.id===btn.dataset.bless);
+    applyNeowBlessing(run,meta,b);
+    saveMeta();
+    closeRogueModal();
+    if(after)after();
+  });
 }
 
 function renderRogueMap(run){
