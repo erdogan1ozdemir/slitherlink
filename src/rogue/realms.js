@@ -75,6 +75,36 @@ export const REALMS={
     unlockedByDefault:false,
     bossMultiStage:3,
   },
+  "dugumun-ardi":{
+    id:"dugumun-ardi",
+    name:"Düğümün Ardı",
+    intro:"üç diyardan da geçen ipliğin sonu.",
+    accent:"--accent",
+    floors:7,
+    floorConfig:[
+      {sizes:[7,7],keep:0.55,nodes:["puzzle"],floorName:"Eşik"},
+      {sizes:[7,7],keep:0.52,nodes:["puzzle","event","chest"],floorName:"Hatıra"},
+      {sizes:[8,8],keep:0.50,nodes:["elite","event","chest"],floorName:"Yankı"},
+      {sizes:[8,8],keep:0.48,nodes:["puzzle","chest","event"],floorName:"Sis"},
+      {sizes:[9,9],keep:0.45,nodes:["rest","elite","event"],floorName:"Düğüm"},
+      {sizes:[9,9],keep:0.42,nodes:["chest","event","puzzle"],floorName:"İpliğin Sonu"},
+      {sizes:[10,10],keep:0.40,nodes:["boss"],floorName:"Düğüm Ustası"},
+    ],
+    relicPool:[
+      "sogut-yapragi","kelebek-pulu","yun-tohumu","bahcivanin-eldiveni","aksam-mumu","ciyli-yun",
+      "murekkep-damlasi","sayfa-kosesi","bronz-anahtar","tuy-kalem","eski-mum","murekkep-lekesi",
+      "yildiz-tozu","ay-muhru","gece-pusulasi","kuyruklu-yildiz","dus-ipligi","yildizsayar"
+    ],
+    eventPool:[
+      "yagmur-basladi","kelebek-yolu","eski-sandik","bahcivanin-notu","aksam-cayi","cayir-kedisi",
+      "kutuphanecinin-uykusu","kayip-mektup","murekkep-kuyusu","bos-koltuk","anahtar-cingirgi","toz-patikasi",
+      "sonmus-yildiz","ay-seni-taniyor","dus-parcasi","kar-tanesi","buzlu-cam","gece-patikasi"
+    ],
+    bossName:"Düğüm Ustası",
+    bossIntro:"tüm ipleri çözer ya da kopararak biter.",
+    unlockedByDefault:false,
+    requiresAllRealmsCleared:true,
+  },
 };
 
 export function getRealm(id){return REALMS[id];}

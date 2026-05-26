@@ -21,7 +21,7 @@
 - [x] Task 10: Ana menü "Günün Çemberi" kartı + flow
 
 ## Phase F — 4. diyar
-- [ ] Task 11: realms.js dugumun-ardi entry + unlock kuralı
+- [x] Task 11: realms.js dugumun-ardi entry + unlock kuralı
 - [ ] Task 12: D4 achievement (3 ach)
 
 ## Final

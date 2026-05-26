@@ -1309,13 +1309,17 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
           achievementUnlock("event_chain:"+run.realmId+":yagmur-shelter-and-clear");
         }
         // Cross-realm meta checks
-        const clearedCount=Object.values(meta.realms||{}).filter(r=>r&&r.timesCleared>0).length;
-        if(clearedCount>=3)achievementUnlock("realms_cleared_all");
-        const defeatedCount=Object.values(meta.realms||{}).filter(r=>r&&r.defeatedBosses>0).length;
-        if(defeatedCount>=3)achievementUnlock("bosses_defeated_all");
-        // Koleksiyoncu: her diyardan >=3 relic
-        const realmIds=["sogut-esigi","karanlik-igne","yildiz-gecidi"];
-        if(realmIds.every(id=>(meta.realms[id]?.knownRelics||[]).length>=3))achievementUnlock("relics_per_realm:3");
+        const baseRealmIds=["sogut-esigi","karanlik-igne","yildiz-gecidi"];
+        const baseClearedCount=baseRealmIds.filter(id=>(meta.realms[id]?.timesCleared||0)>0).length;
+        if(baseClearedCount>=3)achievementUnlock("realms_cleared_all");
+        const baseDefeatedCount=baseRealmIds.filter(id=>(meta.realms[id]?.defeatedBosses||0)>0).length;
+        if(baseDefeatedCount>=3)achievementUnlock("bosses_defeated_all");
+        // Koleksiyoncu: her base diyardan >=3 relic
+        if(baseRealmIds.every(id=>(meta.realms[id]?.knownRelics||[]).length>=3))achievementUnlock("relics_per_realm:3");
+        // 4 diyarın tümü cleared → realms_cleared_four
+        const allRealmIds=["sogut-esigi","karanlik-igne","yildiz-gecidi","dugumun-ardi"];
+        const totalClearedCount=allRealmIds.filter(id=>(meta.realms[id]?.timesCleared||0)>0).length;
+        if(totalClearedCount>=4)achievementUnlock("realms_cleared_four");
         // Unlock next realm
         if(run.realmId==="sogut-esigi"){
           if(!meta.realms["karanlik-igne"])meta.realms["karanlik-igne"]={};
@@ -1330,6 +1334,11 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
         }else if(run.realmId==="yildiz-gecidi"){
           if(run.lives.current>=2)achievementUnlock("clear_with_lives:yildiz-gecidi:2");
           if(!run.wasResumed)achievementUnlock("single_session_clear:yildiz-gecidi");
+        }
+        // D4 unlock: 3 base diyar cleared olunca
+        if(baseClearedCount>=3){
+          if(!meta.realms["dugumun-ardi"])meta.realms["dugumun-ardi"]={};
+          meta.realms["dugumun-ardi"].unlocked=true;
         }
         // Speed clear achievement
         if(run.realmId==="karanlik-igne"&&elapsed<900){
@@ -1515,15 +1524,16 @@ function showDailyLeaderboard(){
    ROGUE — Yuva / Karakter / İpliklik / Diken render fonksiyonları
    ========================================================================= */
 function renderYuva(){
-  const realmIds=["sogut-esigi","karanlik-igne","yildiz-gecidi"];
+  const realmIds=["sogut-esigi","karanlik-igne","yildiz-gecidi","dugumun-ardi"];
   const realms=realmIds.map(id=>{
     const r=REALMS[id]||{id,name:id,intro:"yakında",accent:"--accent"};
     const stars=meta.realms[id]?.compassStars||0;
     const unlocked=isRealmUnlocked(id,meta);
+    const lockedHint=(id==="dugumun-ardi")?"kilitli — üç diyarı da bitir":"kilitli — önceki diyarın patronunu yen";
     return {
       id:r.id,
       name:r.name,
-      intro:unlocked?(r.intro||""):"kilitli — önceki diyarın patronunu yen",
+      intro:unlocked?(r.intro||""):lockedHint,
       unlocked,
       accent:r.accent||"--accent",
       stars,
