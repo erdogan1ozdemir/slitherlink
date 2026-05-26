@@ -1858,12 +1858,7 @@ function renderKarakter(){
   const sel=$("starterSelectBtn")||$("starterChangeBtn");
   if(sel)sel.addEventListener("click",openStarterPicker);
   $("karakterContent").querySelectorAll("[data-charm-slot]").forEach(el=>{
-    el.addEventListener("click",()=>{
-      const i=+el.dataset.charmSlot;
-      const eq=(meta.charms?.equipped||[])[i];
-      if(eq){unequipCharm(meta,eq);saveMeta();renderKarakter();}
-      else{openCharmsLibrary();}
-    });
+    el.addEventListener("click",()=>openCharmsLibrary());
   });
   $("charmsLibBtn")?.addEventListener("click",openCharmsLibrary);
 }

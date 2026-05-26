@@ -12,7 +12,7 @@
 - [x] Task 7: Corner auto-X mekaniği (Phase B.3)
 - [x] Task 8: Map symbol legend toggle (Phase B.4)
 - [x] Task 9: Rogue text size + Karakter label boost (Phase B.5)
-- [ ] Task 10: Charm slot tap → library (Phase B.6)
+- [x] Task 10: Charm slot tap → library (Phase B.6)
 
 ## Phase C — Generator
 - [ ] Task 11: density min 0→35 + uyarı not (Phase C.1)
