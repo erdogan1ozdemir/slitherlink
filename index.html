@@ -383,8 +383,47 @@ const HOW_CONTENT={
     <h4>Rogue Modu ☠</h4>
     <p>Sessiz İplik'in en derin modu. Üç diyar, dallanan haritalar, eşyalar, canlar, ve koşular arası kalıcı geliştirme. (Detay için "Rogue" sekmesi.)</p>
   `,
-  rogue:"",
-  meta:"",
+  rogue:`
+    <h3>Rogue Modu</h3>
+    <p class="quote">Jedi geceleri ipliği takip eder. Her koşusu yeni bir diyara, eski boncuklarla.</p>
+    <h4>Diyarlar</h4>
+    <p>Üç diyar var: <b>Söğüt Eşiği</b> (sıcak başlangıç), <b>Karanlık İğne</b> (mistik kütüphane), <b>Yıldız Geçidi</b> (kozmik final). Başta sadece Söğüt Eşiği açık; ilerleme ile diğerleri açılır.</p>
+    <h4>Koşu yapısı</h4>
+    <ul>
+      <li><b>5 kat</b>, her katta 2-3 düğüm, dallanan harita</li>
+      <li>Düğüm tipleri: <b>Bulmaca</b>, <b>Elit</b>, <b>Sandık</b>, <b>Dinlenme</b>, <b>Olay</b>, <b>Patron</b></li>
+      <li>Başta <b>3 can</b>. Her hata 1 can götürür. Canlar biterse koşu son bulur (geri dönüş yok).</li>
+      <li>Çözdüğün her bulmaca İplik biriktirir; bossu yenince Boncuk düşer.</li>
+    </ul>
+    <h4>Eşyalar (Relic)</h4>
+    <p>Sandık ve olaylardan gelir. Sadece o koşu boyunca taşırsın. Örnek: <i>Söğüt Yaprağı</i> (ilk hata cezasız), <i>Mürekkep Damlası</i> (hint cezasız), <i>Ay Mührü</i> (bir kez geri al).</p>
+    <h4>Mühürlü Hücreler</h4>
+    <p>Diyar ilerledikçe puzzle'lara <b>kısıt mühürleri</b> eklenir: donmuş hücreler (etrafına çizgi konmaz), "2 konmaz" (sayı 2 değil), sis (sayı gizli), ikiz (iki hücre aynı sayı), lanetli (loop kesin çevreler), yankı, kayan...</p>
+    <h4>Mum Modu (opsiyonel)</h4>
+    <p>Zaman baskısı. Koşu 10 dakika ile başlar, her kat +90s. Düğümler süre tüketir. Süre biterse koşu son bulur ama kazandığın İplik kalır.</p>
+    <h4>Patron</h4>
+    <p>Her diyarın kendi patronu var: <i>Yün Bekçisi</i> (sessiz), <i>Sessiz Kütüphaneci</i> (uyandırırsan zaman daralır), <i>Yıldız İplikçisi</i> (3 ardışık bulmaca).</p>
+  `,
+  meta:`
+    <h3>Kalıcı Geliştirme</h3>
+    <p class="quote">Koşu biter; iplik kalır.</p>
+    <h4>Yuva Ekranı</h4>
+    <p>Rogue moduna girince ilk açılan yer. Jedi'nin koşular arası dinlendiği yer. Diyar seçimi, istatistikler, ve aşağıdaki ekranlara giriş.</p>
+    <h4>Karakter Ekranı</h4>
+    <p>Jedi'nin kartı: avatar, istatistik, kazanılmış boncuklar, dizilen boncuklar, kazanılmış başarımlar.</p>
+    <h4>İpliklik</h4>
+    <p>Kalıcı pasif yetenekler. <b>İplik</b> ile açılır. 8 yetenek; her birinin iki vibrasyonu (ücretsiz geçiş).</p>
+    <h4>Diken Sözleşmesi</h4>
+    <p>Kendi zorluğunu seç. 10 modifier (Daralma, Kör Pusula, Kırılgan İplik...) ranklarla. Toplam <b>İz</b> = koşu sonu ödülü çarpanı.</p>
+    <h4>Pusula Yıldızı</h4>
+    <p>Her diyar kendi yıldız progression'ı taşır. Boss yenildikçe yıldız artar, yeni içerik (event tipleri, relic kategorileri, constraint tile'lar) açılır.</p>
+    <h4>Para birimleri</h4>
+    <ul>
+      <li><b>İplik</b> — her koşuda kazanılır, İpliklik talent'leri için</li>
+      <li><b>Boncuk</b> — boss yenince düşer, Boncuk Dizimi (charm) için</li>
+      <li><b>Yıldız Tozu</b> — Diken Sözleşmesi koşularından, kozmetik için</li>
+    </ul>
+  `,
   backup:"",
 };
 
