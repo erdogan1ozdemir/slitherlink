@@ -759,6 +759,14 @@ function startRogueRun(realmId){
     activeRun.chestExtraOffer=tEff.chestExtraOffer||0;
     activeRun.restBonusHeal=tEff.restBonusHeal||0;
     activeRun.bossBonusThread=tEff.bossBonusThread||0;
+    // Charm effects (Boncuk Dizimi) — merged into run flags
+    const cEff=charmEffects(meta);
+    activeRun.bonusHints=(activeRun.bonusHints||0)+cEff.bonusHint;
+    activeRun.restBonusHeal=(activeRun.restBonusHeal||0)+cEff.restBonusHeal;
+    activeRun.eventExtraChoice=cEff.eventExtraChoice||0;
+    activeRun.bonusUndo=cEff.bonusUndo||0;
+    activeRun.mapPreview=cEff.mapPreview||false;
+    activeRun.visitedThread=cEff.visitedThread||0;
     store.set(KEYS.rogueRun,activeRun);
     meta.totalStats.runs=(meta.totalStats.runs||0)+1;saveMeta();
     achievementUnlock("run_started");
@@ -864,6 +872,11 @@ function handleRogueNode(nodeId){
   if(!run||run.ended)return;
   const prevFloor=run.floor;
   run=moveTo(run,nodeId);
+  // Charm: Pati İzi — her visited node'dan +1 iplik
+  if(run.visitedThread){
+    meta.currencies.thread=(meta.currencies.thread||0)+run.visitedThread;
+    saveMeta();
+  }
   store.set(KEYS.rogueRun,run);
   const node=rogueCurrentNode(run);
   // Mum Modu: node tipi süre tüketir + floor change bonus
