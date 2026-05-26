@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Slitherlink Test Runner</title>
+<style>
+body{font-family:ui-monospace,monospace;background:#0a0a0c;color:#EDEAE3;padding:24px;line-height:1.5;}
+h1{color:#A89B8B;font-weight:500;margin:0 0 16px;}
+.test{padding:8px 12px;margin:4px 0;border-radius:6px;border:1px solid rgba(237,234,227,.08);}
+.test.pass{border-color:rgba(143,163,154,.5);color:#8FA39A;}
+.test.fail{border-color:rgba(201,122,111,.5);color:#C97A6F;}
+.summary{margin-top:18px;padding:12px;background:#15151a;border-radius:8px;}
+</style>
+</head>
+<body>
+<h1>Slitherlink — Core Tests</h1>
+<div id="results"></div>
+<div class="summary" id="summary">Running…</div>
+<script type="module">
+import "./core.test.js";
+</script>
+</body>
+</html>

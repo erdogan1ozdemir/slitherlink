@@ -318,7 +318,11 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
 
 <canvas id="confetti"></canvas>
 
-<script>
+<script type="module">
+import {hashSeed, mulberry32} from "./src/core/rng.js";
+import {makePuzzle} from "./src/core/generator.js";
+import {lineCount as _lineCount, decided as _decided, validateLoop} from "./src/core/checker.js";
+
 /* =========================================================================
    0) PWA — service worker register + persistent storage
    ========================================================================= */
@@ -396,33 +400,13 @@ const idbStore={
 /* =========================================================================
    3) RASTGELELIK (seed'lenebilir RNG)
    ========================================================================= */
-function hashSeed(s){let h=2166136261>>>0;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
-function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
+// hashSeed + mulberry32 imported from ./src/core/rng.js
 
 /* =========================================================================
    4) BULMACA URETECI + DOGRULAYICI  (saf mantik, UI'dan bagimsiz)
       makePuzzle: tek-kapali-cember garantili bulmaca; opsiyonel seed'li rng
    ========================================================================= */
-function makePuzzle(R,C,keepRatio,rng){
-  rng=rng||Math.random;
-  const filled=Array.from({length:R},()=>Array(C).fill(false));
-  filled[(R/2)|0][(C/2)|0]=true;
-  const inb=(r,c)=>r>=0&&r<R&&c>=0&&c<C;
-  const cnt=()=>{let n=0;for(let r=0;r<R;r++)for(let c=0;c<C;c++)if(filled[r][c])n++;return n;};
-  function regionConnected(){let s=null;for(let r=0;r<R&&!s;r++)for(let c=0;c<C&&!s;c++)if(filled[r][c])s=[r,c];if(!s)return false;const seen=Array.from({length:R},()=>Array(C).fill(false));const st=[s];seen[s[0]][s[1]]=true;let k=0;while(st.length){const[r,c]=st.pop();k++;for(const[dr,dc]of[[1,0],[-1,0],[0,1],[0,-1]]){const nr=r+dr,nc=c+dc;if(inb(nr,nc)&&filled[nr][nc]&&!seen[nr][nc]){seen[nr][nc]=true;st.push([nr,nc]);}}}return k===cnt();}
-  function complementConnected(){const seen=Array.from({length:R},()=>Array(C).fill(false));const st=[];for(let r=0;r<R;r++)for(let c=0;c<C;c++)if(!filled[r][c]&&(r===0||r===R-1||c===0||c===C-1)&&!seen[r][c]){seen[r][c]=true;st.push([r,c]);}while(st.length){const[r,c]=st.pop();for(const[dr,dc]of[[1,0],[-1,0],[0,1],[0,-1]]){const nr=r+dr,nc=c+dc;if(inb(nr,nc)&&!filled[nr][nc]&&!seen[nr][nc]){seen[nr][nc]=true;st.push([nr,nc]);}}}for(let r=0;r<R;r++)for(let c=0;c<C;c++)if(!filled[r][c]&&!seen[r][c])return false;return true;}
-  const total=R*C, iters=R*C*40;
-  for(let i=0;i<iters;i++){const r=(rng()*R)|0,c=(rng()*C)|0,prev=filled[r][c];filled[r][c]=!prev;const nf=cnt();let ok=nf>=1&&nf<=total-1;if(ok)ok=regionConnected()&&complementConnected();if(!ok)filled[r][c]=prev;}
-  const f=(r,c)=>inb(r,c)?filled[r][c]:false;
-  const hE=Array.from({length:R+1},()=>Array(C).fill(0));
-  for(let r=0;r<=R;r++)for(let c=0;c<C;c++)hE[r][c]=(f(r-1,c)!==f(r,c))?1:0;
-  const vE=Array.from({length:R},()=>Array(C+1).fill(0));
-  for(let r=0;r<R;r++)for(let c=0;c<=C;c++)vE[r][c]=(f(r,c-1)!==f(r,c))?1:0;
-  const clue=Array.from({length:R},()=>Array(C).fill(-1));
-  for(let r=0;r<R;r++)for(let c=0;c<C;c++)clue[r][c]=hE[r][c]+hE[r+1][c]+vE[r][c]+vE[r][c+1];
-  for(let r=0;r<R;r++)for(let c=0;c<C;c++)if(rng()>keepRatio)clue[r][c]=-1;
-  return {R,C,solH:hE,solV:vE,clue};
-}
+// makePuzzle imported from ./src/core/generator.js
 
 /* =========================================================================
    5) AYARLAR
@@ -666,8 +650,9 @@ function redo(){
   restoreState(redoStack.pop());
   buzz(6);render();autosave();
 }
-function lineCount(r,c){return (hState[r][c]===1)+(hState[r+1][c]===1)+(vState[r][c]===1)+(vState[r][c+1]===1);}
-function decided(r,c){return [hState[r][c],hState[r+1][c],vState[r][c],vState[r][c+1]].every(s=>s!==0);}
+// lineCount + decided delegated to ./src/core/checker.js (state-bound wrappers)
+const lineCount=(r,c)=>_lineCount(hState,vState,r,c);
+const decided=(r,c)=>_decided(hState,vState,r,c);
 function updateClueStates(){
   boardEl.querySelectorAll("text.clue").forEach(t=>{
     const r=+t.dataset.r,c=+t.dataset.c,n=P.clue[r][c],lc=lineCount(r,c);
@@ -685,20 +670,8 @@ function updateClueStates(){
 }
 
 /* kazanma */
-function checkWin(){const R=P.R,C=P.C;
-  for(let r=0;r<R;r++)for(let c=0;c<C;c++){if(P.clue[r][c]<0)continue;if(lineCount(r,c)!==P.clue[r][c])return;}
-  const deg=Array.from({length:R+1},()=>Array(C+1).fill(0));let edges=0;
-  for(let r=0;r<=R;r++)for(let c=0;c<C;c++)if(hState[r][c]===1){deg[r][c]++;deg[r][c+1]++;edges++;}
-  for(let r=0;r<R;r++)for(let c=0;c<=C;c++)if(vState[r][c]===1){deg[r][c]++;deg[r+1][c]++;edges++;}
-  if(!edges)return;for(let r=0;r<=R;r++)for(let c=0;c<=C;c++)if(deg[r][c]!==0&&deg[r][c]!==2)return;
-  let s=null,td2=0;for(let r=0;r<=R;r++)for(let c=0;c<=C;c++)if(deg[r][c]===2){td2++;if(!s)s=[r,c];}
-  const seen=Array.from({length:R+1},()=>Array(C+1).fill(false));const st=[s];seen[s[0]][s[1]]=true;let v=0;
-  while(st.length){const[r,c]=st.pop();v++;
-    if(c<C&&hState[r][c]===1&&!seen[r][c+1]){seen[r][c+1]=true;st.push([r,c+1]);}
-    if(c>0&&hState[r][c-1]===1&&!seen[r][c-1]){seen[r][c-1]=true;st.push([r,c-1]);}
-    if(r<R&&vState[r][c]===1&&!seen[r+1][c]){seen[r+1][c]=true;st.push([r+1,c]);}
-    if(r>0&&vState[r-1][c]===1&&!seen[r-1][c]){seen[r-1][c]=true;st.push([r-1,c]);}}
-  if(v===td2)win();
+function checkWin(){
+  if(validateLoop(P,hState,vState))win();
 }
 function win(){solved=true;stopTimer();buzz([16,40,24]);
   if(ctx.mode==="journey"){const p=journeyProgress();p.unlocked=Math.max(p.unlocked,ctx.levelIndex+1);
