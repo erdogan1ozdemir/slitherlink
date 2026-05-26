@@ -109,8 +109,10 @@ svg{width:100%;height:auto;display:block;touch-action:manipulation;}
 .clue.tile-yanki{fill:var(--accent-cool,#99A3B0);font-style:italic;}
 .clue.tile-kayan{fill:var(--good,#8FA39A);}
 .edge-line{stroke:var(--line);stroke-width:5.5;stroke-linecap:round;}
+.edge-line.wrong{stroke:var(--bad);}
 .edge-hit{stroke:transparent;cursor:pointer;}
 .ex{stroke:var(--muted);stroke-width:2.4;stroke-linecap:round;opacity:.55;}
+.ex.wrong{stroke:var(--bad);opacity:.9;}
 .seg-appear{animation:pop .14s ease-out;}
 @keyframes pop{from{opacity:0}to{opacity:1}}
 @keyframes pawTrail {
@@ -647,6 +649,7 @@ let P=null,hState=null,vState=null,solved=false,hints=0;
 let elapsed=0,timerId=null,timerBase=0;
 let ctx={mode:"free",levelIndex:null};
 let undoStack=[],redoStack=[];
+let wrongSet=null;
 const $=id=>document.getElementById(id);
 const boardEl=$("board");
 
@@ -713,9 +716,25 @@ function render(){
     }
     boardEl.appendChild(t);
   }
-  function seg(x1,y1,x2,y2,st){if(st===1){const l=document.createElementNS(NS,"line");l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);l.setAttribute("class","edge-line seg-appear");boardEl.appendChild(l);}else if(st===2){const mx=(x1+x2)/2,my=(y1+y2)/2,s=g.S*0.13;for(const[a,b,cc,dd]of[[-s,-s,s,s],[-s,s,s,-s]]){const l=document.createElementNS(NS,"line");l.setAttribute("x1",mx+a);l.setAttribute("y1",my+b);l.setAttribute("x2",mx+cc);l.setAttribute("y2",my+dd);l.setAttribute("class","ex");boardEl.appendChild(l);}}}
-  for(let r=0;r<=g.R;r++)for(let c=0;c<g.C;c++)seg(dx(c),dy(r),dx(c+1),dy(r),hState[r][c]);
-  for(let r=0;r<g.R;r++)for(let c=0;c<=g.C;c++)seg(dx(c),dy(r),dx(c),dy(r+1),vState[r][c]);
+  function seg(x1,y1,x2,y2,st,k,r,c){
+    const isWrong=wrongSet&&wrongSet.has(k+":"+r+":"+c);
+    if(st===1){
+      const l=document.createElementNS(NS,"line");
+      l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);
+      l.setAttribute("class","edge-line seg-appear"+(isWrong?" wrong":""));
+      boardEl.appendChild(l);
+    }else if(st===2){
+      const mx=(x1+x2)/2,my=(y1+y2)/2,s=g.S*0.13;
+      for(const[a,b,cc,dd]of[[-s,-s,s,s],[-s,s,s,-s]]){
+        const l=document.createElementNS(NS,"line");
+        l.setAttribute("x1",mx+a);l.setAttribute("y1",my+b);l.setAttribute("x2",mx+cc);l.setAttribute("y2",my+dd);
+        l.setAttribute("class","ex"+(isWrong?" wrong":""));
+        boardEl.appendChild(l);
+      }
+    }
+  }
+  for(let r=0;r<=g.R;r++)for(let c=0;c<g.C;c++)seg(dx(c),dy(r),dx(c+1),dy(r),hState[r][c],"h",r,c);
+  for(let r=0;r<g.R;r++)for(let c=0;c<=g.C;c++)seg(dx(c),dy(r),dx(c),dy(r+1),vState[r][c],"v",r,c);
   for(let r=0;r<=g.R;r++)for(let c=0;c<=g.C;c++){const ci=document.createElementNS(NS,"circle");ci.setAttribute("cx",dx(c));ci.setAttribute("cy",dy(r));ci.setAttribute("r",g.S*0.06);ci.setAttribute("class","dotc");boardEl.appendChild(ci);}
   const hw=g.S*0.5;
   function hit(x1,y1,x2,y2,k,r,c){const l=document.createElementNS(NS,"line");l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);l.setAttribute("class","edge-hit");l.setAttribute("stroke-width",hw);l.addEventListener("click",()=>toggle(k,r,c));boardEl.appendChild(l);}
@@ -774,6 +793,25 @@ function redo(){
   undoStack.push(snapshotState());
   restoreState(redoStack.pop());
   buzz(6);render();autosave();
+}
+function runCheck(){
+  if(!P||solved)return;
+  wrongSet=new Set();
+  for(let r=0;r<=P.R;r++)for(let c=0;c<P.C;c++){
+    const s=hState[r][c],sol=P.solH[r][c];
+    if((s===1&&sol===0)||(s===2&&sol===1))wrongSet.add("h:"+r+":"+c);
+  }
+  for(let r=0;r<P.R;r++)for(let c=0;c<=P.C;c++){
+    const s=vState[r][c],sol=P.solV[r][c];
+    if((s===1&&sol===0)||(s===2&&sol===1))wrongSet.add("v:"+r+":"+c);
+  }
+  const wrongs=wrongSet.size;
+  render();
+  const t=$("gameTitle"),old=t.textContent,oldColor=t.style.color;
+  t.textContent=wrongs===0?"✓ doğru gidiyorsun":`✗ ${wrongs} hatalı kenar`;
+  t.style.color=wrongs===0?"var(--good)":"var(--bad)";
+  setTimeout(()=>{t.textContent=old;t.style.color=oldColor;},2700);
+  setTimeout(()=>{wrongSet=null;if(P&&!solved)render();},3000);
 }
 // lineCount + decided delegated to ./src/core/checker.js (state-bound wrappers)
 const lineCount=(r,c)=>_lineCount(hState,vState,r,c);
@@ -2141,6 +2179,7 @@ $("gameNewBtn").addEventListener("click",()=>{
 $("undoBtn").addEventListener("click",undo);
 $("redoBtn").addEventListener("click",redo);
 $("resetBtn").addEventListener("click",resetBoard);
+$("checkBtn").addEventListener("click",runCheck);
 $("hintBtn").addEventListener("click",hint);
 function updateUndoRedoButtons(){
   $("undoBtn").disabled=!undoStack.length||solved;
