@@ -207,6 +207,28 @@ export const ACHIEVEMENTS={
     diary:"Gece yarısı geçti, kedi uyumadı. Sen de.",
     trigger:"played_in_hour:3",secret:true,
   },
+  // === D4 Düğümün Ardı ===
+  "dugumun-ardi-cleared":{
+    id:"dugumun-ardi-cleared",realm:"dugumun-ardi",
+    title:"Düğümün Sonu",
+    body:"Düğümün Ardı'nı tamamladın.",
+    diary:"Tüm iplikler döndü. Düğüm çözüldü. Sen başladın.",
+    trigger:"realm_cleared:dugumun-ardi",secret:false,
+  },
+  "dugum-ustasi":{
+    id:"dugum-ustasi",realm:"dugumun-ardi",
+    title:"Düğüm Ustası",
+    body:"Düğüm Ustası'nı yendin.",
+    diary:"Düğüm Ustası başını eğdi. Sen ona ipliği uzattın.",
+    trigger:"boss_defeated:dugumun-ardi",secret:false,
+  },
+  "iplgin-sonu":{
+    id:"iplgin-sonu",realm:null,
+    title:"İpliğin Sonu",
+    body:"Tüm 4 diyarı geçtin.",
+    diary:"İpliğin sonu yokmuş. Yeni biri başlar.",
+    trigger:"realms_cleared_four",secret:false,
+  },
 };
 
 /** Engine — emit/check pattern.

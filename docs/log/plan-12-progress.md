@@ -22,7 +22,7 @@
 
 ## Phase F — 4. diyar
 - [x] Task 11: realms.js dugumun-ardi entry + unlock kuralı
-- [ ] Task 12: D4 achievement (3 ach)
+- [x] Task 12: D4 achievement (3 ach)
 
 ## Final
 - [ ] Task 13: tests/core.test.js genişlet
