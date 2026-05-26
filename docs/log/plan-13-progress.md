@@ -15,7 +15,7 @@
 - [x] Task 10: Charm slot tap → library (Phase B.6)
 
 ## Phase C — Generator
-- [ ] Task 11: density min 0→35 + uyarı not (Phase C.1)
+- [x] Task 11: density min 0→35 + uyarı not (Phase C.1)
 
 ## Final
 - [ ] Task 12: Final + merge + push
