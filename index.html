@@ -315,11 +315,12 @@ function makePuzzle(R,C,keepRatio,rng){
 /* =========================================================================
    5) AYARLAR
    ========================================================================= */
-const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true};
+const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only"};
 let settings=Object.assign({},DEFAULT_SETTINGS,store.get(KEYS.settings,{}));
 function saveSettings(){store.set(KEYS.settings,settings);}
 const TOGGLE_DEFS=[
   {k:"hints",  t:"İpucu butonu",            d:"Oyunda ipucu butonunu göster"},
+  {k:"autoX",  t:"Otomatik çarpı",          d:"Sayı tamamlanınca boş kenarlara çarpı koy"},
   {k:"fade",   t:"Tamamlananı soluklaştır", d:"Çizgisi biten sayıyı soluklaştır"},
   {k:"errors", t:"Hataları kırmızı göster", d:"Fazla/yanlış çizgide sayıyı kırmızı yap"},
   {k:"haptics",t:"Titreşim",                d:"Dokununca küçük titreşim (destekleyen cihazda)"},
