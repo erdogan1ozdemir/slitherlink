@@ -1,7 +1,7 @@
 # Plan 09 Progress
 - [x] Task 1: Branch + log
 ## Phase A - UX polish
-- [ ] Task 2: Yuva ⚙ handler + Yuva settings buttons
+- [x] Task 2: Yuva ⚙ handler + Yuva settings buttons
 - [ ] Task 3: Rogue Map floor labels (GİRİŞ / BİTİŞ + isim)
 - [ ] Task 4: Home Rogue Modu kartına resume pill
 - [ ] Task 5: Game "Yeni" butonu rogue'da gizle + mid-puzzle save/resume
