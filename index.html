@@ -47,6 +47,9 @@
   --font-mono:"JetBrains Mono", "SF Mono", ui-monospace, monospace;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;}
+*:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px;}
+button:focus-visible,.opt:focus-visible,.sw:focus-visible,.tab:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
+.iconbtn:focus-visible{outline-offset:2px;}
 html,body{margin:0;padding:0;height:100%;}
 body{
   background:radial-gradient(120% 80% at 50% -10%,#17171c 0%,var(--bg) 60%);
@@ -190,7 +193,7 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
 
   <!-- HOME -->
   <section class="screen active" id="s-home">
-    <div class="topbar"><div class="ttl"></div><button class="iconbtn" id="homeSettings">⚙</button></div>
+    <div class="topbar"><div class="ttl"></div><button class="iconbtn" id="homeSettings" aria-label="Ayarlar">⚙</button></div>
     <div class="scroll">
       <div class="hero">
         <h1>slitherlink<span class="dot">.</span></h1>
@@ -205,7 +208,7 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
 
   <!-- FREE SETUP -->
   <section class="screen" id="s-setup">
-    <div class="topbar"><button class="iconbtn" data-back>‹</button><div class="ttl">Serbest Oyun</div></div>
+    <div class="topbar"><button class="iconbtn" data-back aria-label="Geri">‹</button><div class="ttl">Serbest Oyun</div></div>
     <div class="scroll">
       <div class="section-label">Hazır seviye</div>
       <div class="chips" id="presetChips"></div>
@@ -224,33 +227,33 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
 
   <!-- JOURNEY -->
   <section class="screen" id="s-journey">
-    <div class="topbar"><button class="iconbtn" data-back>‹</button><div class="ttl">Yolculuk</div>
-      <button class="iconbtn" id="journeyReset" title="Sıfırla">↺</button></div>
+    <div class="topbar"><button class="iconbtn" data-back aria-label="Geri">‹</button><div class="ttl">Yolculuk</div>
+      <button class="iconbtn" id="journeyReset" title="Sıfırla" aria-label="Yolculuğu sıfırla">↺</button></div>
     <div class="scroll"><div class="level-list" id="levelList"></div></div>
   </section>
 
   <!-- GAME -->
   <section class="screen" id="s-game">
-    <div class="topbar"><button class="iconbtn" data-back>‹</button><div class="ttl" id="gameTitle">Bulmaca</div>
-      <button class="iconbtn" id="gameSettings">⚙</button></div>
+    <div class="topbar"><button class="iconbtn" data-back aria-label="Geri">‹</button><div class="ttl" id="gameTitle">Bulmaca</div>
+      <button class="iconbtn" id="gameSettings" aria-label="Ayarlar">⚙</button></div>
     <div class="gamebar">
       <div class="chip"><small>Süre</small><span id="timer">0:00</span></div>
       <div class="chip" id="hintChip"><small>İpucu</small><span id="hintsUsed">0</span></div>
     </div>
     <div class="board-wrap"><div class="board-card"><svg id="board"></svg></div></div>
     <div class="controls">
-      <button class="btn-ghost" id="undoBtn" title="Geri al">↶</button>
-      <button class="btn-ghost" id="redoBtn" title="İleri al">↷</button>
-      <button class="btn-ghost" id="resetBtn" title="Temizle">↺</button>
-      <button class="btn-ghost hidden" id="hintBtn">💡 İpucu</button>
-      <button class="btn-primary" id="newBtn">✦ Yeni</button>
+      <button class="btn-ghost" id="undoBtn" title="Geri al" aria-label="Geri al">↶</button>
+      <button class="btn-ghost" id="redoBtn" title="İleri al" aria-label="İleri al">↷</button>
+      <button class="btn-ghost" id="resetBtn" title="Temizle" aria-label="Tahtayı temizle">↺</button>
+      <button class="btn-ghost hidden" id="hintBtn" aria-label="İpucu al">💡 İpucu</button>
+      <button class="btn-primary" id="newBtn" aria-label="Yeni bulmaca">✦ Yeni</button>
     </div>
   </section>
 
   <!-- YUVA (Rogue hub) -->
   <section class="screen" id="s-yuva">
-    <div class="topbar"><button class="iconbtn" data-back>‹</button><div class="ttl">Yuva</div>
-      <button class="iconbtn" id="yuvaSettings">⚙</button></div>
+    <div class="topbar"><button class="iconbtn" data-back aria-label="Geri">‹</button><div class="ttl">Yuva</div>
+      <button class="iconbtn" id="yuvaSettings" aria-label="Ayarlar">⚙</button></div>
     <div class="scroll">
       <div id="yuvaContent"></div>
     </div>
@@ -258,25 +261,25 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
 
   <!-- KARAKTER -->
   <section class="screen" id="s-karakter">
-    <div class="topbar"><button class="iconbtn" data-back>‹</button><div class="ttl">Karakter</div></div>
+    <div class="topbar"><button class="iconbtn" data-back aria-label="Geri">‹</button><div class="ttl">Karakter</div></div>
     <div class="scroll"><div id="karakterContent"></div></div>
   </section>
 
   <!-- IPLIKLIK -->
   <section class="screen" id="s-ipliklik">
-    <div class="topbar"><button class="iconbtn" data-back>‹</button><div class="ttl">İpliklik</div></div>
+    <div class="topbar"><button class="iconbtn" data-back aria-label="Geri">‹</button><div class="ttl">İpliklik</div></div>
     <div class="scroll"><div id="ipliklikContent"></div></div>
   </section>
 
   <!-- DIKEN SOZLESMESI -->
   <section class="screen" id="s-diken">
-    <div class="topbar"><button class="iconbtn" data-back>‹</button><div class="ttl">Diken Sözleşmesi</div></div>
+    <div class="topbar"><button class="iconbtn" data-back aria-label="Geri">‹</button><div class="ttl">Diken Sözleşmesi</div></div>
     <div class="scroll"><div id="dikenContent"></div></div>
   </section>
 
   <!-- ROGUE MAP -->
   <section class="screen" id="s-rogue-map">
-    <div class="topbar"><button class="iconbtn" data-back>‹</button><div class="ttl" id="rogueMapTitle">Koşu</div></div>
+    <div class="topbar"><button class="iconbtn" data-back aria-label="Geri">‹</button><div class="ttl" id="rogueMapTitle">Koşu</div></div>
     <div class="scroll"><div id="rogueMapContent"></div></div>
   </section>
 </div>
@@ -1562,7 +1565,7 @@ function startJourney(i){
 function renderToggles(){
   const togglesHtml=TOGGLE_DEFS.map(d=>`
     <div class="toggle-row"><div class="lbl"><b>${d.t}</b><span>${d.d}</span></div>
-    <div class="sw ${settings[d.k]?'on':''}" data-tog="${d.k}"></div></div>`).join("");
+    <div class="sw ${settings[d.k]?'on':''}" data-tog="${d.k}" role="switch" aria-checked="${settings[d.k]?'true':'false'}" aria-label="${d.t}" tabindex="0"></div></div>`).join("");
   const checkModes=[
     {v:"off",t:"Kapalı"},
     {v:"mistakes-only",t:"Sadece hata"},
@@ -1576,7 +1579,9 @@ function renderToggles(){
 $("toggleList").addEventListener("click",e=>{
   const sw=e.target.closest("[data-tog]");
   if(sw){
-    const k=sw.dataset.tog;settings[k]=!settings[k];saveSettings();sw.classList.toggle("on",settings[k]);
+    const k=sw.dataset.tog;settings[k]=!settings[k];saveSettings();
+    sw.classList.toggle("on",settings[k]);
+    sw.setAttribute("aria-checked",settings[k]?"true":"false");
     if($("s-game").classList.contains("active")){applyHintVisibility();applyUndoVisibility();updateClueStates();render();}
     return;
   }
@@ -1587,6 +1592,13 @@ $("toggleList").addEventListener("click",e=>{
     settings[key]=val;saveSettings();
     seg.querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.val===val));
     if($("s-game").classList.contains("active")){updateClueStates();}
+  }
+});
+// Switch keyboard support (Enter / Space)
+$("toggleList").addEventListener("keydown",e=>{
+  if(e.key==="Enter"||e.key===" "){
+    const sw=e.target.closest("[data-tog]");
+    if(sw){e.preventDefault();sw.click();}
   }
 });
 
