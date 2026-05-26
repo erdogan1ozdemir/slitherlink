@@ -83,7 +83,7 @@ Her plan tamamlanınca:
 | Plan | Durum | Commit |
 |------|-------|--------|
 | 01 — Sessiz İplik tokens | ✓ tamamlandı | f7d25f3 |
-| 02 — Quick fixes + Slitherlink QoL + How-to-play + Backup code | yazıldı, exec hazır | – |
+| 02 — Quick fixes + Slitherlink QoL + How-to-play + Backup code | ✓ tamamlandı | 11911ac |
 | 03 — PWA setup | bekliyor | – |
 | 04 — Persistence v2 | bekliyor | – |
 | 05 — Modular refactor | bekliyor | – |

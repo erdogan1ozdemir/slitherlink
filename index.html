@@ -101,7 +101,8 @@ svg{width:100%;height:auto;display:block;touch-action:manipulation;}
 .chip{background:var(--panel);border:1px solid var(--hairline);border-radius:999px;padding:6px 13px;font-family:var(--font-mono);font-weight:700;font-size:12px;display:flex;gap:8px;align-items:center;font-variant-numeric:tabular-nums;}
 .chip small{color:var(--muted);font-weight:500;font-size:9px;letter-spacing:.22em;text-transform:uppercase;font-family:var(--font-mono);}
 .controls{display:flex;gap:10px;justify-content:center;padding:14px 16px calc(8px + var(--safe-b));}
-.controls button{font-family:var(--font-body);font-weight:700;font-size:14px;padding:13px 16px;border-radius:14px;border:1px solid var(--hairline);cursor:pointer;flex:1;max-width:150px;letter-spacing:.01em;}
+.controls button{font-family:var(--font-body);font-weight:700;font-size:14px;padding:13px 12px;border-radius:14px;border:1px solid var(--hairline);cursor:pointer;flex:1;max-width:150px;letter-spacing:.01em;min-width:44px;}
+.controls button:disabled{opacity:.3;cursor:not-allowed;}
 .btn-primary{background:var(--ink);color:var(--bg);border:none!important;}
 .btn-ghost{background:var(--panel);color:var(--ink);}
 .controls button:active{transform:translateY(2px);}
@@ -145,6 +146,21 @@ input[type=range]{flex:1;accent-color:var(--ink);}
 .sw.on{background:var(--ink);}
 .sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--bg);transition:.2s;}
 .sw.on::after{left:23px;background:var(--bg);}
+.seg{display:flex;gap:4px;background:var(--bg);border:1px solid var(--hairline);border-radius:10px;padding:3px;}
+.seg button{flex:1;background:transparent;border:none;color:var(--muted);padding:6px 8px;font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border-radius:7px;}
+.seg button.sel{background:var(--ink);color:var(--bg);}
+.how-sheet h2{margin:0 0 14px;}
+.tabs{display:flex;gap:4px;overflow-x:auto;padding-bottom:8px;border-bottom:1px solid var(--hairline);margin-bottom:14px;-webkit-overflow-scrolling:touch;}
+.tab{flex-shrink:0;background:transparent;border:none;color:var(--muted);padding:8px 12px;font-family:var(--font-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;border-radius:8px;}
+.tab.sel{background:var(--ink);color:var(--bg);}
+.tab-body{font-family:var(--font-body);line-height:1.6;color:var(--ink);font-size:14.5px;}
+.tab-body h3{font-family:var(--font-serif);font-weight:600;font-size:18px;margin:0 0 8px;color:var(--ink);letter-spacing:-.01em;}
+.tab-body h4{font-family:var(--font-serif);font-weight:600;font-size:15px;margin:18px 0 4px;color:var(--accent);}
+.tab-body p{margin:0 0 12px;color:var(--ink-dim);}
+.tab-body ul{margin:6px 0 14px;padding-left:20px;color:var(--ink-dim);}
+.tab-body ul li{margin:4px 0;}
+.tab-body .quote{font-family:var(--font-serif);font-style:italic;color:var(--accent);border-left:2px solid var(--accent-dim);padding-left:14px;margin:14px 0;}
+.tab-body code{font-family:var(--font-mono);background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;color:var(--accent);}
 .overlay.center{align-items:center;}
 .modal{background:var(--panel-2);border:1px solid var(--hairline);border-radius:24px;padding:32px 26px;max-width:360px;width:calc(100% - 48px);text-align:center;transform:scale(.95);transition:.3s;}
 .overlay.show .modal{transform:none;}
@@ -169,12 +185,13 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
     <div class="topbar"><div class="ttl"></div><button class="iconbtn" id="homeSettings">⚙</button></div>
     <div class="scroll">
       <div class="hero">
-        <div class="kick">cember bulmaca</div>
+        <div class="kick">çember bulmaca</div>
         <h1>Çember</h1>
         <div class="greet" id="greet"></div>
       </div>
       <div class="cards" id="homeCards"></div>
-      <p class="foot-note">Tek ve kapali bir cember ciz. Her sayi, etrafindaki cizgi adedini soyler.</p>
+      <p class="foot-note">Tek ve kapalı bir çember çiz. Her sayı, etrafındaki çizgi adedini söyler.</p>
+      <div style="text-align:center;padding:0 24px 8px;"><button id="howBtn" class="opt" style="background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);">Nasıl Oynanır?</button></div>
     </div>
   </section>
 
@@ -182,25 +199,25 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
   <section class="screen" id="s-setup">
     <div class="topbar"><button class="iconbtn" data-back>‹</button><div class="ttl">Serbest Oyun</div></div>
     <div class="scroll">
-      <div class="section-label">Hazir seviye</div>
+      <div class="section-label">Hazır seviye</div>
       <div class="chips" id="presetChips"></div>
       <div class="section-label">Tahta boyutu</div>
       <div class="chips" id="sizeChips"></div>
-      <div class="section-label">Ipucu yogunlugu <span id="densVal" style="color:var(--ink)"></span></div>
+      <div class="section-label">İpucu yoğunluğu <span id="densVal" style="color:var(--ink)"></span></div>
       <div class="slider-row"><span style="color:var(--muted);font-size:12px">Az</span>
-        <input type="range" id="density" min="35" max="90" value="70">
-        <span style="color:var(--muted);font-size:12px">Cok</span></div>
-      <div class="section-label">Seed (rastgelelik) - bos birak = rastgele</div>
-      <div class="seedrow"><input type="text" id="seedInput" placeholder="orn. merve-01" autocapitalize="off" autocomplete="off">
+        <input type="range" id="density" min="0" max="90" value="70">
+        <span style="color:var(--muted);font-size:12px">Çok</span></div>
+      <div class="section-label">Seed (rastgelelik) — boş bırak = rastgele</div>
+      <div class="seedrow"><input type="text" id="seedInput" placeholder="örn. merve-01" autocapitalize="off" autocomplete="off">
         <button class="opt" id="seedRand">🎲</button></div>
-      <button class="bigbtn" id="startFreeBtn">Baslat</button>
+      <button class="bigbtn" id="startFreeBtn">Başlat</button>
     </div>
   </section>
 
   <!-- JOURNEY -->
   <section class="screen" id="s-journey">
     <div class="topbar"><button class="iconbtn" data-back>‹</button><div class="ttl">Yolculuk</div>
-      <button class="iconbtn" id="journeyReset" title="Sifirla">↺</button></div>
+      <button class="iconbtn" id="journeyReset" title="Sıfırla">↺</button></div>
     <div class="scroll"><div class="level-list" id="levelList"></div></div>
   </section>
 
@@ -209,13 +226,15 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
     <div class="topbar"><button class="iconbtn" data-back>‹</button><div class="ttl" id="gameTitle">Bulmaca</div>
       <button class="iconbtn" id="gameSettings">⚙</button></div>
     <div class="gamebar">
-      <div class="chip"><small>Sure</small><span id="timer">0:00</span></div>
-      <div class="chip" id="hintChip"><small>Ipucu</small><span id="hintsUsed">0</span></div>
+      <div class="chip"><small>Süre</small><span id="timer">0:00</span></div>
+      <div class="chip" id="hintChip"><small>İpucu</small><span id="hintsUsed">0</span></div>
     </div>
     <div class="board-wrap"><div class="board-card"><svg id="board"></svg></div></div>
     <div class="controls">
-      <button class="btn-ghost" id="resetBtn">↺ Temizle</button>
-      <button class="btn-ghost hidden" id="hintBtn">💡 Ipucu</button>
+      <button class="btn-ghost" id="undoBtn" title="Geri al">↶</button>
+      <button class="btn-ghost" id="redoBtn" title="İleri al">↷</button>
+      <button class="btn-ghost" id="resetBtn" title="Temizle">↺</button>
+      <button class="btn-ghost hidden" id="hintBtn">💡 İpucu</button>
       <button class="btn-primary" id="newBtn">✦ Yeni</button>
     </div>
   </section>
@@ -226,8 +245,41 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
   <div class="sheet">
     <h2>Ayarlar</h2>
     <div id="toggleList"></div>
+    <div style="padding:14px 0 0;display:flex;flex-direction:column;gap:8px;">
+      <button id="howBtnSettings" class="opt" style="width:100%;background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);">Nasıl Oynanır?</button>
+      <button id="backupExportBtn" class="opt" style="width:100%;background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);">Yedek Kodu Üret</button>
+      <button id="backupImportBtn" class="opt" style="width:100%;background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);">Yedek Yükle</button>
+    </div>
     <p class="foot-note" style="text-align:left;padding:14px 0 0;">
-      iPhone'da tam ekran: Safari'de paylas butonu → "Ana Ekrana Ekle". Oyun uygulama gibi tam ekran acilir.</p>
+      iPhone'da tam ekran: Safari'de paylaş butonu → "Ana Ekrana Ekle". Oyun uygulama gibi tam ekran açılır.</p>
+  </div>
+</div>
+
+<!-- HOW TO PLAY -->
+<div class="overlay" id="howOverlay">
+  <div class="sheet how-sheet">
+    <h2>Nasıl Oynanır</h2>
+    <div class="tabs" id="howTabs">
+      <button class="tab sel" data-tab="rules">Kurallar</button>
+      <button class="tab" data-tab="modes">Modlar</button>
+      <button class="tab" data-tab="rogue">Rogue</button>
+      <button class="tab" data-tab="meta">Geliştirme</button>
+      <button class="tab" data-tab="backup">Yedek</button>
+    </div>
+    <div class="tab-body" id="howBody"></div>
+  </div>
+</div>
+
+<!-- BACKUP -->
+<div class="overlay center" id="backupOverlay">
+  <div class="modal" style="max-width:420px;width:calc(100% - 32px);text-align:left;">
+    <h2 id="backupTitle">Yedek Kodu</h2>
+    <p id="backupMsg">Bu kodu kopyala ve güvenli bir yere kaydet. Geri yüklemek için aynı kodu yapıştır.</p>
+    <textarea id="backupTextarea" style="width:100%;height:160px;background:var(--bg);color:var(--ink);border:1px solid var(--hairline);border-radius:12px;padding:12px;font-family:var(--font-mono);font-size:11px;line-height:1.4;resize:none;margin:14px 0 12px;word-break:break-all;"></textarea>
+    <div class="row">
+      <button class="btn-ghost" id="backupCancel">İptal</button>
+      <button class="btn-primary" id="backupAction" style="border:none">Kopyala</button>
+    </div>
   </div>
 </div>
 
@@ -238,10 +290,10 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
     <h2 id="winTitle">Aferin!</h2>
     <p id="winMsg"></p>
     <div class="stats">
-      <div class="stat"><b id="winTime">0:00</b><small>Sure</small></div>
-      <div class="stat"><b id="winHints">0</b><small>Ipucu</small></div>
+      <div class="stat"><b id="winTime">0:00</b><small>Süre</small></div>
+      <div class="stat"><b id="winHints">0</b><small>İpucu</small></div>
     </div>
-    <div class="row"><button class="btn-ghost" id="winHome">Ana menu</button>
+    <div class="row"><button class="btn-ghost" id="winHome">Ana menü</button>
       <button class="btn-primary" id="winNext" style="border:none">Devam ›</button></div>
   </div>
 </div>
@@ -252,7 +304,7 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
     <div class="big">🩶</div>
     <h2 id="startTitle">Merhaba</h2>
     <p id="startMsg"></p>
-    <button class="btn-primary" id="startBtn" style="border:none;margin-top:10px;">Basla</button>
+    <button class="btn-primary" id="startBtn" style="border:none;margin-top:10px;">Başla</button>
   </div>
 </div>
 
@@ -264,9 +316,10 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
    ========================================================================= */
 const CONFIG = {
   name: "Merve",
-  greet: "{name} icin",
-  startMsg: "Bunu senin icin yaptim. Tek bir cember ciz, kaybolma 🩶",
-  winMsg:   "Yine basardin. Seninle her bulmaca daha guzel.",
+  intimateName: "Yarim",
+  greet: "{name} için",
+  startMsg: "Bunu senin için yaptım. Tek bir çember çiz, kaybolma 🩶",
+  winMsg:   "Yine başardın. Seninle her bulmaca daha güzel.",
 };
 
 /* =========================================================================
@@ -314,25 +367,116 @@ function makePuzzle(R,C,keepRatio,rng){
 /* =========================================================================
    5) AYARLAR
    ========================================================================= */
-const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true};
+const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only"};
 let settings=Object.assign({},DEFAULT_SETTINGS,store.get(KEYS.settings,{}));
 function saveSettings(){store.set(KEYS.settings,settings);}
 const TOGGLE_DEFS=[
-  {k:"hints",  t:"Ipucu butonu",            d:"Oyunda ipucu butonunu goster"},
-  {k:"fade",   t:"Tamamlanani soluklastir", d:"Cizgisi biten sayiyi soluklastir"},
-  {k:"errors", t:"Hatalari kirmizi goster", d:"Fazla/yanlis cizgide sayiyi kirmizi yap"},
-  {k:"haptics",t:"Titresim",                d:"Dokununca kucuk titresim (destekleyen cihazda)"},
+  {k:"hints",  t:"İpucu butonu",            d:"Oyunda ipucu butonunu göster"},
+  {k:"autoX",  t:"Otomatik çarpı",          d:"Sayı tamamlanınca boş kenarlara çarpı koy"},
+  {k:"fade",   t:"Tamamlananı soluklaştır", d:"Çizgisi biten sayıyı soluklaştır"},
+  {k:"errors", t:"Hataları kırmızı göster", d:"Fazla/yanlış çizgide sayıyı kırmızı yap"},
+  {k:"haptics",t:"Titreşim",                d:"Dokununca küçük titreşim (destekleyen cihazda)"},
 ];
+
+const HOW_CONTENT={
+  rules:`
+    <h3>Çember Kuralları</h3>
+    <p class="quote">Tek ve kapalı bir çember çiz. İplikten kaybolma.</p>
+    <ul>
+      <li>Noktalardan oluşan ızgaranın kenarlarına çizgi çekersin.</li>
+      <li>Hücredeki sayı, o hücrenin etrafındaki çizgi adedini söyler (0-3).</li>
+      <li>Tüm çizilen kenarlar <b>tek ve kapalı</b> bir döngü oluşturmalı.</li>
+      <li>Çizgiler kesişemez, dallanamaz.</li>
+    </ul>
+    <h4>Üç durum</h4>
+    <p>Bir kenara dokun → <b>boş</b> → <b>çizgi</b> → <b>çarpı</b> → boş. Çarpı senin "burada kesin çizgi yok" notun; çözümü etkilemez, akıl yürütmene yardım eder.</p>
+    <h4>Kazanma</h4>
+    <p>Tüm gösterilen sayılar tatmin olduğunda + tüm çizgili kenarlar tek bir kapalı döngü oluşturduğunda kazandın.</p>
+  `,
+  modes:`
+    <h3>Üç Mod</h3>
+    <h4>Serbest Oyun ✦</h4>
+    <p>Boyut (4×4–12×12), ipucu yoğunluğu (%0–%90) ve seed'i sen seçersin. Aynı seed her zaman aynı bulmacayı verir — favoriler için.</p>
+    <h4>Yolculuk ⬢</h4>
+    <p>30 bölümlük lineer kampanya. Zorluk kademeli artar. Her bölümün en iyi süresi tutulur. Yarım kalan bölüm "Devam et" rozetiyle açılır.</p>
+    <h4>Rogue Modu ☠</h4>
+    <p>Sessiz İplik'in en derin modu. Üç diyar, dallanan haritalar, eşyalar, canlar, ve koşular arası kalıcı geliştirme. (Detay için "Rogue" sekmesi.)</p>
+  `,
+  rogue:`
+    <h3>Rogue Modu</h3>
+    <p class="quote">Jedi geceleri ipliği takip eder. Her koşusu yeni bir diyara, eski boncuklarla.</p>
+    <h4>Diyarlar</h4>
+    <p>Üç diyar var: <b>Söğüt Eşiği</b> (sıcak başlangıç), <b>Karanlık İğne</b> (mistik kütüphane), <b>Yıldız Geçidi</b> (kozmik final). Başta sadece Söğüt Eşiği açık; ilerleme ile diğerleri açılır.</p>
+    <h4>Koşu yapısı</h4>
+    <ul>
+      <li><b>5 kat</b>, her katta 2-3 düğüm, dallanan harita</li>
+      <li>Düğüm tipleri: <b>Bulmaca</b>, <b>Elit</b>, <b>Sandık</b>, <b>Dinlenme</b>, <b>Olay</b>, <b>Patron</b></li>
+      <li>Başta <b>3 can</b>. Her hata 1 can götürür. Canlar biterse koşu son bulur (geri dönüş yok).</li>
+      <li>Çözdüğün her bulmaca İplik biriktirir; bossu yenince Boncuk düşer.</li>
+    </ul>
+    <h4>Eşyalar (Relic)</h4>
+    <p>Sandık ve olaylardan gelir. Sadece o koşu boyunca taşırsın. Örnek: <i>Söğüt Yaprağı</i> (ilk hata cezasız), <i>Mürekkep Damlası</i> (hint cezasız), <i>Ay Mührü</i> (bir kez geri al).</p>
+    <h4>Mühürlü Hücreler</h4>
+    <p>Diyar ilerledikçe puzzle'lara <b>kısıt mühürleri</b> eklenir: donmuş hücreler (etrafına çizgi konmaz), "2 konmaz" (sayı 2 değil), sis (sayı gizli), ikiz (iki hücre aynı sayı), lanetli (loop kesin çevreler), yankı, kayan...</p>
+    <h4>Mum Modu (opsiyonel)</h4>
+    <p>Zaman baskısı. Koşu 10 dakika ile başlar, her kat +90s. Düğümler süre tüketir. Süre biterse koşu son bulur ama kazandığın İplik kalır.</p>
+    <h4>Patron</h4>
+    <p>Her diyarın kendi patronu var: <i>Yün Bekçisi</i> (sessiz), <i>Sessiz Kütüphaneci</i> (uyandırırsan zaman daralır), <i>Yıldız İplikçisi</i> (3 ardışık bulmaca).</p>
+  `,
+  meta:`
+    <h3>Kalıcı Geliştirme</h3>
+    <p class="quote">Koşu biter; iplik kalır.</p>
+    <h4>Yuva Ekranı</h4>
+    <p>Rogue moduna girince ilk açılan yer. Jedi'nin koşular arası dinlendiği yer. Diyar seçimi, istatistikler, ve aşağıdaki ekranlara giriş.</p>
+    <h4>Karakter Ekranı</h4>
+    <p>Jedi'nin kartı: avatar, istatistik, kazanılmış boncuklar, dizilen boncuklar, kazanılmış başarımlar.</p>
+    <h4>İpliklik</h4>
+    <p>Kalıcı pasif yetenekler. <b>İplik</b> ile açılır. 8 yetenek; her birinin iki vibrasyonu (ücretsiz geçiş).</p>
+    <h4>Diken Sözleşmesi</h4>
+    <p>Kendi zorluğunu seç. 10 modifier (Daralma, Kör Pusula, Kırılgan İplik...) ranklarla. Toplam <b>İz</b> = koşu sonu ödülü çarpanı.</p>
+    <h4>Pusula Yıldızı</h4>
+    <p>Her diyar kendi yıldız progression'ı taşır. Boss yenildikçe yıldız artar, yeni içerik (event tipleri, relic kategorileri, constraint tile'lar) açılır.</p>
+    <h4>Para birimleri</h4>
+    <ul>
+      <li><b>İplik</b> — her koşuda kazanılır, İpliklik talent'leri için</li>
+      <li><b>Boncuk</b> — boss yenince düşer, Boncuk Dizimi (charm) için</li>
+      <li><b>Yıldız Tozu</b> — Diken Sözleşmesi koşularından, kozmetik için</li>
+    </ul>
+  `,
+  backup:`
+    <h3>Yedek Kodu</h3>
+    <p class="quote">Tüm emeğin bir kodda. Kopyala, sakla, gerektiğinde geri yükle.</p>
+    <h4>Ne işe yarar?</h4>
+    <p>Tarayıcı geçmişini temizlesen, telefonun bozulsa, yeni bir cihaza geçsen — tüm ilerlemen kaybolmaz. Yedek kodunu kopyalayıp Notes/Mail/Drive'a kaydedersin; istediğin zaman geri yükleyebilirsin.</p>
+    <h4>Üretme</h4>
+    <p>Ayarlar → <b>Yedek Kodu Üret</b>. Açılan modalda uzun bir kod görünür (~5-50KB). "Kopyala" butonuna bas, istediğin yere yapıştır.</p>
+    <h4>Yükleme</h4>
+    <p>Ayarlar → <b>Yedek Yükle</b>. Açılan modale kodu yapıştır, "Yükle" de. <b>Mevcut tüm ilerlemenin üzerine yazılır</b> — önce mevcudunu yedeklemeyi unutma.</p>
+    <h4>Kod neyi içerir?</h4>
+    <ul>
+      <li>Ayarlar (toggle'lar)</li>
+      <li>Yolculuk ilerlemesi + en iyi süreler</li>
+      <li>Yarım kalan oyunlar (Serbest + Yolculuk + Rogue)</li>
+      <li>Rogue meta progress (İplik, Boncuk, talent'ler, achievement'lar, Pusula Yıldızları)</li>
+    </ul>
+    <h4>Güvenli mi?</h4>
+    <p>Kod base64 ile şifrelenmiştir, sadece bu uygulama tanır. Başka kimse okuyamaz ya da değiştiremez. Kaybolursa veri kaybı dışında risk yok.</p>
+  `,
+};
+
+function renderHowTab(tab){
+  $("howBody").innerHTML=HOW_CONTENT[tab]||"";
+}
 
 /* =========================================================================
    6) YOLCULUK (level / dungeon iskeleti) - deterministik uretim
    ========================================================================= */
 const FLOORS=[
-  {name:"Giris Holu",     size:4, keep:.85},
+  {name:"Giriş Holü",     size:4, keep:.85},
   {name:"Sessiz Koridor", size:5, keep:.78},
-  {name:"Golge Galerisi", size:6, keep:.72},
-  {name:"Kayip Kutuphane",size:7, keep:.66},
-  {name:"Kristal Magara", size:8, keep:.60},
+  {name:"Gölge Galerisi", size:6, keep:.72},
+  {name:"Kayıp Kütüphane",size:7, keep:.66},
+  {name:"Kristal Mağara", size:8, keep:.60},
   {name:"Zirve",          size:9, keep:.55},
 ];
 const LEVELS_PER_FLOOR=5;
@@ -341,7 +485,7 @@ function levelParams(i){
   const fi=Math.floor(i/LEVELS_PER_FLOOR), within=i%LEVELS_PER_FLOOR;
   const f=FLOORS[Math.min(fi,FLOORS.length-1)];
   const keep=Math.max(.4, f.keep - within*0.03);
-  return {index:i, floor:fi, name:f.name, R:f.size, C:f.size, keep, seed:"merve-journey-"+i, title:"Bolum "+(i+1)};
+  return {index:i, floor:fi, name:f.name, R:f.size, C:f.size, keep, seed:"merve-journey-"+i, title:"Bölüm "+(i+1)};
 }
 function journeyProgress(){return store.get(KEYS.jrnProg,{unlocked:0,times:{}});}
 
@@ -351,6 +495,7 @@ function journeyProgress(){return store.get(KEYS.jrnProg,{unlocked:0,times:{}});
 let P=null,hState=null,vState=null,solved=false,hints=0;
 let elapsed=0,timerId=null,timerBase=0;
 let ctx={mode:"free",levelIndex:null};
+let undoStack=[],redoStack=[];
 const $=id=>document.getElementById(id);
 const boardEl=$("board");
 
@@ -358,6 +503,7 @@ function buzz(ms){if(settings.haptics&&navigator.vibrate){try{navigator.vibrate(
 
 function startGame(puzzle,context,restore){
   P=puzzle;ctx=context;solved=false;
+  undoStack=[];redoStack=[];
   if(restore){hState=restore.hState;vState=restore.vState;hints=restore.hints||0;elapsed=restore.elapsed||0;}
   else{hState=Array.from({length:P.R+1},()=>Array(P.C).fill(0));
        vState=Array.from({length:P.R},()=>Array(P.C+1).fill(0));hints=0;elapsed=0;}
@@ -388,11 +534,74 @@ function render(){
   for(let r=0;r<=g.R;r++)for(let c=0;c<g.C;c++)hit(dx(c),dy(r),dx(c+1),dy(r),"h",r,c);
   for(let r=0;r<g.R;r++)for(let c=0;c<=g.C;c++)hit(dx(c),dy(r),dx(c),dy(r+1),"v",r,c);
   updateClueStates();
+  updateUndoRedoButtons();
 }
-function toggle(k,r,c){if(solved)return;const arr=k==="h"?hState:vState;arr[r][c]=(arr[r][c]+1)%3;buzz(8);render();autosave();checkWin();}
+function autoXAfterClue(r,c){
+  if(!settings.autoX)return;
+  if(!P||r<0||r>=P.R||c<0||c>=P.C)return;
+  const n=P.clue[r][c];if(n<0)return;
+  const lc=lineCount(r,c);
+  if(lc===n){
+    if(hState[r][c]===0)hState[r][c]=2;
+    if(hState[r+1][c]===0)hState[r+1][c]=2;
+    if(vState[r][c]===0)vState[r][c]=2;
+    if(vState[r][c+1]===0)vState[r][c+1]=2;
+  }
+}
+function applyAutoXAround(r,c){
+  for(const[dr,dc]of[[0,0],[-1,0],[0,-1],[-1,-1]]){
+    autoXAfterClue(r+dr,c+dc);
+  }
+}
+function snapshotState(){
+  return {h:hState.map(row=>row.slice()),v:vState.map(row=>row.slice())};
+}
+function restoreState(s){
+  hState=s.h.map(row=>row.slice());
+  vState=s.v.map(row=>row.slice());
+}
+function toggle(k,r,c){
+  if(solved)return;
+  undoStack.push(snapshotState());
+  if(undoStack.length>200)undoStack.shift();
+  redoStack=[];
+  const arr=k==="h"?hState:vState;
+  arr[r][c]=(arr[r][c]+1)%3;
+  if(settings.autoX){
+    if(k==="h"){applyAutoXAround(r,c);applyAutoXAround(r,c+1);}
+    else{applyAutoXAround(r,c);applyAutoXAround(r+1,c);}
+  }
+  buzz(8);render();autosave();checkWin();
+}
+function undo(){
+  if(!undoStack.length||solved)return;
+  redoStack.push(snapshotState());
+  restoreState(undoStack.pop());
+  buzz(6);render();autosave();
+}
+function redo(){
+  if(!redoStack.length||solved)return;
+  undoStack.push(snapshotState());
+  restoreState(redoStack.pop());
+  buzz(6);render();autosave();
+}
 function lineCount(r,c){return (hState[r][c]===1)+(hState[r+1][c]===1)+(vState[r][c]===1)+(vState[r][c+1]===1);}
 function decided(r,c){return [hState[r][c],hState[r+1][c],vState[r][c],vState[r][c+1]].every(s=>s!==0);}
-function updateClueStates(){boardEl.querySelectorAll("text.clue").forEach(t=>{const r=+t.dataset.r,c=+t.dataset.c,n=P.clue[r][c],lc=lineCount(r,c);t.classList.remove("done","err");if(settings.errors&&(lc>n||(decided(r,c)&&lc!==n)))t.classList.add("err");else if(settings.fade&&lc===n)t.classList.add("done");});}
+function updateClueStates(){
+  boardEl.querySelectorAll("text.clue").forEach(t=>{
+    const r=+t.dataset.r,c=+t.dataset.c,n=P.clue[r][c],lc=lineCount(r,c);
+    t.classList.remove("done","err");
+    const mode=settings.autoCheckMode||"mistakes-only";
+    let isErr=false;
+    if(mode==="live"){
+      isErr=(lc>n)||(decided(r,c)&&lc!==n);
+    }else if(mode==="mistakes-only"){
+      isErr=(lc>n)||(decided(r,c)&&lc!==n);
+    }
+    if(settings.errors&&isErr)t.classList.add("err");
+    else if(settings.fade&&lc===n)t.classList.add("done");
+  });
+}
 
 /* kazanma */
 function checkWin(){const R=P.R,C=P.C;
@@ -420,12 +629,27 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
 }
 
 /* ipucu / temizle */
-function hint(){if(solved)return;const cand=[];
+function hint(){
+  if(solved)return;
+  undoStack.push(snapshotState());
+  if(undoStack.length>200)undoStack.shift();
+  redoStack=[];
+  const cand=[];
   for(let r=0;r<=P.R;r++)for(let c=0;c<P.C;c++)if(P.solH[r][c]===1&&hState[r][c]!==1)cand.push(["h",r,c]);
   for(let r=0;r<P.R;r++)for(let c=0;c<=P.C;c++)if(P.solV[r][c]===1&&vState[r][c]!==1)cand.push(["v",r,c]);
-  if(!cand.length)return;const[k,r,c]=cand[(Math.random()*cand.length)|0];(k==="h"?hState:vState)[r][c]=1;
-  hints++;$("hintsUsed").textContent=hints;render();autosave();checkWin();}
-function resetBoard(){hState=Array.from({length:P.R+1},()=>Array(P.C).fill(0));vState=Array.from({length:P.R},()=>Array(P.C+1).fill(0));solved=false;render();autosave();}
+  if(!cand.length)return;
+  const[k,r,c]=cand[(Math.random()*cand.length)|0];
+  (k==="h"?hState:vState)[r][c]=1;
+  hints++;$("hintsUsed").textContent=hints;render();autosave();checkWin();
+}
+function resetBoard(){
+  undoStack.push(snapshotState());
+  if(undoStack.length>200)undoStack.shift();
+  redoStack=[];
+  hState=Array.from({length:P.R+1},()=>Array(P.C).fill(0));
+  vState=Array.from({length:P.R},()=>Array(P.C+1).fill(0));
+  solved=false;render();autosave();
+}
 
 /* sure */
 function fmt(s){const m=(s/60)|0,ss=s%60;return m+":"+(ss<10?"0":"")+ss;}
@@ -447,9 +671,9 @@ function renderHome(){
   const freeResume=loadResume(KEYS.freeCur), jrnResume=loadResume(KEYS.jrnCur);
   const prog=journeyProgress();
   const cards=[
-    {id:"free",emo:"✦",h:"Serbest Oyun",p:"Boyut, yogunluk ve seed sec",resume:freeResume},
-    {id:"journey",emo:"⬢",h:"Yolculuk",p:prog.unlocked+" / "+TOTAL_LEVELS+" bolum acildi",resume:jrnResume},
-    {id:"rogue",emo:"☠",h:"Rogue Modu",p:"Yakinda - canlar, esyalar, rastgele kat",locked:true},
+    {id:"free",emo:"✦",h:"Serbest Oyun",p:"Boyut, yoğunluk ve seed seç",resume:freeResume},
+    {id:"journey",emo:"⬢",h:"Yolculuk",p:prog.unlocked+" / "+TOTAL_LEVELS+" bölüm açıldı",resume:jrnResume},
+    {id:"rogue",emo:"☠",h:"Rogue Modu",p:"Yakında — canlar, eşyalar, rastgele kat",locked:true},
   ];
   $("homeCards").innerHTML=cards.map(c=>`
     <div class="card ${c.locked?'locked':''}" data-card="${c.id}">
@@ -504,13 +728,35 @@ function startJourney(i){
    9) AYAR PANELI
    ========================================================================= */
 function renderToggles(){
-  $("toggleList").innerHTML=TOGGLE_DEFS.map(d=>`
+  const togglesHtml=TOGGLE_DEFS.map(d=>`
     <div class="toggle-row"><div class="lbl"><b>${d.t}</b><span>${d.d}</span></div>
     <div class="sw ${settings[d.k]?'on':''}" data-tog="${d.k}"></div></div>`).join("");
+  const checkModes=[
+    {v:"off",t:"Kapalı"},
+    {v:"mistakes-only",t:"Sadece hata"},
+    {v:"live",t:"Canlı"},
+  ];
+  const segHtml=`
+    <div class="toggle-row"><div class="lbl"><b>Hata kontrolü</b><span>Yanlış kenarları ne zaman göster</span></div>
+    <div class="seg" data-seg="autoCheckMode">${checkModes.map(m=>`<button data-val="${m.v}" class="${settings.autoCheckMode===m.v?'sel':''}">${m.t}</button>`).join('')}</div></div>`;
+  $("toggleList").innerHTML=togglesHtml+segHtml;
 }
-$("toggleList").addEventListener("click",e=>{const sw=e.target.closest("[data-tog]");if(!sw)return;
-  const k=sw.dataset.tog;settings[k]=!settings[k];saveSettings();sw.classList.toggle("on",settings[k]);
-  if($("s-game").classList.contains("active")){applyHintVisibility();updateClueStates();}});
+$("toggleList").addEventListener("click",e=>{
+  const sw=e.target.closest("[data-tog]");
+  if(sw){
+    const k=sw.dataset.tog;settings[k]=!settings[k];saveSettings();sw.classList.toggle("on",settings[k]);
+    if($("s-game").classList.contains("active")){applyHintVisibility();updateClueStates();render();}
+    return;
+  }
+  const segBtn=e.target.closest("[data-val]");
+  if(segBtn){
+    const seg=segBtn.closest("[data-seg]");
+    const key=seg.dataset.seg;const val=segBtn.dataset.val;
+    settings[key]=val;saveSettings();
+    seg.querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.val===val));
+    if($("s-game").classList.contains("active")){updateClueStates();}
+  }
+});
 
 /* =========================================================================
    10) KONFETI (gri tonlu)
@@ -524,7 +770,7 @@ function cloop(){cx.clearRect(0,0,cv.width,cv.height);let alive=false;for(const 
 /* =========================================================================
    11) OLAY BAGLAMA
    ========================================================================= */
-$("startTitle").textContent="Merhaba "+CONFIG.name;
+$("startTitle").textContent="Merhaba "+CONFIG.intimateName;
 $("startMsg").textContent=CONFIG.startMsg;
 $("winTitle").textContent="Aferin "+CONFIG.name;
 $("winMsg").textContent=CONFIG.winMsg;
@@ -542,17 +788,125 @@ $("density").addEventListener("input",e=>{setupDens=+e.target.value;$("densVal")
 $("seedRand").addEventListener("click",()=>{$("seedInput").value="merve-"+(Math.floor(Math.random()*900)+100);});
 $("startFreeBtn").addEventListener("click",startFree);
 $("levelList").addEventListener("click",e=>{const l=e.target.closest("[data-level]");if(!l||l.dataset.level==="")return;startJourney(+l.dataset.level);});
-$("journeyReset").addEventListener("click",()=>{if(confirm("Yolculuk ilerlemesi sifirlansin mi?")){store.del(KEYS.jrnProg);store.del(KEYS.jrnCur);renderJourney();}});
+$("journeyReset").addEventListener("click",()=>{if(confirm("Yolculuk ilerlemesi sıfırlansın mı?")){store.del(KEYS.jrnProg);store.del(KEYS.jrnCur);renderJourney();}});
 $("newBtn").addEventListener("click",()=>{if(ctx.mode==="journey")startJourney(ctx.levelIndex);else startFree();});
+$("undoBtn").addEventListener("click",undo);
+$("redoBtn").addEventListener("click",redo);
 $("resetBtn").addEventListener("click",resetBoard);
 $("hintBtn").addEventListener("click",hint);
+function updateUndoRedoButtons(){
+  $("undoBtn").disabled=!undoStack.length||solved;
+  $("redoBtn").disabled=!redoStack.length||solved;
+}
 $("homeSettings").addEventListener("click",()=>{renderToggles();$("settingsOverlay").classList.add("show");});
 $("gameSettings").addEventListener("click",()=>{renderToggles();$("settingsOverlay").classList.add("show");});
 $("settingsOverlay").addEventListener("click",e=>{if(e.target.id==="settingsOverlay")$("settingsOverlay").classList.remove("show");});
 $("winHome").addEventListener("click",()=>{$("winOverlay").classList.remove("show");renderHome();showScreen("s-home");});
 $("winNext").addEventListener("click",()=>{$("winOverlay").classList.remove("show");if(ctx.mode==="journey")startJourney(ctx.levelIndex+1);else startFree();});
+function openHow(){renderHowTab("rules");$("howTabs").querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("sel",i===0));$("howOverlay").classList.add("show");}
+$("howBtn")?.addEventListener("click",openHow);
+$("howBtnSettings")?.addEventListener("click",()=>{$("settingsOverlay").classList.remove("show");setTimeout(openHow,260);});
+$("howTabs").addEventListener("click",e=>{const t=e.target.closest(".tab");if(!t)return;$("howTabs").querySelectorAll(".tab").forEach(x=>x.classList.toggle("sel",x===t));renderHowTab(t.dataset.tab);});
+$("howOverlay").addEventListener("click",e=>{if(e.target.id==="howOverlay")$("howOverlay").classList.remove("show");});
+$("backupOverlay").addEventListener("click",e=>{if(e.target.id==="backupOverlay")$("backupOverlay").classList.remove("show");});
+$("backupAction").addEventListener("click",handleBackupAction);
+$("backupCancel").addEventListener("click",()=>$("backupOverlay").classList.remove("show"));
+$("backupExportBtn")?.addEventListener("click",openBackupExport);
+$("backupImportBtn")?.addEventListener("click",openBackupImport);
+
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&$("s-game").classList.contains("active"))autosave();});
 window.addEventListener("pagehide",()=>{if($("s-game").classList.contains("active"))autosave();});
+
+const BACKUP_PREFIX="CEMBER-v1:";
+const BACKUP_KEYS=[KEYS.settings,KEYS.freeCur,KEYS.jrnProg,KEYS.jrnCur,KEYS.stats];
+function backupCollect(){
+  const data={v:1,t:Date.now(),keys:{}};
+  for(const k of BACKUP_KEYS){
+    const v=store.get(k,null);
+    if(v!==null)data.keys[k]=v;
+  }
+  return data;
+}
+function backupEncode(data){
+  try{
+    const json=JSON.stringify(data);
+    const b64=btoa(unescape(encodeURIComponent(json)));
+    return BACKUP_PREFIX+b64;
+  }catch(e){return null;}
+}
+function backupDecode(code){
+  if(!code)return {error:"empty"};
+  if(!code.startsWith(BACKUP_PREFIX))return {error:"prefix"};
+  try{
+    const b64=code.slice(BACKUP_PREFIX.length).trim();
+    const json=decodeURIComponent(escape(atob(b64)));
+    const data=JSON.parse(json);
+    if(typeof data!=="object"||!data.keys)return {error:"format"};
+    if(data.v&&data.v>1)return {error:"version-newer"};
+    return {data};
+  }catch(e){return {error:"corrupted",detail:e.message};}
+}
+function backupRestore(data){
+  if(!data||!data.keys||typeof data.keys!=="object")return false;
+  for(const k of BACKUP_KEYS){
+    if(data.keys[k]!==undefined)store.set(k,data.keys[k]);
+    else store.del(k);
+  }
+  return true;
+}
+
+let backupMode="export";
+function openBackupExport(){
+  backupMode="export";
+  const code=backupEncode(backupCollect())||"(kod üretilemedi)";
+  $("backupTitle").textContent="Yedek Kodu Üret";
+  $("backupMsg").textContent="Aşağıdaki kodu kopyala ve güvenli bir yere kaydet (Notes, Mail, Drive). Geri yüklemek için aynı kodu kullanırsın.";
+  $("backupTextarea").value=code;
+  $("backupTextarea").readOnly=true;
+  $("backupAction").textContent="Kopyala";
+  $("settingsOverlay").classList.remove("show");
+  setTimeout(()=>$("backupOverlay").classList.add("show"),260);
+}
+function openBackupImport(){
+  backupMode="import";
+  $("backupTitle").textContent="Yedek Yükle";
+  $("backupMsg").textContent="Daha önce ürettiğin yedek kodunu yapıştır. Mevcut tüm ilerlemenin üzerine yazılır.";
+  $("backupTextarea").value="";
+  $("backupTextarea").readOnly=false;
+  $("backupTextarea").placeholder="CEMBER-v1:eyJ...";
+  $("backupAction").textContent="Yükle";
+  $("settingsOverlay").classList.remove("show");
+  setTimeout(()=>$("backupOverlay").classList.add("show"),260);
+}
+function handleBackupAction(){
+  if(backupMode==="export"){
+    const ta=$("backupTextarea");ta.select();
+    try{document.execCommand("copy");$("backupAction").textContent="Kopyalandı ✓";setTimeout(()=>{$("backupOverlay").classList.remove("show");$("backupAction").textContent="Kopyala";},900);}
+    catch(e){alert("Kopyalama başarısız. Manuel olarak seçip kopyala.");}
+  }else{
+    const code=$("backupTextarea").value.trim();
+    if(!code){alert("Lütfen bir kod yapıştır.");return;}
+    const result=backupDecode(code);
+    if(result.error){
+      const msgs={
+        "empty":"Kod boş görünüyor.",
+        "prefix":"Kod 'CEMBER-v1:' ile başlamalı. Doğru kodu yapıştırdığından emin ol.",
+        "format":"Kod yapısı tanınamadı.",
+        "version-newer":"Bu kod daha yeni bir Çember sürümüne ait. Uygulamayı güncelle.",
+        "corrupted":"Kod bozuk: "+(result.detail||"bilinmeyen hata"),
+      };
+      alert(msgs[result.error]||"Kod geçersiz.");
+      return;
+    }
+    const data=result.data;
+    if(!confirm("Mevcut tüm ilerlemenin üzerine yazılacak. Devam edilsin mi?"))return;
+    const ok=backupRestore(data);
+    if(ok){
+      $("backupAction").textContent="Yüklendi ✓";
+      setTimeout(()=>{$("backupOverlay").classList.remove("show");settings=Object.assign({},DEFAULT_SETTINGS,store.get(KEYS.settings,{}));renderHome();showScreen("s-home");$("backupAction").textContent="Yükle";},900);
+    }else{alert("Yükleme başarısız. Kod formatı doğru ama içerik tanınamadı.");}
+  }
+}
 
 renderHome();
 </script>
