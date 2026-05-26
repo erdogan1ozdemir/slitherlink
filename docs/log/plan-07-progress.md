@@ -3,7 +3,7 @@
 - [x] Task 2: src/rogue/realms.js (registry + Söğüt Eşiği)
 - [x] Task 3: src/rogue/relics.js (6 relic + effects)
 - [x] Task 4: src/rogue/events.js (6 event + resolvers)
-- [ ] Task 5: src/rogue/achievements.js (engine + 5 D1 ach)
+- [x] Task 5: src/rogue/achievements.js (engine + 5 D1 ach)
 - [ ] Task 6: Chest modal + relic offer UI
 - [ ] Task 7: Event modal + choice resolver UI
 - [ ] Task 8: Boss → Pusula Yıldızı + winRun + currency
