@@ -8,5 +8,5 @@
 - [x] Task 7: Event modal + choice resolver UI
 - [x] Task 8: Boss → Pusula Yıldızı + winRun + currency
 - [x] Task 9: Achievement notification toast + jediDiary
-- [ ] Task 10: Yuva realm cards real data + D2 lock
+- [x] Task 10: Yuva realm cards real data + D2 lock
 - [ ] Task 11: Final + merge + push

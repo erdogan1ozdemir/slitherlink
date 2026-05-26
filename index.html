@@ -1078,11 +1078,20 @@ function renderHome(){
    ROGUE — Yuva / Karakter / İpliklik / Diken render fonksiyonları
    ========================================================================= */
 function renderYuva(){
-  const realms=[
-    {id:STUB_REALM.id,name:STUB_REALM.name,intro:STUB_REALM.intro,unlocked:true,accent:"--accent-warm"},
-    {id:"sogut-esigi",name:"Söğüt Eşiği",intro:"Yakında — Plan 07'de gelecek",unlocked:false,accent:"--accent-warm"},
-    {id:"karanlik-igne",name:"Karanlık İğne",intro:"Yakında — Plan 08'de gelecek",unlocked:false,accent:"--accent"},
-  ];
+  const realmIds=["sogut-esigi","karanlik-igne","yildiz-gecidi"];
+  const realms=realmIds.map(id=>{
+    const r=REALMS[id]||{id,name:id,intro:"yakında",accent:"--accent"};
+    const stars=meta.realms[id]?.compassStars||0;
+    const unlocked=isRealmUnlocked(id,meta);
+    return {
+      id:r.id,
+      name:r.name,
+      intro:unlocked?(r.intro||""):"kilitli — önceki diyarın patronunu yen",
+      unlocked,
+      accent:r.accent||"--accent",
+      stars,
+    };
+  });
   const activeRun=store.get(KEYS.rogueRun,null);
   const totalRuns=meta.totalStats.runs;
   const totalSolves=meta.totalStats.solves;
@@ -1108,13 +1117,14 @@ function renderYuva(){
           <div class="meta">
             <h3>${r.name}</h3>
             <p>${r.intro}</p>
+            ${r.unlocked&&r.stars>0?`<div style="margin-top:4px;font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;color:var(${r.accent});">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>`:""}
           </div>
           <div class="go">${r.unlocked?'›':'◌'}</div>
         </div>
       `).join("")}
     </div>
     <div style="text-align:center;font-family:var(--font-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);padding:18px 0 14px;">
-      ${totalRuns} koşu · ${totalSolves} çözüm
+      ${totalRuns} koşu · ${totalSolves} çözüm · ${achUnlocked(meta)}/${achTotal()} başarım
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;padding:0 4px;">
       <button class="opt" data-yuva-nav="karakter" style="background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);text-align:left;padding:14px 18px;">
