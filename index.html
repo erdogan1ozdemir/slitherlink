@@ -450,7 +450,7 @@ const idbStore={
 /* =========================================================================
    5) AYARLAR
    ========================================================================= */
-const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true};
+const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true,mumModu:false};
 let settings=Object.assign({},DEFAULT_SETTINGS,store.get(KEYS.settings,{}));
 function saveSettings(){store.set(KEYS.settings,settings);}
 
@@ -481,6 +481,7 @@ const TOGGLE_DEFS=[
   {k:"fade",        t:"Tamamlananı soluklaştır", d:"Çizgisi biten sayıyı soluklaştır"},
   {k:"errors",      t:"Hataları kırmızı göster", d:"Fazla/yanlış çizgide sayıyı kırmızı yap"},
   {k:"haptics",     t:"Titreşim",                d:"Dokununca küçük titreşim (destekleyen cihazda)"},
+  {k:"mumModu",     t:"Mum Modu (Rogue)",        d:"Rogue koşusunda süre baskısı: 10dk + her kat +90s"},
 ];
 
 const HOW_CONTENT={
