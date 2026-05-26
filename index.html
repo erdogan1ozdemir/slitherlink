@@ -149,6 +149,18 @@ input[type=range]{flex:1;accent-color:var(--ink);}
 .seg{display:flex;gap:4px;background:var(--bg);border:1px solid var(--hairline);border-radius:10px;padding:3px;}
 .seg button{flex:1;background:transparent;border:none;color:var(--muted);padding:6px 8px;font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border-radius:7px;}
 .seg button.sel{background:var(--ink);color:var(--bg);}
+.how-sheet h2{margin:0 0 14px;}
+.tabs{display:flex;gap:4px;overflow-x:auto;padding-bottom:8px;border-bottom:1px solid var(--hairline);margin-bottom:14px;-webkit-overflow-scrolling:touch;}
+.tab{flex-shrink:0;background:transparent;border:none;color:var(--muted);padding:8px 12px;font-family:var(--font-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;border-radius:8px;}
+.tab.sel{background:var(--ink);color:var(--bg);}
+.tab-body{font-family:var(--font-body);line-height:1.6;color:var(--ink);font-size:14.5px;}
+.tab-body h3{font-family:var(--font-serif);font-weight:600;font-size:18px;margin:0 0 8px;color:var(--ink);letter-spacing:-.01em;}
+.tab-body h4{font-family:var(--font-serif);font-weight:600;font-size:15px;margin:18px 0 4px;color:var(--accent);}
+.tab-body p{margin:0 0 12px;color:var(--ink-dim);}
+.tab-body ul{margin:6px 0 14px;padding-left:20px;color:var(--ink-dim);}
+.tab-body ul li{margin:4px 0;}
+.tab-body .quote{font-family:var(--font-serif);font-style:italic;color:var(--accent);border-left:2px solid var(--accent-dim);padding-left:14px;margin:14px 0;}
+.tab-body code{font-family:var(--font-mono);background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;color:var(--accent);}
 .overlay.center{align-items:center;}
 .modal{background:var(--panel-2);border:1px solid var(--hairline);border-radius:24px;padding:32px 26px;max-width:360px;width:calc(100% - 48px);text-align:center;transform:scale(.95);transition:.3s;}
 .overlay.show .modal{transform:none;}
@@ -234,6 +246,21 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
     <div id="toggleList"></div>
     <p class="foot-note" style="text-align:left;padding:14px 0 0;">
       iPhone'da tam ekran: Safari'de paylaş butonu → "Ana Ekrana Ekle". Oyun uygulama gibi tam ekran açılır.</p>
+  </div>
+</div>
+
+<!-- HOW TO PLAY -->
+<div class="overlay" id="howOverlay">
+  <div class="sheet how-sheet">
+    <h2>Nasıl Oynanır</h2>
+    <div class="tabs" id="howTabs">
+      <button class="tab sel" data-tab="rules">Kurallar</button>
+      <button class="tab" data-tab="modes">Modlar</button>
+      <button class="tab" data-tab="rogue">Rogue</button>
+      <button class="tab" data-tab="meta">Geliştirme</button>
+      <button class="tab" data-tab="backup">Yedek</button>
+    </div>
+    <div class="tab-body" id="howBody"></div>
   </div>
 </div>
 
