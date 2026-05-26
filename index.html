@@ -101,6 +101,7 @@ svg{width:100%;height:auto;display:block;touch-action:manipulation;}
 .clue{font-family:var(--font-body);font-weight:700;text-anchor:middle;dominant-baseline:central;fill:var(--ink);transition:fill .18s,opacity .18s;font-variant-numeric:tabular-nums;}
 .clue.done{fill:var(--ink);opacity:.22;}
 .clue.err{fill:var(--bad);}
+.clue.sis-hidden{fill:var(--accent);font-style:italic;opacity:.7;}
 .edge-line{stroke:var(--line);stroke-width:5.5;stroke-linecap:round;}
 .edge-hit{stroke:transparent;cursor:pointer;}
 .ex{stroke:var(--muted);stroke-width:2.4;stroke-linecap:round;opacity:.55;}
@@ -379,6 +380,7 @@ import {ACHIEVEMENTS, emit as emitAchievement, getAchievement, unlockedCount as 
 import {TALENTS, isUnlocked as isTalentUnlocked, canAfford as canAffordTalent, purchase as purchaseTalent, aggregateEffects as talentEffects} from "./src/rogue/talents.js";
 import {CHARMS, isUnlocked as isCharmUnlocked, isEquipped as isCharmEquipped, canAfford as canAffordCharm, purchase as purchaseCharm, equip as equipCharm, unequip as unequipCharm, aggregateEffects as charmEffects} from "./src/rogue/charms.js";
 import {NEOW_BLESSINGS, rollBlessings as neowBlessings, applyBlessing as applyNeowBlessing} from "./src/rogue/neow.js";
+import {TILE_TYPES, applyTiles, revealTile} from "./src/rogue/tiles.js";
 
 /* =========================================================================
    0) PWA — service worker register + persistent storage
@@ -649,8 +651,28 @@ function render(){
   const dx=c=>g.pad+c*g.S,dy=r=>g.pad+r*g.S;
   for(let r=0;r<g.R;r++)for(let c=0;c<g.C;c++){if(P.clue[r][c]<0)continue;
     const t=document.createElementNS(NS,"text");t.setAttribute("x",dx(c)+g.S/2);t.setAttribute("y",dy(r)+g.S/2+1);
-    t.setAttribute("class","clue");t.setAttribute("font-size",g.S*0.42);t.textContent=P.clue[r][c];
-    t.dataset.r=r;t.dataset.c=c;boardEl.appendChild(t);}
+    const tile=P.tiles&&P.tiles[r+","+c];
+    const hidden=tile&&tile.type==="sis"&&!tile.revealed;
+    t.setAttribute("class",hidden?"clue sis-hidden":"clue");
+    t.setAttribute("font-size",g.S*0.42);
+    t.textContent=hidden?"?":P.clue[r][c];
+    t.dataset.r=r;t.dataset.c=c;
+    if(hidden){
+      t.style.cursor="pointer";
+      const rr=r,cc=c;
+      t.addEventListener("click",ev=>{
+        ev.stopPropagation();
+        tile.revealed=true;
+        render();
+        setTimeout(()=>{
+          if(P.tiles&&P.tiles[rr+","+cc]){
+            P.tiles[rr+","+cc].revealed=false;
+            render();
+          }
+        },3000);
+      });
+    }
+    boardEl.appendChild(t);}
   function seg(x1,y1,x2,y2,st){if(st===1){const l=document.createElementNS(NS,"line");l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);l.setAttribute("class","edge-line seg-appear");boardEl.appendChild(l);}else if(st===2){const mx=(x1+x2)/2,my=(y1+y2)/2,s=g.S*0.13;for(const[a,b,cc,dd]of[[-s,-s,s,s],[-s,s,s,-s]]){const l=document.createElementNS(NS,"line");l.setAttribute("x1",mx+a);l.setAttribute("y1",my+b);l.setAttribute("x2",mx+cc);l.setAttribute("y2",my+dd);l.setAttribute("class","ex");boardEl.appendChild(l);}}}
   for(let r=0;r<=g.R;r++)for(let c=0;c<g.C;c++)seg(dx(c),dy(r),dx(c+1),dy(r),hState[r][c]);
   for(let r=0;r<g.R;r++)for(let c=0;c<=g.C;c++)seg(dx(c),dy(r),dx(c),dy(r+1),vState[r][c]);
@@ -955,7 +977,10 @@ function handleRogueNode(nodeId){
     const size=floorCfg?floorCfg.sizes[0]:5;
     const keep=floorCfg?floorCfg.keep:0.75;
     const rng=mulberry32(hashSeed(run.seed+"-"+nodeId));
-    startGame(makePuzzle(size,size,keep,rng),{mode:"rogue",realmId:run.realmId,nodeId,runRef:true});
+    const puzzle=makePuzzle(size,size,keep,rng);
+    // Sis constraint tile — D2/D3'te %22 yoğunluk
+    applyTiles(puzzle,run.realmId,mulberry32(hashSeed(run.seed+"-"+nodeId+"-tiles")),0.22);
+    startGame(puzzle,{mode:"rogue",realmId:run.realmId,nodeId,runRef:true});
   }else if(node.type==="chest"||node.type==="locked-chest"){
     openChestModal(run,node);
   }else if(node.type==="event"){
