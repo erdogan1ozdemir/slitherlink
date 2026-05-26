@@ -3,7 +3,7 @@
 ## Phase A - UX polish
 - [x] Task 2: Yuva ⚙ handler + Yuva settings buttons
 - [x] Task 3: Rogue Map floor labels (GİRİŞ / BİTİŞ + isim)
-- [ ] Task 4: Home Rogue Modu kartına resume pill
+- [x] Task 4: Home Rogue Modu kartına resume pill
 - [ ] Task 5: Game "Yeni" butonu rogue'da gizle + mid-puzzle save/resume
 ## Phase B - D3 content
 - [ ] Task 6: realms.js — yildiz-gecidi

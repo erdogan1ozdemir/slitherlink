@@ -1156,11 +1156,14 @@ function showScreen(id){document.querySelectorAll(".screen").forEach(s=>s.classL
 function renderHome(){
   const g=$("greet");if(g)g.textContent=CONFIG.greet.replace("{name}",CONFIG.name);
   const freeResume=loadResume(KEYS.freeCur), jrnResume=loadResume(KEYS.jrnCur);
+  const rogueRunRaw=store.get(KEYS.rogueRun,null);
+  const rogueResume=rogueRunRaw&&!rogueRunRaw.ended?rogueRunRaw:null;
+  const rogueRealmName=rogueResume?((REALMS[rogueResume.realmId]&&REALMS[rogueResume.realmId].name)||rogueResume.realmId):"";
   const prog=journeyProgress();
   const cards=[
     {id:"free",emo:"✦",h:"Serbest Oyun",p:"Boyut, yoğunluk ve seed seç",resume:freeResume},
     {id:"journey",emo:"⬢",h:"Yolculuk",p:prog.unlocked+" / "+TOTAL_LEVELS+" bölüm açıldı",resume:jrnResume},
-    {id:"rogue",emo:"☠",h:"Rogue Modu",p:"Yuva'na git, bir diyar seç"},
+    {id:"rogue",emo:"☠",h:"Rogue Modu",p:rogueResume?("yarım koşu · "+rogueRealmName):"Yuva'na git, bir diyar seç",resume:rogueResume},
   ];
   $("homeCards").innerHTML=cards.map(c=>`
     <div class="card ${c.locked?'locked':''}" data-card="${c.id}">
@@ -1440,7 +1443,11 @@ $("winMsg").textContent=CONFIG.winMsg;
 
 $("startBtn").addEventListener("click",()=>{$("startOverlay").classList.remove("show");renderHome();showScreen("s-home");});
 $("homeCards").addEventListener("click",e=>{const c=e.target.closest("[data-card]");if(!c)return;const id=c.dataset.card;
-  if(id==="rogue"){renderYuva();showScreen("s-yuva");return;}
+  if(id==="rogue"){
+    const rr=store.get(KEYS.rogueRun,null);
+    if(rr&&!rr.ended){renderRogueMap(rr);showScreen("s-rogue-map");return;}
+    renderYuva();showScreen("s-yuva");return;
+  }
   if(id==="free"){const r=loadResume(KEYS.freeCur);if(r)startGame(r.puzzle,r.ctx,r);else{renderSetup();showScreen("s-setup");}}
   if(id==="journey"){const r=loadResume(KEYS.jrnCur);if(r)startGame(r.puzzle,r.ctx,r);else{renderJourney();showScreen("s-journey");}}
 });
