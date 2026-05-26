@@ -91,4 +91,4 @@ Her plan tamamlanınca:
 | 07 — Söğüt Eşiği (D1) | ✓ tamamlandı | dd7d4ca |
 | 08 — Karanlık İğne (D2) | ✓ tamamlandı | 4272163 |
 | 09 — Yıldız Geçidi (D3) + Mum Modu + UX polish | ✓ tamamlandı | a7b7fdf |
-| 10 — Polish + meta ach + permanent starter + a11y + Vercel deploy | ✓ tamamlandı | (merge SHA) |
+| 10 — Polish + meta ach + permanent starter + a11y + Vercel deploy | ✓ tamamlandı | 17ca9fa |
