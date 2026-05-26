@@ -1017,16 +1017,18 @@ function renderRogueMap(run){
       }).join("")}
       ${run.mapGraph.nodes.map(n=>{
         const isCur=n.id===current,isVis=visited.has(n.id),isAcc=accessible.has(n.id);
+        const isPending=run.pendingNodeId===n.id&&!isVis;
         const fill=isCur?"var(--ink)":(isVis?"var(--panel-2)":"var(--bg)");
         const stroke=isCur?"var(--accent)":(isAcc?"var(--accent)":"var(--hairline-2)");
         const txt=isCur?"var(--bg)":(isVis||isAcc?"var(--accent)":"var(--muted)");
         const op=(isCur||isVis||isAcc)?1:0.4;
         return `
-          ${isCur?`<circle cx="${cx(n.col)}" cy="${cy(n.floor)}" r="22" fill="none" stroke="var(--accent)" stroke-opacity=".25" stroke-width="6"/>`:""}
+          ${isCur?`<circle cx="${cx(n.col)}" cy="${cy(n.floor)}" r="28" fill="none" stroke="var(--accent)" stroke-opacity=".25" stroke-width="6"/>`:""}
+          ${isPending?`<circle cx="${cx(n.col)}" cy="${cy(n.floor)}" r="24" fill="none" stroke="var(--bad)" stroke-opacity=".55" stroke-width="2" stroke-dasharray="4 3"/>`:""}
           <g data-node-id="${n.id}" data-accessible="${isAcc&&!isCur?"1":"0"}" style="cursor:${isAcc&&!isCur?"pointer":"default"};" opacity="${op}">
-            <circle cx="${cx(n.col)}" cy="${cy(n.floor)}" r="26" fill="transparent" stroke="none" pointer-events="all"/>
-            <circle cx="${cx(n.col)}" cy="${cy(n.floor)}" r="16" fill="${fill}" stroke="${stroke}" stroke-width="1.2" pointer-events="none"/>
-            <text x="${cx(n.col)}" y="${cy(n.floor)+1}" text-anchor="middle" dominant-baseline="central" font-family="var(--font-serif)" font-size="14" font-weight="600" fill="${txt}" pointer-events="none">${glyph[n.type]||"?"}</text>
+            <circle cx="${cx(n.col)}" cy="${cy(n.floor)}" r="32" fill="transparent" stroke="none" pointer-events="all"/>
+            <circle cx="${cx(n.col)}" cy="${cy(n.floor)}" r="20" fill="${fill}" stroke="${stroke}" stroke-width="1.2" pointer-events="none"/>
+            <text x="${cx(n.col)}" y="${cy(n.floor)+1}" text-anchor="middle" dominant-baseline="central" font-family="var(--font-serif)" font-size="16" font-weight="600" fill="${txt}" pointer-events="none">${glyph[n.type]||"?"}</text>
           </g>
         `;
       }).join("")}
@@ -1096,29 +1098,18 @@ function renderRogueMap(run){
 function handleRogueNode(nodeId){
   let run=store.get(KEYS.rogueRun,null);
   if(!run||run.ended)return;
+  const node=run.mapGraph.nodes.find(n=>n.id===nodeId);
+  if(!node)return;
   const prevFloor=run.floor;
-  run=moveTo(run,nodeId);
-  // Charm: Pati İzi — her visited node'dan +1 iplik
-  if(run.visitedThread){
-    meta.currencies.thread=(meta.currencies.thread||0)+run.visitedThread;
-    saveMeta();
-  }
-  store.set(KEYS.rogueRun,run);
-  const node=rogueCurrentNode(run);
-  // Mum Modu: node tipi süre tüketir + floor change bonus
-  if(run.candleMode){
-    const costs={puzzle:60,elite:120,rest:0,event:30,chest:0,"locked-chest":0,boss:0};
-    run.timeRemaining=Math.max(0,(run.timeRemaining||0)-(costs[node.type]||0));
-    if(node.floor>prevFloor)run.timeRemaining+=90;
-    if(run.timeRemaining<=0){
-      run.ended=true;run.endReason="timeout";run.timeRemaining=0;
-      store.set(KEYS.rogueRun,run);
-      renderRogueMap(run);
-      return;
-    }
-    store.set(KEYS.rogueRun,run);
-  }
+
   if(node.type==="puzzle"||node.type==="elite"||node.type==="boss"){
+    // Bekletme: moveTo win()'e ertelendi. Sadece pending olarak işaretle.
+    // Farklı bir puzzle node'a geçildiyse midPuzzle'ı temizle.
+    if(run.pendingNodeId&&run.pendingNodeId!==nodeId){
+      run.midPuzzle=null;
+    }
+    run.pendingNodeId=nodeId;
+    store.set(KEYS.rogueRun,run);
     // Resume mid-puzzle if same node
     if(run.midPuzzle&&run.midPuzzle.ctx&&run.midPuzzle.ctx.nodeId===nodeId){
       startGame(run.midPuzzle.puzzle,run.midPuzzle.ctx,run.midPuzzle);
@@ -1131,14 +1122,47 @@ function handleRogueNode(nodeId){
     const keep=floorCfg?floorCfg.keep:0.75;
     const rng=mulberry32(hashSeed(run.seed+"-"+nodeId));
     const puzzle=makePuzzle(size,size,keep,rng);
-    // Sis constraint tile — D2/D3'te %22 yoğunluk
-    applyTiles(puzzle,run.realmId,mulberry32(hashSeed(run.seed+"-"+nodeId+"-tiles")),0.22);
+    // Constraint tile density — realm bazlı, boss x1.5
+    const tileDensity=({
+      "sogut-esigi":0.15,
+      "karanlik-igne":0.22,
+      "yildiz-gecidi":0.30,
+      "dugumun-ardi":0.35,
+    })[run.realmId]||0.22;
+    const isBoss=node.type==="boss";
+    const finalDensity=isBoss?tileDensity*1.5:tileDensity;
+    applyTiles(puzzle,run.realmId,mulberry32(hashSeed(run.seed+"-"+nodeId+"-tiles")),finalDensity);
     startGame(puzzle,{mode:"rogue",realmId:run.realmId,nodeId,runRef:true});
-  }else if(node.type==="chest"||node.type==="locked-chest"){
-    openChestModal(run,node);
-  }else if(node.type==="event"){
-    openEventModal(run,node);
-  }else if(node.type==="rest"){
+    return;
+  }
+
+  // Non-puzzle nodes: moveTo immediately
+  run=moveTo(run,nodeId);
+  // Charm: Pati İzi — her visited node'dan +1 iplik
+  if(run.visitedThread){
+    meta.currencies.thread=(meta.currencies.thread||0)+run.visitedThread;
+    saveMeta();
+  }
+  store.set(KEYS.rogueRun,run);
+  const curNode=rogueCurrentNode(run);
+  // Mum Modu: node tipi süre tüketir + floor change bonus
+  if(run.candleMode){
+    const costs={puzzle:60,elite:120,rest:0,event:30,chest:0,"locked-chest":0,boss:0};
+    run.timeRemaining=Math.max(0,(run.timeRemaining||0)-(costs[curNode.type]||0));
+    if(curNode.floor>prevFloor)run.timeRemaining+=90;
+    if(run.timeRemaining<=0){
+      run.ended=true;run.endReason="timeout";run.timeRemaining=0;
+      store.set(KEYS.rogueRun,run);
+      renderRogueMap(run);
+      return;
+    }
+    store.set(KEYS.rogueRun,run);
+  }
+  if(curNode.type==="chest"||curNode.type==="locked-chest"){
+    openChestModal(run,curNode);
+  }else if(curNode.type==="event"){
+    openEventModal(run,curNode);
+  }else if(curNode.type==="rest"){
     const heal=1+(run.restBonusHeal||0);
     run.lives.current=Math.min(run.lives.max,run.lives.current+heal);
     store.set(KEYS.rogueRun,run);
@@ -1459,6 +1483,28 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
         if(run.realmId==="karanlik-igne"&&elapsed<900){
           achievementUnlock("speed_clear:karanlik-igne:900");
         }
+      }
+      // YENİ: puzzle/elite/boss gerçekten win — deferred moveTo şimdi çalışsın.
+      // (Multi-stage boss erken return ettiği için ara aşamalarda buraya gelmez.)
+      if(run.pendingNodeId===ctx.nodeId&&run.currentNodeId!==ctx.nodeId){
+        try{
+          const prevFloor=run.floor;
+          run=moveTo(run,ctx.nodeId);
+          // Charm: Pati İzi — visited node'dan +iplik
+          if(run.visitedThread){
+            meta.currencies.thread=(meta.currencies.thread||0)+run.visitedThread;
+          }
+          // Mum Modu: puzzle/elite süresi şimdi düşülsün (boss=0)
+          if(run.candleMode){
+            const costs={puzzle:60,elite:120,boss:0};
+            run.timeRemaining=Math.max(0,(run.timeRemaining||0)-(costs[node?.type]||0));
+            if(node&&node.floor>prevFloor)run.timeRemaining+=90;
+            if(run.timeRemaining<=0){
+              run.ended=true;run.endReason="timeout";run.timeRemaining=0;
+            }
+          }
+        }catch(e){console.warn("moveTo failed",e);}
+        run.pendingNodeId=null;
       }
       run.midPuzzle=null; // puzzle cleared, clear mid-puzzle snapshot
       saveMeta();
