@@ -2,6 +2,10 @@
 import {hashSeed, mulberry32} from "../src/core/rng.js";
 import {makePuzzle} from "../src/core/generator.js";
 import {validateLoop} from "../src/core/checker.js";
+import {TALENTS, purchase as purchaseTalent, aggregateEffects as talentEffects} from "../src/rogue/talents.js";
+import {CHARMS, purchase as purchaseCharm, equip as equipCharm, aggregateEffects as charmEffects} from "../src/rogue/charms.js";
+import {NEOW_BLESSINGS, rollBlessings, applyBlessing} from "../src/rogue/neow.js";
+import {TILE_TYPES, applyTiles, revealTile} from "../src/rogue/tiles.js";
 
 const results=document.getElementById("results");
 const summary=document.getElementById("summary");
@@ -59,6 +63,47 @@ test("validateLoop returns false for empty edges",()=>{
   const hEmpty=Array.from({length:5},()=>Array(4).fill(0));
   const vEmpty=Array.from({length:4},()=>Array(5).fill(0));
   assert(!validateLoop(p,hEmpty,vEmpty));
+});
+
+// === Plan 11 — talents + charms + neow + tiles ===
+test("talents registry has 6 entries",()=>eq(Object.keys(TALENTS).length,6));
+test("charms registry has 6 entries",()=>eq(Object.keys(CHARMS).length,6));
+test("neow has 8 blessings",()=>eq(NEOW_BLESSINGS.length,8));
+test("tiles has sis type",()=>assert(TILE_TYPES.sis));
+
+test("talent purchase decrements thread",()=>{
+  const m={currencies:{thread:100,bead:0,stardust:0},loomHall:{unlockedTalents:[]}};
+  assert(purchaseTalent(m,"dur-dengesi"));
+  eq(m.currencies.thread,90);
+  eq(m.loomHall.unlockedTalents[0],"dur-dengesi");
+});
+
+test("talent aggregateEffects sums life bonuses",()=>{
+  const m={loomHall:{unlockedTalents:["dur-dengesi"]}};
+  eq(talentEffects(m).bonusLife,1);
+});
+
+test("charm equip enforces 3-slot cap",()=>{
+  const m={currencies:{bead:100,thread:0,stardust:0},charms:{unlocked:["sogut-yapragi-charm","yun-yumagi","kelebek-kanadi","ay-muhru-charm"],equipped:[]}};
+  assert(equipCharm(m,"sogut-yapragi-charm"));
+  assert(equipCharm(m,"yun-yumagi"));
+  assert(equipCharm(m,"kelebek-kanadi"));
+  eq(equipCharm(m,"ay-muhru-charm"),false); // slot full
+});
+
+test("neow rollBlessings deterministic",()=>{
+  const rng1=mulberry32(42),rng2=mulberry32(42);
+  const a=rollBlessings(rng1,3),b=rollBlessings(rng2,3);
+  eq(JSON.stringify(a),JSON.stringify(b));
+});
+
+test("tiles apply adds sis to D2/D3 puzzles",()=>{
+  const rng=mulberry32(hashSeed("tile-test"));
+  const p=makePuzzle(6,6,1.0,rng);
+  applyTiles(p,"karanlik-igne",mulberry32(hashSeed("tile-test-2")),0.5);
+  let count=0;
+  for(const k in (p.tiles||{}))count++;
+  assert(count>0,"should have at least one sis tile");
 });
 
 summary.textContent=`${pass} pass · ${fail} fail · ${pass+fail} total`;
