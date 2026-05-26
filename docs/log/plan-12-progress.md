@@ -11,7 +11,7 @@
 
 ## Phase C — Hediye Boncukları
 - [x] Task 6: keepsakes.js (8 keepsake + auto-unlock on ach)
-- [ ] Task 7: Karakter UI keepsake bölümü
+- [x] Task 7: Karakter UI keepsake bölümü
 
 ## Phase D — Mum tick
 - [ ] Task 8: Puzzle render her saniye timeRemaining tick

@@ -379,6 +379,7 @@ import {CHARMS, isUnlocked as isCharmUnlocked, isEquipped as isCharmEquipped, ca
 import {NEOW_BLESSINGS, rollBlessings as neowBlessings, applyBlessing as applyNeowBlessing} from "./src/rogue/neow.js";
 import {TILE_TYPES, applyTiles, revealTile, tickKayanTiles} from "./src/rogue/tiles.js";
 import {THORNS, getThorn, totalIzScore as thornsIzScore, applyThornsToRun, rewardMultiplier as thornsRewardMult} from "./src/rogue/thorns.js";
+import {KEEPSAKES, allUnlockedKeepsakes, checkAutoUnlock as checkKeepsakeUnlock} from "./src/rogue/keepsakes.js";
 
 /* =========================================================================
    0) PWA — service worker register + persistent storage
@@ -1218,7 +1219,10 @@ function achievementUnlock(triggerId){
   const ach=emitAchievement(triggerId,meta,a=>{
     showAchievementToast(a);
   });
-  if(ach){saveMeta();}
+  if(ach){
+    checkKeepsakeUnlock(meta);
+    saveMeta();
+  }
 }
 
 function showAchievementToast(ach){
@@ -1626,7 +1630,25 @@ function renderKarakter(){
     </div>
   `;
 
-  const fullHtml=existingHtml+`<div style="margin-top:16px;padding:0 4px;">${starterHtml}</div>`+charmsHtml;
+  const unlockedKeepsakes=allUnlockedKeepsakes(meta);
+  const keepsakesHtml=`
+    <div style="margin-top:18px;padding:0 4px;">
+      <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">hediye boncukları · ${unlockedKeepsakes.length}/${Object.keys(KEEPSAKES).length}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        ${Object.values(KEEPSAKES).map(k=>{
+          const owned=!!unlockedKeepsakes.find(u=>u.id===k.id);
+          return `
+            <div title="${owned?k.desc.replace(/"/g,'&quot;'):'kilitli'}" style="flex:1;min-width:30%;background:${owned?'var(--panel-2)':'var(--panel)'};border:1px solid ${owned?'var(--accent)':'var(--hairline)'};border-radius:10px;padding:10px 8px;text-align:center;${owned?'':'opacity:.45;'}">
+              <div style="color:${owned?'var(--accent)':'var(--muted)'};font-family:var(--font-serif);font-size:20px;">✦</div>
+              <div style="font-family:var(--font-serif);font-weight:600;font-size:11px;color:var(--ink);margin-top:4px;line-height:1.2;">${owned?k.name:"····"}</div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
+
+  const fullHtml=existingHtml+`<div style="margin-top:16px;padding:0 4px;">${starterHtml}</div>`+charmsHtml+keepsakesHtml;
   $("karakterContent").innerHTML=fullHtml;
 
   // Handler
