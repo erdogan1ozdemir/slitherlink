@@ -146,6 +146,9 @@ input[type=range]{flex:1;accent-color:var(--ink);}
 .sw.on{background:var(--ink);}
 .sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--bg);transition:.2s;}
 .sw.on::after{left:23px;background:var(--bg);}
+.seg{display:flex;gap:4px;background:var(--bg);border:1px solid var(--hairline);border-radius:10px;padding:3px;}
+.seg button{flex:1;background:transparent;border:none;color:var(--muted);padding:6px 8px;font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border-radius:7px;}
+.seg button.sel{background:var(--ink);color:var(--bg);}
 .overlay.center{align-items:center;}
 .modal{background:var(--panel-2);border:1px solid var(--hairline);border-radius:24px;padding:32px 26px;max-width:360px;width:calc(100% - 48px);text-align:center;transform:scale(.95);transition:.3s;}
 .overlay.show .modal{transform:none;}
@@ -589,13 +592,35 @@ function startJourney(i){
    9) AYAR PANELI
    ========================================================================= */
 function renderToggles(){
-  $("toggleList").innerHTML=TOGGLE_DEFS.map(d=>`
+  const togglesHtml=TOGGLE_DEFS.map(d=>`
     <div class="toggle-row"><div class="lbl"><b>${d.t}</b><span>${d.d}</span></div>
     <div class="sw ${settings[d.k]?'on':''}" data-tog="${d.k}"></div></div>`).join("");
+  const checkModes=[
+    {v:"off",t:"Kapalı"},
+    {v:"mistakes-only",t:"Sadece hata"},
+    {v:"live",t:"Canlı"},
+  ];
+  const segHtml=`
+    <div class="toggle-row"><div class="lbl"><b>Hata kontrolü</b><span>Yanlış kenarları ne zaman göster</span></div>
+    <div class="seg" data-seg="autoCheckMode">${checkModes.map(m=>`<button data-val="${m.v}" class="${settings.autoCheckMode===m.v?'sel':''}">${m.t}</button>`).join('')}</div></div>`;
+  $("toggleList").innerHTML=togglesHtml+segHtml;
 }
-$("toggleList").addEventListener("click",e=>{const sw=e.target.closest("[data-tog]");if(!sw)return;
-  const k=sw.dataset.tog;settings[k]=!settings[k];saveSettings();sw.classList.toggle("on",settings[k]);
-  if($("s-game").classList.contains("active")){applyHintVisibility();updateClueStates();}});
+$("toggleList").addEventListener("click",e=>{
+  const sw=e.target.closest("[data-tog]");
+  if(sw){
+    const k=sw.dataset.tog;settings[k]=!settings[k];saveSettings();sw.classList.toggle("on",settings[k]);
+    if($("s-game").classList.contains("active")){applyHintVisibility();updateClueStates();render();}
+    return;
+  }
+  const segBtn=e.target.closest("[data-val]");
+  if(segBtn){
+    const seg=segBtn.closest("[data-seg]");
+    const key=seg.dataset.seg;const val=segBtn.dataset.val;
+    settings[key]=val;saveSettings();
+    seg.querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.val===val));
+    if($("s-game").classList.contains("active")){updateClueStates();}
+  }
+});
 
 /* =========================================================================
    10) KONFETI (gri tonlu)
