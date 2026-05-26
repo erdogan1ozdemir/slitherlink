@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Çember · Tasarım Tuvali</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Karla:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;background:#f0eee9;font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;}
+  /* canvas bg küçük not için */
+  .design-note{font-family:"Fraunces",serif;font-style:italic;color:rgba(60,50,40,0.7);}
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="tokens.jsx"></script>
+<script type="text/babel" src="screens-onboarding.jsx"></script>
+<script type="text/babel" src="screens-setup.jsx"></script>
+<script type="text/babel" src="screens-game.jsx"></script>
+<script type="text/babel" src="screens-modals.jsx"></script>
+<script type="text/babel" src="screens-rogue.jsx"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+const O = window.SCREENS_ONBOARD;
+const S = window.SCREENS_SETUP;
+const G = window.SCREENS_GAME;
+const M = window.SCREENS_MODALS;
+const R = window.SCREENS_ROGUE;
+
+// iPhone 11 — 414×896 + bezel padding (12 px her tarafta, 24 yatay 24 dikey)
+const PHONE_W = 414 + 24;
+const PHONE_H = 896 + 24;
+const SYS_W = 540 + 64;
+const SYS_H = 640;
+
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="system" title="Sessiz İplik · Sistem" subtitle="Renk, tipografi, ton — Merve'ye bir mektup gibi.">
+        <DCArtboard id="sys" label="00 · Sistem" width={SYS_W} height={SYS_H}>
+          <div style={{padding:32, background:'#0a0a0c', minHeight:'100%', display:'flex', alignItems:'center'}}>
+            <M.SystemCard />
+          </div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="flow" title="Akış · 7 ekran" subtitle="Açılış → ana menü → kurulum → yolculuk → oyun → ayarlar → kazanma. Foundation'daki state'lere birebir denk geliyor.">
+        <DCArtboard id="start" label="01 · Açılış" width={PHONE_W} height={PHONE_H}>
+          <O.StartScreen />
+        </DCArtboard>
+        <DCArtboard id="home" label="02 · Ana Menü" width={PHONE_W} height={PHONE_H}>
+          <O.HomeScreen />
+        </DCArtboard>
+        <DCArtboard id="home-resume" label="02b · Devam et" width={PHONE_W} height={PHONE_H}>
+          <O.HomeScreen withResume />
+        </DCArtboard>
+        <DCArtboard id="setup" label="03 · Serbest · Kurulum" width={PHONE_W} height={PHONE_H}>
+          <S.SetupScreen />
+        </DCArtboard>
+        <DCArtboard id="journey" label="04 · Yolculuk · Harita" width={PHONE_W} height={PHONE_H}>
+          <S.JourneyMap />
+        </DCArtboard>
+        <DCArtboard id="settings" label="06 · Ayarlar" width={PHONE_W} height={PHONE_H}>
+          <M.SettingsSheet />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="game" title="Oyun · kritik ekran" subtitle="Üç durum + kazanma. İplik kahraman; sayılar dinlenir, hata pas tonunda, tamamlanan solar.">
+        <DCArtboard id="g-early" label="05a · Erken" width={PHONE_W} height={PHONE_H}>
+          <G.GameEarly />
+        </DCArtboard>
+        <DCArtboard id="g-mid" label="05b · Orta + hata" width={PHONE_W} height={PHONE_H}>
+          <G.GameMid />
+        </DCArtboard>
+        <DCArtboard id="g-large" label="05c · Uzman 12×12" width={PHONE_W} height={PHONE_H}>
+          <G.GameLarge />
+        </DCArtboard>
+        <DCArtboard id="g-win" label="05d · Kazanma" width={PHONE_W} height={PHONE_H}>
+          <G.GameWin />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="journey-alt" title="Yolculuk · çeşitlemeler" subtitle="İki yön — düğüm haritası ve kart listesi. Aynı veriyi farklı vurgu.">
+        <DCArtboard id="j-map" label="04a · Harita yönü" width={PHONE_W} height={PHONE_H}>
+          <S.JourneyMap />
+        </DCArtboard>
+        <DCArtboard id="j-list" label="04b · Liste yönü" width={PHONE_W} height={PHONE_H}>
+          <S.JourneyList />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="rogue" title="Rogue Modu · gelecek aşama" subtitle="MVP için 5 ekran: koşu haritası, oyun HUD, sandık, olay, koşu sonu. Şimdilik tasarım, kod yok.">
+        <DCArtboard id="r-map" label="07 · Koşu haritası" width={PHONE_W} height={PHONE_H}>
+          <R.RogueMap />
+        </DCArtboard>
+        <DCArtboard id="r-game" label="08 · Oyun + HUD" width={PHONE_W} height={PHONE_H}>
+          <R.RogueGame />
+        </DCArtboard>
+        <DCArtboard id="r-chest" label="09 · Sandık" width={PHONE_W} height={PHONE_H}>
+          <R.RogueChest />
+        </DCArtboard>
+        <DCArtboard id="r-event" label="10 · Olay" width={PHONE_W} height={PHONE_H}>
+          <R.RogueEvent />
+        </DCArtboard>
+        <DCArtboard id="r-end" label="11 · Koşu sonu" width={PHONE_W} height={PHONE_H}>
+          <R.RogueEnd />
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

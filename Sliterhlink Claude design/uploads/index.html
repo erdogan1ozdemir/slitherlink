@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Çember">
+<meta name="theme-color" content="#0b0b0d">
+<title>Çember</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* =========================================================================
+   ÇEMBER - Slitherlink foundation  (Merve surumu)
+   NOT: Bu bir TEMEL/iskelet. Gorsel tasarim Claude Design ile yenilenecek.
+   Tema renkleri --bg, --line, --accent degiskenlerinden yonetilir.
+   ========================================================================= */
+:root{
+  --bg:#0b0b0d;
+  --panel:#141418;
+  --panel-2:#1c1c22;
+  --line:#ededf2;      /* cember rengi */
+  --ink:#ededf2;
+  --muted:#8a8a93;
+  --dim:#3a3a42;
+  --accent:#c9c9d2;    /* gri vurgu */
+  --good:#9fb0a6;
+  --bad:#d98a86;
+  --border:rgba(255,255,255,.08);
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  background:radial-gradient(120% 80% at 50% -10%,#17171c 0%,var(--bg) 60%);
+  color:var(--ink);font-family:"Karla",-apple-system,system-ui,sans-serif;
+  height:100dvh;overflow:hidden;user-select:none;
+}
+.app{height:100dvh;display:flex;flex-direction:column;
+  padding:calc(var(--safe-t) + 6px) 0 var(--safe-b);max-width:600px;margin:0 auto;}
+.screen{flex:1;display:none;flex-direction:column;min-height:0;}
+.screen.active{display:flex;}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 18px 24px;}
+
+/* topbar */
+.topbar{display:flex;align-items:center;gap:12px;padding:8px 16px;min-height:48px;}
+.topbar .ttl{font-family:"Fraunces",serif;font-size:20px;font-weight:600;flex:1;}
+.iconbtn{background:var(--panel);border:1px solid var(--border);color:var(--ink);
+  width:40px;height:40px;border-radius:12px;font-size:17px;display:grid;place-items:center;cursor:pointer;}
+.iconbtn:active{transform:scale(.93);}
+
+/* home */
+.hero{text-align:center;padding:18px 0 6px;}
+.hero .kick{font-size:11px;letter-spacing:.4em;text-transform:uppercase;color:var(--muted);}
+.hero h1{font-family:"Fraunces",serif;font-size:46px;font-weight:600;margin:6px 0 2px;letter-spacing:-.02em;}
+.hero .greet{color:var(--muted);font-family:"Fraunces",serif;font-style:italic;font-size:16px;}
+.cards{display:flex;flex-direction:column;gap:12px;margin-top:22px;}
+.card{background:linear-gradient(160deg,var(--panel-2),var(--panel));border:1px solid var(--border);
+  border-radius:18px;padding:18px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:.16s;}
+.card:active{transform:scale(.985);}
+.card.locked{opacity:.45;cursor:not-allowed;}
+.card .emo{font-size:26px;width:46px;height:46px;display:grid;place-items:center;background:var(--bg);border-radius:14px;border:1px solid var(--border);}
+.card .meta{flex:1;}
+.card .meta h3{margin:0;font-size:18px;font-weight:700;font-family:"Fraunces",serif;}
+.card .meta p{margin:3px 0 0;color:var(--muted);font-size:13px;}
+.card .go{color:var(--muted);font-size:20px;}
+.resume-pill{display:inline-block;margin-top:8px;background:var(--ink);color:var(--bg);
+  font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;}
+
+/* board */
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:6px 14px;}
+.board-card{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:14px;width:100%;}
+svg{width:100%;height:auto;display:block;touch-action:manipulation;}
+.dotc{fill:var(--dim);}
+.clue{font-family:"Karla",sans-serif;font-weight:700;text-anchor:middle;dominant-baseline:central;fill:var(--ink);transition:fill .18s,opacity .18s;}
+.clue.done{fill:var(--muted);opacity:.3;}
+.clue.err{fill:var(--bad);}
+.edge-line{stroke:var(--line);stroke-width:6;stroke-linecap:round;}
+.edge-hit{stroke:transparent;cursor:pointer;}
+.ex{stroke:var(--muted);stroke-width:2.4;stroke-linecap:round;opacity:.55;}
+.seg-appear{animation:pop .14s ease-out;}
+@keyframes pop{from{opacity:0}to{opacity:1}}
+
+/* game hud */
+.gamebar{display:flex;gap:8px;justify-content:center;padding:4px 16px 2px;}
+.chip{background:var(--panel);border:1px solid var(--border);border-radius:999px;padding:6px 13px;font-weight:700;font-size:13px;display:flex;gap:6px;align-items:center;}
+.chip small{color:var(--muted);font-weight:500;font-size:10px;letter-spacing:.08em;text-transform:uppercase;}
+.controls{display:flex;gap:10px;justify-content:center;padding:14px 16px calc(8px + var(--safe-b));}
+.controls button{font-family:"Karla";font-weight:700;font-size:14px;padding:12px 16px;border-radius:14px;border:1px solid var(--border);cursor:pointer;flex:1;max-width:150px;}
+.btn-primary{background:var(--ink);color:var(--bg);border:none!important;}
+.btn-ghost{background:var(--panel);color:var(--ink);}
+.controls button:active{transform:translateY(2px);}
+.hidden{display:none!important;}
+
+/* setup / journey */
+.section-label{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin:20px 0 10px;}
+.chips{display:flex;flex-wrap:wrap;gap:8px;}
+.opt{background:var(--panel);border:1px solid var(--border);color:var(--ink);border-radius:12px;padding:9px 15px;font-weight:700;font-size:14px;cursor:pointer;}
+.opt.sel{background:var(--ink);color:var(--bg);}
+.slider-row{display:flex;align-items:center;gap:14px;margin-top:8px;}
+input[type=range]{flex:1;accent-color:var(--ink);}
+.seedrow{display:flex;gap:8px;margin-top:8px;}
+.seedrow input[type=text]{flex:1;background:var(--panel);border:1px solid var(--border);color:var(--ink);border-radius:12px;padding:11px 14px;font-family:"Karla";font-size:15px;}
+.bigbtn{width:100%;background:var(--ink);color:var(--bg);border:none;border-radius:16px;padding:16px;font-family:"Karla";font-weight:700;font-size:16px;margin-top:24px;cursor:pointer;}
+.bigbtn:active{transform:scale(.99);}
+.level-list{display:flex;flex-direction:column;gap:10px;margin-top:8px;}
+.floor-h{font-family:"Fraunces",serif;font-size:15px;color:var(--accent);margin:18px 0 4px;font-style:italic;}
+.lvl{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:13px 16px;cursor:pointer;}
+.lvl.locked{opacity:.4;cursor:not-allowed;}
+.lvl.done{border-color:rgba(255,255,255,.18);}
+.lvl .num{width:34px;height:34px;border-radius:10px;background:var(--bg);display:grid;place-items:center;font-weight:700;border:1px solid var(--border);}
+.lvl .info{flex:1;}
+.lvl .info b{font-size:15px;}
+.lvl .info span{display:block;color:var(--muted);font-size:12px;}
+.lvl .state{font-size:18px;color:var(--muted);}
+
+/* settings + overlays */
+.overlay{position:fixed;inset:0;z-index:30;display:flex;align-items:flex-end;justify-content:center;
+  background:rgba(0,0,0,.6);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:.25s;}
+.overlay.show{opacity:1;pointer-events:auto;}
+.sheet{background:var(--panel-2);border:1px solid var(--border);border-radius:24px 24px 0 0;width:100%;max-width:600px;
+  padding:22px 20px calc(26px + var(--safe-b));transform:translateY(100%);transition:.3s cubic-bezier(.2,.8,.2,1);max-height:84dvh;overflow-y:auto;}
+.overlay.show .sheet{transform:none;}
+.sheet h2{font-family:"Fraunces",serif;font-weight:600;font-size:24px;margin:0 0 4px;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);}
+.toggle-row .lbl b{font-size:15px;}
+.toggle-row .lbl span{display:block;color:var(--muted);font-size:12px;margin-top:2px;}
+.sw{width:50px;height:30px;border-radius:999px;background:var(--dim);position:relative;cursor:pointer;transition:.2s;flex-shrink:0;}
+.sw.on{background:var(--ink);}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.2s;}
+.sw.on::after{left:23px;}
+.overlay.center{align-items:center;}
+.modal{background:var(--panel-2);border:1px solid var(--border);border-radius:24px;padding:32px 26px;max-width:360px;width:calc(100% - 48px);text-align:center;transform:scale(.95);transition:.3s;}
+.overlay.show .modal{transform:none;}
+.modal .big{font-size:42px;}
+.modal h2{font-family:"Fraunces",serif;font-weight:600;font-size:28px;margin:8px 0 4px;}
+.modal p{color:var(--muted);font-size:15px;font-family:"Fraunces",serif;font-style:italic;margin:0 0 6px;line-height:1.5;}
+.modal .stats{display:flex;gap:12px;justify-content:center;margin:18px 0;}
+.modal .stat{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:9px 16px;}
+.modal .stat b{display:block;font-size:20px;font-family:"Fraunces",serif;}
+.modal .stat small{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.modal .row{display:flex;gap:10px;margin-top:6px;}
+.modal button{flex:1;border-radius:14px;padding:13px;font-family:"Karla";font-weight:700;font-size:14px;cursor:pointer;border:1px solid var(--border);}
+canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
+.foot-note{text-align:center;color:var(--muted);font-size:12px;font-style:italic;font-family:"Fraunces",serif;padding:8px 24px;line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HOME -->
+  <section class="screen active" id="s-home">
+    <div class="topbar"><div class="ttl"></div><button class="iconbtn" id="homeSettings">⚙</button></div>
+    <div class="scroll">
+      <div class="hero">
+        <div class="kick">cember bulmaca</div>
+        <h1>Çember</h1>
+        <div class="greet" id="greet"></div>
+      </div>
+      <div class="cards" id="homeCards"></div>
+      <p class="foot-note">Tek ve kapali bir cember ciz. Her sayi, etrafindaki cizgi adedini soyler.</p>
+    </div>
+  </section>
+
+  <!-- FREE SETUP -->
+  <section class="screen" id="s-setup">
+    <div class="topbar"><button class="iconbtn" data-back>‹</button><div class="ttl">Serbest Oyun</div></div>
+    <div class="scroll">
+      <div class="section-label">Hazir seviye</div>
+      <div class="chips" id="presetChips"></div>
+      <div class="section-label">Tahta boyutu</div>
+      <div class="chips" id="sizeChips"></div>
+      <div class="section-label">Ipucu yogunlugu <span id="densVal" style="color:var(--ink)"></span></div>
+      <div class="slider-row"><span style="color:var(--muted);font-size:12px">Az</span>
+        <input type="range" id="density" min="35" max="90" value="70">
+        <span style="color:var(--muted);font-size:12px">Cok</span></div>
+      <div class="section-label">Seed (rastgelelik) - bos birak = rastgele</div>
+      <div class="seedrow"><input type="text" id="seedInput" placeholder="orn. merve-01" autocapitalize="off" autocomplete="off">
+        <button class="opt" id="seedRand">🎲</button></div>
+      <button class="bigbtn" id="startFreeBtn">Baslat</button>
+    </div>
+  </section>
+
+  <!-- JOURNEY -->
+  <section class="screen" id="s-journey">
+    <div class="topbar"><button class="iconbtn" data-back>‹</button><div class="ttl">Yolculuk</div>
+      <button class="iconbtn" id="journeyReset" title="Sifirla">↺</button></div>
+    <div class="scroll"><div class="level-list" id="levelList"></div></div>
+  </section>
+
+  <!-- GAME -->
+  <section class="screen" id="s-game">
+    <div class="topbar"><button class="iconbtn" data-back>‹</button><div class="ttl" id="gameTitle">Bulmaca</div>
+      <button class="iconbtn" id="gameSettings">⚙</button></div>
+    <div class="gamebar">
+      <div class="chip"><small>Sure</small><span id="timer">0:00</span></div>
+      <div class="chip" id="hintChip"><small>Ipucu</small><span id="hintsUsed">0</span></div>
+    </div>
+    <div class="board-wrap"><div class="board-card"><svg id="board"></svg></div></div>
+    <div class="controls">
+      <button class="btn-ghost" id="resetBtn">↺ Temizle</button>
+      <button class="btn-ghost hidden" id="hintBtn">💡 Ipucu</button>
+      <button class="btn-primary" id="newBtn">✦ Yeni</button>
+    </div>
+  </section>
+</div>
+
+<!-- SETTINGS -->
+<div class="overlay" id="settingsOverlay">
+  <div class="sheet">
+    <h2>Ayarlar</h2>
+    <div id="toggleList"></div>
+    <p class="foot-note" style="text-align:left;padding:14px 0 0;">
+      iPhone'da tam ekran: Safari'de paylas butonu → "Ana Ekrana Ekle". Oyun uygulama gibi tam ekran acilir.</p>
+  </div>
+</div>
+
+<!-- WIN -->
+<div class="overlay center" id="winOverlay">
+  <div class="modal">
+    <div class="big">🩶</div>
+    <h2 id="winTitle">Aferin!</h2>
+    <p id="winMsg"></p>
+    <div class="stats">
+      <div class="stat"><b id="winTime">0:00</b><small>Sure</small></div>
+      <div class="stat"><b id="winHints">0</b><small>Ipucu</small></div>
+    </div>
+    <div class="row"><button class="btn-ghost" id="winHome">Ana menu</button>
+      <button class="btn-primary" id="winNext" style="border:none">Devam ›</button></div>
+  </div>
+</div>
+
+<!-- START -->
+<div class="overlay center show" id="startOverlay">
+  <div class="modal">
+    <div class="big">🩶</div>
+    <h2 id="startTitle">Merhaba</h2>
+    <p id="startMsg"></p>
+    <button class="btn-primary" id="startBtn" style="border:none;margin-top:10px;">Basla</button>
+  </div>
+</div>
+
+<canvas id="confetti"></canvas>
+
+<script>
+/* =========================================================================
+   1) KISISELLESTIRME / CONFIG   (tek degistirecegin yer)
+   ========================================================================= */
+const CONFIG = {
+  name: "Merve",
+  greet: "{name} icin",
+  startMsg: "Bunu senin icin yaptim. Tek bir cember ciz, kaybolma 🩶",
+  winMsg:   "Yine basardin. Seninle her bulmaca daha guzel.",
+};
+
+/* =========================================================================
+   2) DEPOLAMA (otomatik kayit / devam)  - localStorage, guvenli sarmalanmis
+   ========================================================================= */
+const KEYS={settings:"cember:settings",freeCur:"cember:free:current",
+  jrnProg:"cember:journey:progress",jrnCur:"cember:journey:current",stats:"cember:stats"};
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},
+  del(k){try{localStorage.removeItem(k);}catch(e){}}
+};
+
+/* =========================================================================
+   3) RASTGELELIK (seed'lenebilir RNG)
+   ========================================================================= */
+function hashSeed(s){let h=2166136261>>>0;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
+
+/* =========================================================================
+   4) BULMACA URETECI + DOGRULAYICI  (saf mantik, UI'dan bagimsiz)
+      makePuzzle: tek-kapali-cember garantili bulmaca; opsiyonel seed'li rng
+   ========================================================================= */
+function makePuzzle(R,C,keepRatio,rng){
+  rng=rng||Math.random;
+  const filled=Array.from({length:R},()=>Array(C).fill(false));
+  filled[(R/2)|0][(C/2)|0]=true;
+  const inb=(r,c)=>r>=0&&r<R&&c>=0&&c<C;
+  const cnt=()=>{let n=0;for(let r=0;r<R;r++)for(let c=0;c<C;c++)if(filled[r][c])n++;return n;};
+  function regionConnected(){let s=null;for(let r=0;r<R&&!s;r++)for(let c=0;c<C&&!s;c++)if(filled[r][c])s=[r,c];if(!s)return false;const seen=Array.from({length:R},()=>Array(C).fill(false));const st=[s];seen[s[0]][s[1]]=true;let k=0;while(st.length){const[r,c]=st.pop();k++;for(const[dr,dc]of[[1,0],[-1,0],[0,1],[0,-1]]){const nr=r+dr,nc=c+dc;if(inb(nr,nc)&&filled[nr][nc]&&!seen[nr][nc]){seen[nr][nc]=true;st.push([nr,nc]);}}}return k===cnt();}
+  function complementConnected(){const seen=Array.from({length:R},()=>Array(C).fill(false));const st=[];for(let r=0;r<R;r++)for(let c=0;c<C;c++)if(!filled[r][c]&&(r===0||r===R-1||c===0||c===C-1)&&!seen[r][c]){seen[r][c]=true;st.push([r,c]);}while(st.length){const[r,c]=st.pop();for(const[dr,dc]of[[1,0],[-1,0],[0,1],[0,-1]]){const nr=r+dr,nc=c+dc;if(inb(nr,nc)&&!filled[nr][nc]&&!seen[nr][nc]){seen[nr][nc]=true;st.push([nr,nc]);}}}for(let r=0;r<R;r++)for(let c=0;c<C;c++)if(!filled[r][c]&&!seen[r][c])return false;return true;}
+  const total=R*C, iters=R*C*40;
+  for(let i=0;i<iters;i++){const r=(rng()*R)|0,c=(rng()*C)|0,prev=filled[r][c];filled[r][c]=!prev;const nf=cnt();let ok=nf>=1&&nf<=total-1;if(ok)ok=regionConnected()&&complementConnected();if(!ok)filled[r][c]=prev;}
+  const f=(r,c)=>inb(r,c)?filled[r][c]:false;
+  const hE=Array.from({length:R+1},()=>Array(C).fill(0));
+  for(let r=0;r<=R;r++)for(let c=0;c<C;c++)hE[r][c]=(f(r-1,c)!==f(r,c))?1:0;
+  const vE=Array.from({length:R},()=>Array(C+1).fill(0));
+  for(let r=0;r<R;r++)for(let c=0;c<=C;c++)vE[r][c]=(f(r,c-1)!==f(r,c))?1:0;
+  const clue=Array.from({length:R},()=>Array(C).fill(-1));
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++)clue[r][c]=hE[r][c]+hE[r+1][c]+vE[r][c]+vE[r][c+1];
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++)if(rng()>keepRatio)clue[r][c]=-1;
+  return {R,C,solH:hE,solV:vE,clue};
+}
+
+/* =========================================================================
+   5) AYARLAR
+   ========================================================================= */
+const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true};
+let settings=Object.assign({},DEFAULT_SETTINGS,store.get(KEYS.settings,{}));
+function saveSettings(){store.set(KEYS.settings,settings);}
+const TOGGLE_DEFS=[
+  {k:"hints",  t:"Ipucu butonu",            d:"Oyunda ipucu butonunu goster"},
+  {k:"fade",   t:"Tamamlanani soluklastir", d:"Cizgisi biten sayiyi soluklastir"},
+  {k:"errors", t:"Hatalari kirmizi goster", d:"Fazla/yanlis cizgide sayiyi kirmizi yap"},
+  {k:"haptics",t:"Titresim",                d:"Dokununca kucuk titresim (destekleyen cihazda)"},
+];
+
+/* =========================================================================
+   6) YOLCULUK (level / dungeon iskeleti) - deterministik uretim
+   ========================================================================= */
+const FLOORS=[
+  {name:"Giris Holu",     size:4, keep:.85},
+  {name:"Sessiz Koridor", size:5, keep:.78},
+  {name:"Golge Galerisi", size:6, keep:.72},
+  {name:"Kayip Kutuphane",size:7, keep:.66},
+  {name:"Kristal Magara", size:8, keep:.60},
+  {name:"Zirve",          size:9, keep:.55},
+];
+const LEVELS_PER_FLOOR=5;
+const TOTAL_LEVELS=FLOORS.length*LEVELS_PER_FLOOR;
+function levelParams(i){
+  const fi=Math.floor(i/LEVELS_PER_FLOOR), within=i%LEVELS_PER_FLOOR;
+  const f=FLOORS[Math.min(fi,FLOORS.length-1)];
+  const keep=Math.max(.4, f.keep - within*0.03);
+  return {index:i, floor:fi, name:f.name, R:f.size, C:f.size, keep, seed:"merve-journey-"+i, title:"Bolum "+(i+1)};
+}
+function journeyProgress(){return store.get(KEYS.jrnProg,{unlocked:0,times:{}});}
+
+/* =========================================================================
+   7) OYUN DURUMU
+   ========================================================================= */
+let P=null,hState=null,vState=null,solved=false,hints=0;
+let elapsed=0,timerId=null,timerBase=0;
+let ctx={mode:"free",levelIndex:null};
+const $=id=>document.getElementById(id);
+const boardEl=$("board");
+
+function buzz(ms){if(settings.haptics&&navigator.vibrate){try{navigator.vibrate(ms||10);}catch(e){}}}
+
+function startGame(puzzle,context,restore){
+  P=puzzle;ctx=context;solved=false;
+  if(restore){hState=restore.hState;vState=restore.vState;hints=restore.hints||0;elapsed=restore.elapsed||0;}
+  else{hState=Array.from({length:P.R+1},()=>Array(P.C).fill(0));
+       vState=Array.from({length:P.R},()=>Array(P.C+1).fill(0));hints=0;elapsed=0;}
+  $("hintsUsed").textContent=hints;
+  $("gameTitle").textContent = ctx.mode==="journey" ? levelParams(ctx.levelIndex).title : "Serbest";
+  applyHintVisibility();render();startTimer();showScreen("s-game");
+}
+function applyHintVisibility(){$("hintBtn").classList.toggle("hidden",!settings.hints);}
+
+/* cizim */
+function geom(){const R=P.R,C=P.C;const S=Math.max(34,Math.min(70,Math.floor(560/Math.max(R,C))));
+  const pad=Math.round(S*0.55);return{R,C,S,pad,W:C*S+pad*2,H:R*S+pad*2};}
+function render(){
+  const g=geom();boardEl.setAttribute("viewBox",`0 0 ${g.W} ${g.H}`);
+  while(boardEl.firstChild)boardEl.removeChild(boardEl.firstChild);
+  const NS="http://www.w3.org/2000/svg";
+  const dx=c=>g.pad+c*g.S,dy=r=>g.pad+r*g.S;
+  for(let r=0;r<g.R;r++)for(let c=0;c<g.C;c++){if(P.clue[r][c]<0)continue;
+    const t=document.createElementNS(NS,"text");t.setAttribute("x",dx(c)+g.S/2);t.setAttribute("y",dy(r)+g.S/2+1);
+    t.setAttribute("class","clue");t.setAttribute("font-size",g.S*0.42);t.textContent=P.clue[r][c];
+    t.dataset.r=r;t.dataset.c=c;boardEl.appendChild(t);}
+  function seg(x1,y1,x2,y2,st){if(st===1){const l=document.createElementNS(NS,"line");l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);l.setAttribute("class","edge-line seg-appear");boardEl.appendChild(l);}else if(st===2){const mx=(x1+x2)/2,my=(y1+y2)/2,s=g.S*0.13;for(const[a,b,cc,dd]of[[-s,-s,s,s],[-s,s,s,-s]]){const l=document.createElementNS(NS,"line");l.setAttribute("x1",mx+a);l.setAttribute("y1",my+b);l.setAttribute("x2",mx+cc);l.setAttribute("y2",my+dd);l.setAttribute("class","ex");boardEl.appendChild(l);}}}
+  for(let r=0;r<=g.R;r++)for(let c=0;c<g.C;c++)seg(dx(c),dy(r),dx(c+1),dy(r),hState[r][c]);
+  for(let r=0;r<g.R;r++)for(let c=0;c<=g.C;c++)seg(dx(c),dy(r),dx(c),dy(r+1),vState[r][c]);
+  for(let r=0;r<=g.R;r++)for(let c=0;c<=g.C;c++){const ci=document.createElementNS(NS,"circle");ci.setAttribute("cx",dx(c));ci.setAttribute("cy",dy(r));ci.setAttribute("r",g.S*0.07);ci.setAttribute("class","dotc");boardEl.appendChild(ci);}
+  const hw=g.S*0.5;
+  function hit(x1,y1,x2,y2,k,r,c){const l=document.createElementNS(NS,"line");l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);l.setAttribute("class","edge-hit");l.setAttribute("stroke-width",hw);l.addEventListener("click",()=>toggle(k,r,c));boardEl.appendChild(l);}
+  for(let r=0;r<=g.R;r++)for(let c=0;c<g.C;c++)hit(dx(c),dy(r),dx(c+1),dy(r),"h",r,c);
+  for(let r=0;r<g.R;r++)for(let c=0;c<=g.C;c++)hit(dx(c),dy(r),dx(c),dy(r+1),"v",r,c);
+  updateClueStates();
+}
+function toggle(k,r,c){if(solved)return;const arr=k==="h"?hState:vState;arr[r][c]=(arr[r][c]+1)%3;buzz(8);render();autosave();checkWin();}
+function lineCount(r,c){return (hState[r][c]===1)+(hState[r+1][c]===1)+(vState[r][c]===1)+(vState[r][c+1]===1);}
+function decided(r,c){return [hState[r][c],hState[r+1][c],vState[r][c],vState[r][c+1]].every(s=>s!==0);}
+function updateClueStates(){boardEl.querySelectorAll("text.clue").forEach(t=>{const r=+t.dataset.r,c=+t.dataset.c,n=P.clue[r][c],lc=lineCount(r,c);t.classList.remove("done","err");if(settings.errors&&(lc>n||(decided(r,c)&&lc!==n)))t.classList.add("err");else if(settings.fade&&lc===n)t.classList.add("done");});}
+
+/* kazanma */
+function checkWin(){const R=P.R,C=P.C;
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){if(P.clue[r][c]<0)continue;if(lineCount(r,c)!==P.clue[r][c])return;}
+  const deg=Array.from({length:R+1},()=>Array(C+1).fill(0));let edges=0;
+  for(let r=0;r<=R;r++)for(let c=0;c<C;c++)if(hState[r][c]===1){deg[r][c]++;deg[r][c+1]++;edges++;}
+  for(let r=0;r<R;r++)for(let c=0;c<=C;c++)if(vState[r][c]===1){deg[r][c]++;deg[r+1][c]++;edges++;}
+  if(!edges)return;for(let r=0;r<=R;r++)for(let c=0;c<=C;c++)if(deg[r][c]!==0&&deg[r][c]!==2)return;
+  let s=null,td2=0;for(let r=0;r<=R;r++)for(let c=0;c<=C;c++)if(deg[r][c]===2){td2++;if(!s)s=[r,c];}
+  const seen=Array.from({length:R+1},()=>Array(C+1).fill(false));const st=[s];seen[s[0]][s[1]]=true;let v=0;
+  while(st.length){const[r,c]=st.pop();v++;
+    if(c<C&&hState[r][c]===1&&!seen[r][c+1]){seen[r][c+1]=true;st.push([r,c+1]);}
+    if(c>0&&hState[r][c-1]===1&&!seen[r][c-1]){seen[r][c-1]=true;st.push([r,c-1]);}
+    if(r<R&&vState[r][c]===1&&!seen[r+1][c]){seen[r+1][c]=true;st.push([r+1,c]);}
+    if(r>0&&vState[r-1][c]===1&&!seen[r-1][c]){seen[r-1][c]=true;st.push([r-1,c]);}}
+  if(v===td2)win();
+}
+function win(){solved=true;stopTimer();buzz([16,40,24]);
+  if(ctx.mode==="journey"){const p=journeyProgress();p.unlocked=Math.max(p.unlocked,ctx.levelIndex+1);
+    const bt=p.times[ctx.levelIndex];if(bt==null||elapsed<bt)p.times[ctx.levelIndex]=elapsed;store.set(KEYS.jrnProg,p);store.del(KEYS.jrnCur);}
+  else store.del(KEYS.freeCur);
+  $("winTime").textContent=fmt(elapsed);$("winHints").textContent=hints;
+  const next=$("winNext");next.style.display=(ctx.mode==="journey"&&ctx.levelIndex+1<TOTAL_LEVELS)?"block":"none";
+  setTimeout(()=>{$("winOverlay").classList.add("show");burst();},420);
+}
+
+/* ipucu / temizle */
+function hint(){if(solved)return;const cand=[];
+  for(let r=0;r<=P.R;r++)for(let c=0;c<P.C;c++)if(P.solH[r][c]===1&&hState[r][c]!==1)cand.push(["h",r,c]);
+  for(let r=0;r<P.R;r++)for(let c=0;c<=P.C;c++)if(P.solV[r][c]===1&&vState[r][c]!==1)cand.push(["v",r,c]);
+  if(!cand.length)return;const[k,r,c]=cand[(Math.random()*cand.length)|0];(k==="h"?hState:vState)[r][c]=1;
+  hints++;$("hintsUsed").textContent=hints;render();autosave();checkWin();}
+function resetBoard(){hState=Array.from({length:P.R+1},()=>Array(P.C).fill(0));vState=Array.from({length:P.R},()=>Array(P.C+1).fill(0));solved=false;render();autosave();}
+
+/* sure */
+function fmt(s){const m=(s/60)|0,ss=s%60;return m+":"+(ss<10?"0":"")+ss;}
+function startTimer(){timerBase=Date.now()-elapsed*1000;stopTimer();timerId=setInterval(()=>{elapsed=((Date.now()-timerBase)/1000)|0;$("timer").textContent=fmt(elapsed);},500);$("timer").textContent=fmt(elapsed);}
+function stopTimer(){if(timerId)clearInterval(timerId);timerId=null;}
+
+/* otomatik kayit */
+function snapshot(){return {puzzle:P,ctx,hState,vState,hints,elapsed};}
+function autosave(){if(solved)return;store.set(ctx.mode==="journey"?KEYS.jrnCur:KEYS.freeCur,snapshot());}
+function loadResume(key){const s=store.get(key,null);if(!s||!s.puzzle)return null;return s;}
+
+/* =========================================================================
+   8) EKRANLAR / NAVIGASYON
+   ========================================================================= */
+function showScreen(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active",s.id===id));if(id!=="s-game")stopTimer();}
+
+function renderHome(){
+  $("greet").textContent=CONFIG.greet.replace("{name}",CONFIG.name);
+  const freeResume=loadResume(KEYS.freeCur), jrnResume=loadResume(KEYS.jrnCur);
+  const prog=journeyProgress();
+  const cards=[
+    {id:"free",emo:"✦",h:"Serbest Oyun",p:"Boyut, yogunluk ve seed sec",resume:freeResume},
+    {id:"journey",emo:"⬢",h:"Yolculuk",p:prog.unlocked+" / "+TOTAL_LEVELS+" bolum acildi",resume:jrnResume},
+    {id:"rogue",emo:"☠",h:"Rogue Modu",p:"Yakinda - canlar, esyalar, rastgele kat",locked:true},
+  ];
+  $("homeCards").innerHTML=cards.map(c=>`
+    <div class="card ${c.locked?'locked':''}" data-card="${c.id}">
+      <div class="emo">${c.emo}</div>
+      <div class="meta"><h3>${c.h}</h3><p>${c.p}</p>${c.resume?'<span class="resume-pill">Devam et</span>':''}</div>
+      <div class="go">${c.locked?'🔒':'›'}</div>
+    </div>`).join("");
+}
+
+/* free setup */
+const SIZE_OPTS=[4,5,6,7,9,12];
+const PRESETS=[
+  {n:"Kolay",size:5,dens:80},{n:"Orta",size:7,dens:68},{n:"Zor",size:9,dens:58},
+  {n:"Uzman",size:12,dens:50},{n:"Rastgele",rand:true},
+];
+let setupSize=7,setupDens=70;
+function renderSetup(){
+  $("sizeChips").innerHTML=SIZE_OPTS.map(s=>`<div class="opt ${s===setupSize?'sel':''}" data-size="${s}">${s}×${s}</div>`).join("");
+  $("presetChips").innerHTML=PRESETS.map((p,i)=>`<div class="opt" data-preset="${i}">${p.n}</div>`).join("");
+  $("density").value=setupDens;$("densVal").textContent="%"+setupDens;
+}
+function startFree(){
+  const seedStr=$("seedInput").value.trim();
+  const seed=seedStr?seedStr:("r"+Math.floor(Math.random()*1e9));
+  const rng=mulberry32(hashSeed(seed));
+  startGame(makePuzzle(setupSize,setupSize,setupDens/100,rng),{mode:"free",levelIndex:null,seed});
+}
+
+/* journey */
+function renderJourney(){
+  const prog=journeyProgress();let html="";
+  for(let f=0;f<FLOORS.length;f++){
+    html+=`<div class="floor-h">${f+1}. ${FLOORS[f].name}</div>`;
+    for(let w=0;w<LEVELS_PER_FLOOR;w++){
+      const i=f*LEVELS_PER_FLOOR+w, lp=levelParams(i);
+      const locked=i>prog.unlocked, done=prog.times[i]!=null;
+      const bt=done?" · en iyi "+fmt(prog.times[i]):"";
+      html+=`<div class="lvl ${locked?'locked':''} ${done?'done':''}" data-level="${locked?'':i}">
+        <div class="num">${i+1}</div>
+        <div class="info"><b>${lp.R}×${lp.C}</b><span>ipucu %${Math.round(lp.keep*100)}${bt}</span></div>
+        <div class="state">${locked?'🔒':(done?'✓':'›')}</div></div>`;
+    }
+  }
+  $("levelList").innerHTML=html;
+}
+function startJourney(i){
+  const lp=levelParams(i);const rng=mulberry32(hashSeed(lp.seed));
+  startGame(makePuzzle(lp.R,lp.C,lp.keep,rng),{mode:"journey",levelIndex:i});
+}
+
+/* =========================================================================
+   9) AYAR PANELI
+   ========================================================================= */
+function renderToggles(){
+  $("toggleList").innerHTML=TOGGLE_DEFS.map(d=>`
+    <div class="toggle-row"><div class="lbl"><b>${d.t}</b><span>${d.d}</span></div>
+    <div class="sw ${settings[d.k]?'on':''}" data-tog="${d.k}"></div></div>`).join("");
+}
+$("toggleList").addEventListener("click",e=>{const sw=e.target.closest("[data-tog]");if(!sw)return;
+  const k=sw.dataset.tog;settings[k]=!settings[k];saveSettings();sw.classList.toggle("on",settings[k]);
+  if($("s-game").classList.contains("active")){applyHintVisibility();updateClueStates();}});
+
+/* =========================================================================
+   10) KONFETI (gri tonlu)
+   ========================================================================= */
+const cv=$("confetti"),cx=cv.getContext("2d");let parts=[],animId=null;
+function burst(){cv.width=innerWidth;cv.height=innerHeight;parts=[];const cols=["#ededf2","#c9c9d2","#8a8a93","#5a5a63","#ffffff"];
+  for(let i=0;i<130;i++)parts.push({x:innerWidth/2,y:innerHeight*0.42,vx:(Math.random()-.5)*12,vy:Math.random()*-12-3,g:.32,s:5+Math.random()*7,c:cols[(Math.random()*cols.length)|0],rot:Math.random()*6.28,vr:(Math.random()-.5)*.4,life:0});
+  if(animId)cancelAnimationFrame(animId);cloop();}
+function cloop(){cx.clearRect(0,0,cv.width,cv.height);let alive=false;for(const p of parts){p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life++;if(p.y<cv.height+30)alive=true;cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.fillStyle=p.c;cx.globalAlpha=Math.max(0,1-p.life/160);cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6);cx.restore();}if(alive)animId=requestAnimationFrame(cloop);else cx.clearRect(0,0,cv.width,cv.height);}
+
+/* =========================================================================
+   11) OLAY BAGLAMA
+   ========================================================================= */
+$("startTitle").textContent="Merhaba "+CONFIG.name;
+$("startMsg").textContent=CONFIG.startMsg;
+$("winTitle").textContent="Aferin "+CONFIG.name;
+$("winMsg").textContent=CONFIG.winMsg;
+
+$("startBtn").addEventListener("click",()=>{$("startOverlay").classList.remove("show");renderHome();showScreen("s-home");});
+$("homeCards").addEventListener("click",e=>{const c=e.target.closest("[data-card]");if(!c)return;const id=c.dataset.card;
+  if(id==="rogue")return;
+  if(id==="free"){const r=loadResume(KEYS.freeCur);if(r)startGame(r.puzzle,r.ctx,r);else{renderSetup();showScreen("s-setup");}}
+  if(id==="journey"){const r=loadResume(KEYS.jrnCur);if(r)startGame(r.puzzle,r.ctx,r);else{renderJourney();showScreen("s-journey");}}
+});
+document.querySelectorAll("[data-back]").forEach(b=>b.addEventListener("click",()=>{renderHome();showScreen("s-home");}));
+$("sizeChips").addEventListener("click",e=>{const o=e.target.closest("[data-size]");if(!o)return;setupSize=+o.dataset.size;renderSetup();});
+$("presetChips").addEventListener("click",e=>{const o=e.target.closest("[data-preset]");if(!o)return;const p=PRESETS[+o.dataset.preset];if(p.rand){setupSize=SIZE_OPTS[(Math.random()*SIZE_OPTS.length)|0];setupDens=40+((Math.random()*45)|0);}else{setupSize=p.size;setupDens=p.dens;}renderSetup();});
+$("density").addEventListener("input",e=>{setupDens=+e.target.value;$("densVal").textContent="%"+setupDens;});
+$("seedRand").addEventListener("click",()=>{$("seedInput").value="merve-"+(Math.floor(Math.random()*900)+100);});
+$("startFreeBtn").addEventListener("click",startFree);
+$("levelList").addEventListener("click",e=>{const l=e.target.closest("[data-level]");if(!l||l.dataset.level==="")return;startJourney(+l.dataset.level);});
+$("journeyReset").addEventListener("click",()=>{if(confirm("Yolculuk ilerlemesi sifirlansin mi?")){store.del(KEYS.jrnProg);store.del(KEYS.jrnCur);renderJourney();}});
+$("newBtn").addEventListener("click",()=>{if(ctx.mode==="journey")startJourney(ctx.levelIndex);else startFree();});
+$("resetBtn").addEventListener("click",resetBoard);
+$("hintBtn").addEventListener("click",hint);
+$("homeSettings").addEventListener("click",()=>{renderToggles();$("settingsOverlay").classList.add("show");});
+$("gameSettings").addEventListener("click",()=>{renderToggles();$("settingsOverlay").classList.add("show");});
+$("settingsOverlay").addEventListener("click",e=>{if(e.target.id==="settingsOverlay")$("settingsOverlay").classList.remove("show");});
+$("winHome").addEventListener("click",()=>{$("winOverlay").classList.remove("show");renderHome();showScreen("s-home");});
+$("winNext").addEventListener("click",()=>{$("winOverlay").classList.remove("show");if(ctx.mode==="journey")startJourney(ctx.levelIndex+1);else startFree();});
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&$("s-game").classList.contains("active"))autosave();});
+window.addEventListener("pagehide",()=>{if($("s-game").classList.contains("active"))autosave();});
+
+renderHome();
+</script>
+</body>
+</html>
