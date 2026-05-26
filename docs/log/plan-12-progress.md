@@ -14,7 +14,7 @@
 - [x] Task 7: Karakter UI keepsake bölümü
 
 ## Phase D — Mum tick
-- [ ] Task 8: Puzzle render her saniye timeRemaining tick
+- [x] Task 8: Puzzle render her saniye timeRemaining tick
 
 ## Phase E — Daily
 - [ ] Task 9: daily.js (seed + local leaderboard)

@@ -1414,7 +1414,33 @@ function resetBoard(){
 
 /* sure */
 function fmt(s){const m=(s/60)|0,ss=s%60;return m+":"+(ss<10?"0":"")+ss;}
-function startTimer(){timerBase=Date.now()-elapsed*1000;stopTimer();timerId=setInterval(()=>{elapsed=((Date.now()-timerBase)/1000)|0;$("timer").textContent=fmt(elapsed);},500);$("timer").textContent=fmt(elapsed);}
+function startTimer(){
+  timerBase=Date.now()-elapsed*1000;stopTimer();
+  let lastCandleSec=elapsed;
+  timerId=setInterval(()=>{
+    elapsed=((Date.now()-timerBase)/1000)|0;
+    $("timer").textContent=fmt(elapsed);
+    // Mum Modu — puzzle içi tick (her saniye -1)
+    if(ctx.mode==="rogue"&&elapsed!==lastCandleSec){
+      const deltaSec=elapsed-lastCandleSec;
+      lastCandleSec=elapsed;
+      const run=store.get(KEYS.rogueRun,null);
+      if(run&&run.candleMode&&!run.ended&&(run.timeRemaining||0)>0){
+        run.timeRemaining=Math.max(0,(run.timeRemaining||0)-deltaSec);
+        // throttle saves — her 5sn'de bir
+        if((elapsed%5)===0||run.timeRemaining<=0)store.set(KEYS.rogueRun,run);
+        if(run.timeRemaining<=0){
+          run.ended=true;run.endReason="timeout";run.timeRemaining=0;
+          store.set(KEYS.rogueRun,run);
+          stopTimer();
+          alert("Mum söndü. Koşu bitti.");
+          renderRogueMap(run);showScreen("s-rogue-map");
+        }
+      }
+    }
+  },500);
+  $("timer").textContent=fmt(elapsed);
+}
 function stopTimer(){if(timerId)clearInterval(timerId);timerId=null;}
 
 /* otomatik kayit */
