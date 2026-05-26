@@ -304,7 +304,11 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
 
   <!-- ROGUE MAP -->
   <section class="screen" id="s-rogue-map">
-    <div class="topbar"><button class="iconbtn" data-back aria-label="Geri">‹</button><div class="ttl" id="rogueMapTitle">Koşu</div></div>
+    <div class="topbar">
+      <button class="iconbtn" data-back aria-label="Geri">‹</button>
+      <div class="ttl" id="rogueMapTitle">Koşu</div>
+      <button class="iconbtn" id="rogueMapHelp" aria-label="Sembol açıklaması" title="Sembol açıklaması">?</button>
+    </div>
     <div class="scroll"><div id="rogueMapContent"></div></div>
   </section>
 </div>
@@ -1029,15 +1033,41 @@ function renderRogueMap(run){
     </svg>
   `;
 
-  const candleHtml=run.candleMode?`<div style="font-family:var(--font-mono);font-size:11px;color:var(--bad);">🕯 ${Math.floor((run.timeRemaining||0)/60)}:${((run.timeRemaining||0)%60).toString().padStart(2,"0")}</div>`:"";
+  const candleHtml=run.candleMode?`<div style="font-family:var(--font-mono);font-size:13px;color:var(--bad);">🕯 ${Math.floor((run.timeRemaining||0)/60)}:${((run.timeRemaining||0)%60).toString().padStart(2,"0")}</div>`:"";
+
+  const legendHtml=`
+    <div id="rogueMapLegend" style="display:none;background:var(--panel-2);border:1px solid var(--hairline);border-radius:14px;padding:14px;margin-bottom:12px;">
+      <div style="font-family:var(--font-mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;">harita sembolleri</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        ${[
+          ["◇","Bulmaca","Standart bulmaca, çözünce relic seçeneği"],
+          ["☆","Elit","Zor bulmaca, daha iyi ödül"],
+          ["⬚","Sandık","Bulmaca yok, bir relic seç"],
+          ["⚿","Kilitli Sandık","Bronz Anahtar gerekir"],
+          ["◐","Dinlenme","+1 can yenilenir"],
+          ["?","Olay","Metin + 2-3 seçim"],
+          ["☠","Patron","Kat sonu büyük bulmaca"],
+        ].map(([gly,n,d])=>`
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="color:var(--accent);font-family:var(--font-serif);font-size:20px;min-width:22px;text-align:center;">${gly}</span>
+            <div style="flex:1;">
+              <div style="font-family:var(--font-serif);font-weight:600;font-size:13px;color:var(--ink);">${n}</div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.35;font-family:var(--font-serif);font-style:italic;">${d}</div>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
 
   $("rogueMapTitle").textContent=realm.name;
   $("rogueMapContent").innerHTML=`
+    ${legendHtml}
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0 16px;gap:10px;flex-wrap:wrap;">
       <div>${livesHtml}</div>
-      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);">KAT ${run.floor+1}/${run.mapGraph.floors}</div>
+      <div style="font-family:var(--font-mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);">KAT ${run.floor+1}/${run.mapGraph.floors}</div>
       ${candleHtml}
-      <div style="font-family:var(--font-mono);font-size:12px;color:var(--accent);">◇ ${run.relics.length}</div>
+      <div style="font-family:var(--font-mono);font-size:14px;color:var(--accent);">◇ ${run.relics.length}</div>
     </div>
     <div style="background:var(--panel);border:1px solid var(--hairline);border-radius:18px;padding:14px;">
       ${svg}
@@ -2207,6 +2237,7 @@ function updateUndoRedoButtons(){
 }
 $("homeSettings").addEventListener("click",()=>{renderToggles();$("settingsOverlay").classList.add("show");});
 $("gameSettings").addEventListener("click",()=>{renderToggles();$("settingsOverlay").classList.add("show");});
+$("rogueMapHelp")?.addEventListener("click",()=>{const l=$("rogueMapLegend");if(l)l.style.display=l.style.display==="none"?"block":"none";});
 $("settingsOverlay").addEventListener("click",e=>{if(e.target.id==="settingsOverlay")$("settingsOverlay").classList.remove("show");});
 $("winHome").addEventListener("click",()=>{$("winOverlay").classList.remove("show");renderHome();showScreen("s-home");});
 $("winNext").addEventListener("click",()=>{

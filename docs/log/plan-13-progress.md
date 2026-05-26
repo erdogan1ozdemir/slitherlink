@@ -10,7 +10,7 @@
 - [x] Task 5: "Yeni" buton topbar + confirm (Phase B.1)
 - [x] Task 6: Check (Kontrol) butonu (Phase B.2)
 - [x] Task 7: Corner auto-X mekaniği (Phase B.3)
-- [ ] Task 8: Map symbol legend toggle (Phase B.4)
+- [x] Task 8: Map symbol legend toggle (Phase B.4)
 - [ ] Task 9: Rogue text size + Karakter label boost (Phase B.5)
 - [ ] Task 10: Charm slot tap → library (Phase B.6)
 
