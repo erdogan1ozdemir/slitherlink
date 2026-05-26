@@ -21,7 +21,7 @@ Karanlık İğne (D2) tamamlandı:
 
 ## Roadmap
 
-08 — Karanlık İğne (D2) | ✓ tamamlandı | merge SHA `<doldurulacak>`
+08 — Karanlık İğne (D2) | ✓ tamamlandı | merge SHA `4272163`
 
 ## Sonraki adım
 
