@@ -25,19 +25,28 @@ export function applyTiles(puzzle,realmId,rng,density=0.18){
   if(!puzzle.tiles)puzzle.tiles={};
   const pool=REALM_TILE_POOL[realmId]||[];
   if(!pool.length)return puzzle;
+  // Pre-compute solution lineCounts so we only place lanetli on actual 4-edge cells
+  // and donmus on actual 0-edge cells (keeps puzzle solvable).
+  const solLines=(r,c)=>{
+    return (puzzle.solH[r][c]===1)+(puzzle.solH[r+1][c]===1)+(puzzle.solV[r][c]===1)+(puzzle.solV[r][c+1]===1);
+  };
   for(let r=0;r<puzzle.R;r++)for(let c=0;c<puzzle.C;c++){
     if(puzzle.clue[r][c]<0)continue;
     if(rng()<density){
       const type=pool[(rng()*pool.length)|0];
+      const sLines=solLines(r,c);
+      // Solvability-preserving filters:
+      if(type==="iki-konmaz"&&sLines===2)continue; // can't add (sol has 2 lines)
+      if(type==="lanetli"&&sLines!==4)continue;    // place only where loop has 4 edges
+      if(type==="donmus"&&sLines!==0)continue;     // place only where loop has 0 edges
       puzzle.tiles[r+","+c]={type,revealed:false};
-      // Tile-specific data setup
-      if(type==="iki-konmaz"&&puzzle.clue[r][c]===2){
-        puzzle.clue[r][c]=rng()<0.5?1:3;
-      }else if(type==="lanetli"){
-        puzzle.clue[r][c]=4; // 4 kenar (loop tamamen çevreler)
+      // Tile-specific clue setup (solvability-safe)
+      if(type==="lanetli"){
+        puzzle.clue[r][c]=4; // visualize: loop fully surrounds (sol already has 4)
       }else if(type==="donmus"){
-        puzzle.clue[r][c]=-1; // sayı kaldırılır, sadece kısıt
+        puzzle.clue[r][c]=-1; // sayı kaldırılır, sadece görsel constraint (sol has 0)
       }
+      // iki-konmaz, ikiz, yanki, kayan, sis: keep original clue
     }
   }
   // İkiz pairing

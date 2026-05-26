@@ -7,7 +7,7 @@
 
 ## Phase B — 6 tile
 - [x] Task 4: tiles.js genişlet (ikiz, donmuş, ikiKonmaz, lanetli, yanki, kayan)
-- [ ] Task 5: Puzzle render integration (her tile için görsel/davranış)
+- [x] Task 5: Puzzle render integration (her tile için görsel/davranış)
 
 ## Phase C — Hediye Boncukları
 - [ ] Task 6: keepsakes.js (8 keepsake + auto-unlock on ach)
