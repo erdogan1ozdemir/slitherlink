@@ -30,3 +30,10 @@
 - [ ] Task 19: Smoke test (full akış)
 - [ ] Task 20: Progress log final + roadmap güncelle
 - [ ] Task 21: Push + merge main + push
+
+## Test instruction: Yedek roundtrip
+1. Settings'i değiştir, bir bulmaca yarıda bırak
+2. Yedek Kodu Üret → kopyala
+3. DevTools → Application → localStorage → tüm cember:* sil
+4. Yenile, Yedek Yükle → kodu yapıştır
+5. Ayar değişikliği + yarım bulmaca geri gelmeli
