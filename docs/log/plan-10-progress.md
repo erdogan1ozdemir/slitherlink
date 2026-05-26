@@ -1,0 +1,8 @@
+# Plan 10 Progress
+- [x] Task 1: Branch + log
+- [ ] Task 2: 10 meta achievement (achievements.js)
+- [ ] Task 3: Solve_count + days_streak trigger logic
+- [ ] Task 4: Permanent starter UI (Karakter ekranı)
+- [ ] Task 5: A11y focus rings + ARIA
+- [ ] Task 6: vercel.json + README deploy notu
+- [ ] Task 7: Final + merge + push
