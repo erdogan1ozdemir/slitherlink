@@ -7,7 +7,7 @@
 - [x] Task 5: Game "Yeni" butonu rogue'da gizle + mid-puzzle save/resume
 ## Phase B - D3 content
 - [x] Task 6: realms.js — yildiz-gecidi
-- [ ] Task 7: relics.js — 6 D3 relic
+- [x] Task 7: relics.js — 6 D3 relic
 - [ ] Task 8: events.js — 6 D3 event
 - [ ] Task 9: achievements.js — 5 D3 achievement + multi-stage boss
 - [ ] Task 10: Boss callback — D3 boss multi-stage handling
