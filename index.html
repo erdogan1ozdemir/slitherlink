@@ -364,6 +364,7 @@ import {REALMS, getRealm, isRealmUnlocked} from "./src/rogue/realms.js";
 import {RELICS, getRelic, rollRelicOffer, hasRelic} from "./src/rogue/relics.js";
 import {EVENTS, getEvent, rollEvent} from "./src/rogue/events.js";
 import {ACHIEVEMENTS, emit as emitAchievement, getAchievement, unlockedCount as achUnlocked, totalCount as achTotal} from "./src/rogue/achievements.js";
+import {TALENTS, isUnlocked as isTalentUnlocked, canAfford as canAffordTalent, purchase as purchaseTalent, aggregateEffects as talentEffects} from "./src/rogue/talents.js";
 
 /* =========================================================================
    0) PWA — service worker register + persistent storage
@@ -1467,17 +1468,43 @@ function openStarterPicker(){
 }
 
 function renderIpliklik(){
-  $("ipliklikContent").innerHTML=`
-    <div style="text-align:center;padding:48px 24px;">
-      <div style="font-family:var(--font-serif);font-style:italic;color:var(--accent);font-size:18px;margin-bottom:8px;">İpliklik</div>
-      <p style="font-family:var(--font-serif);font-style:italic;color:var(--ink-dim);line-height:1.6;">
-        koşulardan kazanılan iplik burada<br>kalıcı yetenekler olarak örülür.
-      </p>
-      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:18px;">
-        Yakında — Plan 07
-      </div>
+  const html=`
+    <div style="text-align:center;padding:16px 0 8px;">
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--accent);">iplik bakiyesi</div>
+      <div style="font-family:var(--font-serif);font-size:32px;font-weight:500;color:var(--ink);margin-top:2px;">${meta.currencies.thread||0}</div>
+    </div>
+    <p style="text-align:center;font-family:var(--font-serif);font-style:italic;color:var(--ink-dim);font-size:13px;padding:0 18px 8px;line-height:1.5;">
+      koşulardan kazanılan iplik burada<br>kalıcı yetenekler olarak örülür.
+    </p>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:8px 4px;">
+      ${Object.values(TALENTS).map(t=>{
+        const owned=isTalentUnlocked(meta,t.id);
+        const afford=canAffordTalent(meta,t.id);
+        return `
+          <div style="background:${owned?'var(--panel-2)':'var(--panel)'};border:1px solid ${owned?'var(--accent)':'var(--hairline)'};border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;">
+            <div style="flex:1;">
+              <div style="font-family:var(--font-serif);font-weight:600;font-size:15px;color:var(--ink);">${t.name}</div>
+              <div style="color:var(--muted);font-size:12.5px;margin-top:3px;font-family:var(--font-serif);font-style:italic;">${t.desc}</div>
+            </div>
+            ${owned?
+              `<span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);">açıldı</span>`:
+              `<button class="opt" data-talent="${t.id}" ${afford?"":"disabled"} style="background:${afford?'var(--ink)':'var(--panel-2)'};color:${afford?'var(--bg)':'var(--muted)'};border:1px solid ${afford?'var(--ink)':'var(--hairline)'};font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;padding:8px 12px;">${t.cost} İplik</button>`
+            }
+          </div>
+        `;
+      }).join("")}
     </div>
   `;
+  $("ipliklikContent").innerHTML=html;
+  $("ipliklikContent").querySelectorAll("[data-talent]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const id=btn.dataset.talent;
+      if(purchaseTalent(meta,id)){
+        saveMeta();
+        renderIpliklik();
+      }
+    });
+  });
 }
 
 function renderDiken(){
