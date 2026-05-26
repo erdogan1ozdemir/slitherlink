@@ -346,7 +346,25 @@ const CONFIG = {
    2) DEPOLAMA (otomatik kayit / devam)  - localStorage, guvenli sarmalanmis
    ========================================================================= */
 const KEYS={settings:"cember:settings",freeCur:"cember:free:current",
-  jrnProg:"cember:journey:progress",jrnCur:"cember:journey:current",stats:"cember:stats"};
+  jrnProg:"cember:journey:progress",jrnCur:"cember:journey:current",stats:"cember:stats",meta:"cember:meta"};
+const META_DEFAULTS={
+  version:1,
+  hasSeenIntro:false,
+  achievements:{},
+  realms:{
+    "sogut-esigi":  {unlocked:true, timesEntered:0, timesCleared:0, bestFloor:0, bestTime:null, defeatedBosses:0, seenEvents:[], knownRelics:[], compassStars:0, unlockedConstraintTiles:[]},
+    "karanlik-igne":{unlocked:false,timesEntered:0, timesCleared:0, bestFloor:0, bestTime:null, defeatedBosses:0, seenEvents:[], knownRelics:[], compassStars:0, unlockedConstraintTiles:[]},
+    "yildiz-gecidi":{unlocked:false,timesEntered:0, timesCleared:0, bestFloor:0, bestTime:null, defeatedBosses:0, seenEvents:[], knownRelics:[], compassStars:0, unlockedConstraintTiles:[]}
+  },
+  totalStats:{runs:0,solves:0,time:0,hintsUsed:0},
+  permanentStarters:[],
+  jediDiary:[],
+  loomHall:{activeTalents:{},unlockedTalents:[]},
+  thornsContract:{profiles:[]},
+  charms:{equipped:[],unlocked:[]},
+  keepsakes:{discovered:[]},
+  currencies:{thread:0,bead:0,stardust:0}
+};
 const store={
   get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}idbStore.set(k,v);},
@@ -412,6 +430,22 @@ function makePuzzle(R,C,keepRatio,rng){
 const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only"};
 let settings=Object.assign({},DEFAULT_SETTINGS,store.get(KEYS.settings,{}));
 function saveSettings(){store.set(KEYS.settings,settings);}
+
+function deepMerge(target,source){
+  if(!source||typeof source!=="object")return target;
+  for(const k in source){
+    if(source[k]&&typeof source[k]==="object"&&!Array.isArray(source[k])){
+      target[k]=deepMerge(typeof target[k]==="object"&&!Array.isArray(target[k])?target[k]:{},source[k]);
+    }else if(target[k]===undefined){
+      target[k]=source[k];
+    }
+  }
+  return target;
+}
+let meta=deepMerge(Object.assign({},store.get(KEYS.meta,{})),META_DEFAULTS);
+if(!meta.version)meta.version=1;
+store.set(KEYS.meta,meta);
+function saveMeta(){store.set(KEYS.meta,meta);}
 const TOGGLE_DEFS=[
   {k:"hints",  t:"İpucu butonu",            d:"Oyunda ipucu butonunu göster"},
   {k:"autoX",  t:"Otomatik çarpı",          d:"Sayı tamamlanınca boş kenarlara çarpı koy"},
