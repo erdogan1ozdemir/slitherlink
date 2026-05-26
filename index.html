@@ -266,6 +266,19 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
   </div>
 </div>
 
+<!-- BACKUP -->
+<div class="overlay center" id="backupOverlay">
+  <div class="modal" style="max-width:420px;width:calc(100% - 32px);text-align:left;">
+    <h2 id="backupTitle">Yedek Kodu</h2>
+    <p id="backupMsg">Bu kodu kopyala ve güvenli bir yere kaydet. Geri yüklemek için aynı kodu yapıştır.</p>
+    <textarea id="backupTextarea" style="width:100%;height:160px;background:var(--bg);color:var(--ink);border:1px solid var(--hairline);border-radius:12px;padding:12px;font-family:var(--font-mono);font-size:11px;line-height:1.4;resize:none;margin:14px 0 12px;word-break:break-all;"></textarea>
+    <div class="row">
+      <button class="btn-ghost" id="backupCancel">İptal</button>
+      <button class="btn-primary" id="backupAction" style="border:none">Kopyala</button>
+    </div>
+  </div>
+</div>
+
 <!-- WIN -->
 <div class="overlay center" id="winOverlay">
   <div class="modal">
@@ -791,6 +804,9 @@ $("howBtn")?.addEventListener("click",openHow);
 $("howBtnSettings")?.addEventListener("click",()=>{$("settingsOverlay").classList.remove("show");setTimeout(openHow,260);});
 $("howTabs").addEventListener("click",e=>{const t=e.target.closest(".tab");if(!t)return;$("howTabs").querySelectorAll(".tab").forEach(x=>x.classList.toggle("sel",x===t));renderHowTab(t.dataset.tab);});
 $("howOverlay").addEventListener("click",e=>{if(e.target.id==="howOverlay")$("howOverlay").classList.remove("show");});
+$("backupOverlay").addEventListener("click",e=>{if(e.target.id==="backupOverlay")$("backupOverlay").classList.remove("show");});
+$("backupAction").addEventListener("click",handleBackupAction);
+$("backupCancel").addEventListener("click",()=>$("backupOverlay").classList.remove("show"));
 
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&$("s-game").classList.contains("active"))autosave();});
 window.addEventListener("pagehide",()=>{if($("s-game").classList.contains("active"))autosave();});
@@ -827,6 +843,48 @@ function backupRestore(data){
     else store.del(k);
   }
   return true;
+}
+
+let backupMode="export";
+function openBackupExport(){
+  backupMode="export";
+  const code=backupEncode(backupCollect())||"(kod üretilemedi)";
+  $("backupTitle").textContent="Yedek Kodu Üret";
+  $("backupMsg").textContent="Aşağıdaki kodu kopyala ve güvenli bir yere kaydet (Notes, Mail, Drive). Geri yüklemek için aynı kodu kullanırsın.";
+  $("backupTextarea").value=code;
+  $("backupTextarea").readOnly=true;
+  $("backupAction").textContent="Kopyala";
+  $("settingsOverlay").classList.remove("show");
+  setTimeout(()=>$("backupOverlay").classList.add("show"),260);
+}
+function openBackupImport(){
+  backupMode="import";
+  $("backupTitle").textContent="Yedek Yükle";
+  $("backupMsg").textContent="Daha önce ürettiğin yedek kodunu yapıştır. Mevcut tüm ilerlemenin üzerine yazılır.";
+  $("backupTextarea").value="";
+  $("backupTextarea").readOnly=false;
+  $("backupTextarea").placeholder="CEMBER-v1:eyJ...";
+  $("backupAction").textContent="Yükle";
+  $("settingsOverlay").classList.remove("show");
+  setTimeout(()=>$("backupOverlay").classList.add("show"),260);
+}
+function handleBackupAction(){
+  if(backupMode==="export"){
+    const ta=$("backupTextarea");ta.select();
+    try{document.execCommand("copy");$("backupAction").textContent="Kopyalandı ✓";setTimeout(()=>{$("backupOverlay").classList.remove("show");$("backupAction").textContent="Kopyala";},900);}
+    catch(e){alert("Kopyalama başarısız. Manuel olarak seçip kopyala.");}
+  }else{
+    const code=$("backupTextarea").value.trim();
+    if(!code){alert("Lütfen bir kod yapıştır.");return;}
+    const data=backupDecode(code);
+    if(!data){alert("Kod geçersiz veya bozuk. Doğru yedek kodu olduğundan emin ol.");return;}
+    if(!confirm("Mevcut tüm ilerlemenin üzerine yazılacak. Devam edilsin mi?"))return;
+    const ok=backupRestore(data);
+    if(ok){
+      $("backupAction").textContent="Yüklendi ✓";
+      setTimeout(()=>{$("backupOverlay").classList.remove("show");settings=Object.assign({},DEFAULT_SETTINGS,store.get(KEYS.settings,{}));renderHome();showScreen("s-home");$("backupAction").textContent="Yükle";},900);
+    }else{alert("Yükleme başarısız. Kod formatı doğru ama içerik tanınamadı.");}
+  }
 }
 
 renderHome();
