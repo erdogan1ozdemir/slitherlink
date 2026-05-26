@@ -1,5 +1,5 @@
 // Slitherlink PWA service worker — cache-first shell, network-first dynamic
-const VERSION = 'slitherlink-shell-v2';
+const VERSION = 'slitherlink-shell-v3';
 const SHELL = [
   './',
   './index.html',

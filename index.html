@@ -383,6 +383,27 @@ import {KEEPSAKES, allUnlockedKeepsakes, checkAutoUnlock as checkKeepsakeUnlock}
 import {todaySeed, todayDate, hasPlayedToday as todayHasPlayed, recordResult as recordDaily, getLeaderboard as getDailyLB} from "./src/rogue/daily.js";
 
 /* =========================================================================
+   0) ONE-TIME RESET (v3 cache bust + clean state)
+   ========================================================================= */
+(function(){
+  const RESET_FLAG="cember:reset:v3";
+  try{
+    if(!localStorage.getItem(RESET_FLAG)){
+      const toRemove=[];
+      for(let i=0;i<localStorage.length;i++){
+        const k=localStorage.key(i);
+        if(k&&k.startsWith("cember:"))toRemove.push(k);
+      }
+      toRemove.forEach(k=>localStorage.removeItem(k));
+      if(typeof indexedDB!=="undefined"){
+        try{indexedDB.deleteDatabase("cember-db");}catch(e){}
+      }
+      localStorage.setItem(RESET_FLAG,"done");
+    }
+  }catch(e){}
+})();
+
+/* =========================================================================
    0) PWA — service worker register + persistent storage
    ========================================================================= */
 if('serviceWorker' in navigator){
