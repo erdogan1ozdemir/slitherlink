@@ -62,6 +62,67 @@ export const EVENTS={
     ],
     realm:"sogut-esigi",
   },
+  "kutuphanecinin-uykusu":{
+    id:"kutuphanecinin-uykusu",
+    title:"Kütüphanecinin Uykusu",
+    text:"Sessiz Kütüphaneci sandalyesinde uyumuş. Yanından geçmek için iki seçenek var.",
+    choices:[
+      {tone:"safe",text:"Sessizce geç",result:"hiçbir şey olmaz",effect:{type:"none"}},
+      {tone:"risk",text:"Çantasını karıştır",result:"%50 ihtimal +1 relic / %50 -1 can",effect:{type:"chance-relic-or-damage",chance:0.5}},
+    ],
+    realm:"karanlik-igne",
+  },
+  "kayip-mektup":{
+    id:"kayip-mektup",
+    title:"Kayıp Mektup",
+    text:"Bir kitabın arasında yarım kalmış bir mektup. 'Sevdiğim, bilirim ki...'",
+    choices:[
+      {tone:"safe",text:"Oku ve kapat",result:"+3 iplik",effect:{type:"thread",amount:3}},
+      {tone:"pass",text:"Yerine bırak",result:"hiçbir şey olmaz",effect:{type:"none"}},
+    ],
+    realm:"karanlik-igne",
+  },
+  "murekkep-kuyusu":{
+    id:"murekkep-kuyusu",
+    title:"Mürekkep Kuyusu",
+    text:"Eski bir kuyu, içinde koyu mürekkep titriyor. Yansımanda biri var.",
+    choices:[
+      {tone:"risk",text:"Eğil ve bak",result:"-1 can ama nadir relic şansı",effect:{type:"damage-then-relic",damage:1}},
+      {tone:"pass",text:"Geç",result:"hiçbir şey olmaz",effect:{type:"none"}},
+    ],
+    realm:"karanlik-igne",
+  },
+  "bos-koltuk":{
+    id:"bos-koltuk",
+    title:"Boş Koltuk",
+    text:"Üstünde örtü, yastığında tüy basılmış. Birisi yeni kalkmış gibi.",
+    choices:[
+      {tone:"safe",text:"Otur ve dinlen",result:"+1 can",effect:{type:"heal",amount:1}},
+      {tone:"pass",text:"Geç",result:"hiçbir şey olmaz",effect:{type:"none"}},
+    ],
+    realm:"karanlik-igne",
+  },
+  "anahtar-cingirgi":{
+    id:"anahtar-cingirgi",
+    title:"Anahtar Çıngırağı",
+    text:"Uzaktan tıkırdayan bir anahtar sesi. Yaklaşır mı, uzaklaşır mı?",
+    choices:[
+      {tone:"safe",text:"Takip et",result:"%70 ihtimal bronz anahtar",effect:{type:"chance-specific-relic",chance:0.7,relicId:"bronz-anahtar"}},
+      {tone:"pass",text:"Geç",result:"hiçbir şey olmaz",effect:{type:"none"}},
+    ],
+    realm:"karanlik-igne",
+  },
+  "toz-patikasi":{
+    id:"toz-patikasi",
+    title:"Toz Patikası",
+    text:"Yerde minik pati izleri — kediden olmalı. Patika bir yere gidiyor.",
+    choices:[
+      {tone:"safe",text:"İzleri takip et",result:"+2 iplik",effect:{type:"thread",amount:2}},
+      {tone:"safe",text:"Pati izini sev",result:"+1 boncuk",effect:{type:"bead",amount:1}},
+      {tone:"pass",text:"Geç",result:"hiçbir şey olmaz",effect:{type:"none"}},
+    ],
+    realm:"karanlik-igne",
+  },
 };
 
 export function getEvent(id){return EVENTS[id];}
