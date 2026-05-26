@@ -365,6 +365,7 @@ import {RELICS, getRelic, rollRelicOffer, hasRelic} from "./src/rogue/relics.js"
 import {EVENTS, getEvent, rollEvent} from "./src/rogue/events.js";
 import {ACHIEVEMENTS, emit as emitAchievement, getAchievement, unlockedCount as achUnlocked, totalCount as achTotal} from "./src/rogue/achievements.js";
 import {TALENTS, isUnlocked as isTalentUnlocked, canAfford as canAffordTalent, purchase as purchaseTalent, aggregateEffects as talentEffects} from "./src/rogue/talents.js";
+import {CHARMS, isUnlocked as isCharmUnlocked, isEquipped as isCharmEquipped, canAfford as canAffordCharm, purchase as purchaseCharm, equip as equipCharm, unequip as unequipCharm, aggregateEffects as charmEffects} from "./src/rogue/charms.js";
 
 /* =========================================================================
    0) PWA — service worker register + persistent storage
@@ -1444,12 +1445,97 @@ function renderKarakter(){
     </div>
   `;
 
-  const fullHtml=existingHtml+`<div style="margin-top:16px;padding:0 4px;">${starterHtml}</div>`;
+  const charmsHtml=`
+    <div style="margin-top:18px;padding:0 4px;">
+      <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">boncuk dizimi · ${(meta.charms?.equipped||[]).length}/3</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        ${[0,1,2].map(i=>{
+          const eq=(meta.charms?.equipped||[])[i];
+          const c=eq?CHARMS[eq]:null;
+          return `
+            <div data-charm-slot="${i}" style="background:${c?'var(--panel-2)':'var(--panel)'};border:1px ${c?'solid var(--accent)':'dashed var(--hairline)'};border-radius:12px;padding:14px 8px;text-align:center;cursor:pointer;min-height:88px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+              ${c?`
+                <div style="color:var(--accent);font-family:var(--font-serif);font-size:22px;">${c.glyph}</div>
+                <div style="font-family:var(--font-serif);font-weight:600;font-size:11.5px;color:var(--ink);margin-top:4px;line-height:1.2;">${c.name}</div>
+              `:`
+                <div style="color:var(--muted);font-family:var(--font-serif);font-size:20px;opacity:.4;">+</div>
+                <div style="font-family:var(--font-mono);font-size:8.5px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin-top:4px;">boş</div>
+              `}
+            </div>
+          `;
+        }).join("")}
+      </div>
+      <button class="opt" id="charmsLibBtn" style="margin-top:10px;width:100%;background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);">Boncuk Koleksiyonu</button>
+    </div>
+  `;
+
+  const fullHtml=existingHtml+`<div style="margin-top:16px;padding:0 4px;">${starterHtml}</div>`+charmsHtml;
   $("karakterContent").innerHTML=fullHtml;
 
   // Handler
   const sel=$("starterSelectBtn")||$("starterChangeBtn");
   if(sel)sel.addEventListener("click",openStarterPicker);
+  // Charm slot handlers
+  $("karakterContent").querySelectorAll("[data-charm-slot]").forEach(el=>{
+    el.addEventListener("click",()=>{
+      const i=+el.dataset.charmSlot;
+      const eq=(meta.charms?.equipped||[])[i];
+      if(eq){
+        unequipCharm(meta,eq);
+        saveMeta();
+        renderKarakter();
+      }else{
+        openCharmsLibrary();
+      }
+    });
+  });
+  $("charmsLibBtn")?.addEventListener("click",openCharmsLibrary);
+}
+
+function openCharmsLibrary(){
+  const html=`
+    <h2>Boncuk Koleksiyonu</h2>
+    <p>Boncuk: <b>${meta.currencies.bead||0}</b> · Açık: ${(meta.charms?.unlocked||[]).length}/${Object.keys(CHARMS).length} · Dizili: ${(meta.charms?.equipped||[]).length}/3</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin:14px 0;max-height:55dvh;overflow-y:auto;">
+      ${Object.values(CHARMS).map(c=>{
+        const owned=isCharmUnlocked(meta,c.id);
+        const eq=isCharmEquipped(meta,c.id);
+        const afford=canAffordCharm(meta,c.id);
+        let action;
+        if(eq){
+          action=`<button class="opt" data-charm-act="unequip" data-charm="${c.id}" style="background:var(--panel-2);color:var(--accent);border:1px solid var(--accent);font-size:11px;">Çıkar</button>`;
+        }else if(owned){
+          const slotFull=(meta.charms?.equipped||[]).length>=3;
+          action=`<button class="opt" data-charm-act="equip" data-charm="${c.id}" ${slotFull?'disabled':''} style="background:${slotFull?'var(--panel)':'var(--ink)'};color:${slotFull?'var(--muted)':'var(--bg)'};border:none;font-size:11px;">${slotFull?'slot dolu':'Diz'}</button>`;
+        }else{
+          action=`<button class="opt" data-charm-act="buy" data-charm="${c.id}" ${afford?'':'disabled'} style="background:${afford?'var(--ink)':'var(--panel-2)'};color:${afford?'var(--bg)':'var(--muted)'};border:1px solid ${afford?'var(--ink)':'var(--hairline)'};font-family:var(--font-mono);font-size:11px;">${c.cost} Boncuk</button>`;
+        }
+        return `
+          <div style="background:${eq?'var(--panel-2)':'var(--panel)'};border:1px solid ${eq?'var(--accent)':'var(--hairline)'};border-radius:12px;padding:11px 14px;display:flex;align-items:center;gap:12px;">
+            <span style="color:${owned?'var(--accent)':'var(--muted)'};font-family:var(--font-serif);font-size:22px;">${c.glyph}</span>
+            <div style="flex:1;">
+              <div style="font-family:var(--font-serif);font-weight:600;font-size:14px;color:var(--ink);">${c.name}</div>
+              <div style="color:var(--muted);font-size:12px;margin-top:2px;font-family:var(--font-serif);font-style:italic;">${c.desc}</div>
+            </div>
+            ${action}
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+  openRogueModal(html,e=>{
+    const btn=e.target.closest("[data-charm-act]");
+    if(!btn)return;
+    const id=btn.dataset.charm;const act=btn.dataset.charmAct;
+    let changed=false;
+    if(act==="buy")changed=purchaseCharm(meta,id);
+    else if(act==="equip")changed=equipCharm(meta,id);
+    else if(act==="unequip")changed=unequipCharm(meta,id);
+    if(changed){
+      saveMeta();
+      openCharmsLibrary(); // re-render
+    }
+  });
 }
 
 function openStarterPicker(){
