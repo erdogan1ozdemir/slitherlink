@@ -1019,6 +1019,17 @@ function applyEventEffect(run,ev,choice){
       saveMeta();
       checkAllRelicsSeenInRun(run);
     }
+  }else if(e.type==="stardust"){
+    meta.currencies.stardust=(meta.currencies.stardust||0)+(e.amount||1);
+    saveMeta();
+  }else if(e.type==="chance-bead-or-damage"){
+    if(Math.random()<(e.chance||0.5)){
+      meta.currencies.bead=(meta.currencies.bead||0)+(e.beadAmount||1);
+      saveMeta();
+    }else{
+      run.lives.current=Math.max(0,run.lives.current-1);
+      if(run.lives.current===0){run.ended=true;run.endReason="no-lives";}
+    }
   }
 }
 
@@ -1079,6 +1090,29 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
       const node=run.mapGraph.nodes.find(n=>n.id===ctx.nodeId);
       meta.currencies.thread=(meta.currencies.thread||0)+(node&&node.type==="elite"?5:3);
       if(node&&node.type==="boss"){
+        // Multi-stage boss handling (e.g. Yıldız İplikçisi 3 aşama)
+        const realmForBoss=getRealm(run.realmId);
+        if(realmForBoss&&realmForBoss.bossMultiStage&&realmForBoss.bossMultiStage>1){
+          if(!run.bossStage)run.bossStage=1;
+          if(run.bossStage<realmForBoss.bossMultiStage){
+            run.bossStage++;
+            run.midPuzzle=null;
+            store.set(KEYS.rogueRun,run);
+            const cfg=realmForBoss.floorConfig[node.floor];
+            const stageSize=cfg.sizes[0]+run.bossStage-1;
+            const stageKeep=Math.max(0.40,cfg.keep-0.05*(run.bossStage-1));
+            const stageRng=mulberry32(hashSeed(run.seed+"-"+ctx.nodeId+"-stage"+run.bossStage));
+            setTimeout(()=>{
+              $("winOverlay").classList.remove("show");
+              startGame(makePuzzle(stageSize,stageSize,stageKeep,stageRng),{mode:"rogue",realmId:run.realmId,nodeId:ctx.nodeId,runRef:true,bossStage:run.bossStage});
+            },1200);
+            $("winTime").textContent=fmt(elapsed);$("winHints").textContent=hints;
+            setTimeout(()=>{$("winOverlay").classList.add("show");burst();},420);
+            return;
+          }
+          // Final stage cleared
+          run.bossStage=null;
+        }
         winRun(run);
         meta.currencies.bead=(meta.currencies.bead||0)+1;
         if(!meta.realms[run.realmId])meta.realms[run.realmId]={};
@@ -1103,6 +1137,9 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
             if(!meta.realms["yildiz-gecidi"])meta.realms["yildiz-gecidi"]={};
             meta.realms["yildiz-gecidi"].unlocked=true;
           }
+        }else if(run.realmId==="yildiz-gecidi"){
+          if(run.lives.current>=2)achievementUnlock("clear_with_lives:yildiz-gecidi:2");
+          if(!run.wasResumed)achievementUnlock("single_session_clear:yildiz-gecidi");
         }
         // Speed clear achievement
         if(run.realmId==="karanlik-igne"&&elapsed<900){
@@ -1460,7 +1497,11 @@ $("startBtn").addEventListener("click",()=>{$("startOverlay").classList.remove("
 $("homeCards").addEventListener("click",e=>{const c=e.target.closest("[data-card]");if(!c)return;const id=c.dataset.card;
   if(id==="rogue"){
     const rr=store.get(KEYS.rogueRun,null);
-    if(rr&&!rr.ended){renderRogueMap(rr);showScreen("s-rogue-map");return;}
+    if(rr&&!rr.ended){
+      rr.wasResumed=true;
+      store.set(KEYS.rogueRun,rr);
+      renderRogueMap(rr);showScreen("s-rogue-map");return;
+    }
     renderYuva();showScreen("s-yuva");return;
   }
   if(id==="free"){const r=loadResume(KEYS.freeCur);if(r)startGame(r.puzzle,r.ctx,r);else{renderSetup();showScreen("s-setup");}}

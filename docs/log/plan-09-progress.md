@@ -10,7 +10,7 @@
 - [x] Task 7: relics.js — 6 D3 relic
 - [x] Task 8: events.js — 6 D3 event
 - [x] Task 9: achievements.js — 5 D3 achievement + multi-stage boss
-- [ ] Task 10: Boss callback — D3 boss multi-stage handling
+- [x] Task 10: Boss callback — D3 boss multi-stage handling
 ## Phase C - Mum Modu
 - [ ] Task 11: Settings'e mumModu toggle
 - [ ] Task 12: Rogue HUD mum + timer + node cost
