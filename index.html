@@ -253,8 +253,12 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
 
   <!-- GAME -->
   <section class="screen" id="s-game">
-    <div class="topbar"><button class="iconbtn" data-back aria-label="Geri">‹</button><div class="ttl" id="gameTitle">Bulmaca</div>
-      <button class="iconbtn" id="gameSettings" aria-label="Ayarlar">⚙</button></div>
+    <div class="topbar">
+      <button class="iconbtn" data-back aria-label="Geri">‹</button>
+      <div class="ttl" id="gameTitle">Bulmaca</div>
+      <button class="iconbtn" id="gameNewBtn" aria-label="Yeni bulmaca" title="Yeni bulmaca">✦</button>
+      <button class="iconbtn" id="gameSettings" aria-label="Ayarlar">⚙</button>
+    </div>
     <div class="gamebar">
       <div class="chip"><small>Süre</small><span id="timer">0:00</span></div>
       <div class="chip" id="hintChip"><small>İpucu</small><span id="hintsUsed">0</span></div>
@@ -264,8 +268,8 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
       <button class="btn-ghost" id="undoBtn" title="Geri al" aria-label="Geri al">↶</button>
       <button class="btn-ghost" id="redoBtn" title="İleri al" aria-label="İleri al">↷</button>
       <button class="btn-ghost" id="resetBtn" title="Temizle" aria-label="Tahtayı temizle">↺</button>
+      <button class="btn-ghost" id="checkBtn" title="Kontrol et" aria-label="Kontrol et">✓</button>
       <button class="btn-ghost hidden" id="hintBtn" aria-label="İpucu al">💡 İpucu</button>
-      <button class="btn-primary" id="newBtn" aria-label="Yeni bulmaca">✦ Yeni</button>
     </div>
   </section>
 
@@ -660,7 +664,7 @@ function startGame(puzzle,context,restore){
 }
 function applyHintVisibility(){$("hintBtn").classList.toggle("hidden",!settings.hints);}
 function applyUndoVisibility(){const v=settings.undoButtons!==false;$("undoBtn").classList.toggle("hidden",!v);$("redoBtn").classList.toggle("hidden",!v);}
-function applyNewBtnVisibility(){$("newBtn").classList.toggle("hidden",ctx.mode==="rogue");}
+function applyNewBtnVisibility(){$("gameNewBtn").classList.toggle("hidden",ctx.mode==="rogue");}
 
 /* cizim */
 function geom(){const R=P.R,C=P.C;const S=Math.max(34,Math.min(70,Math.floor(560/Math.max(R,C))));
@@ -2130,7 +2134,10 @@ $("seedRand").addEventListener("click",()=>{$("seedInput").value="merve-"+(Math.
 $("startFreeBtn").addEventListener("click",startFree);
 $("levelList").addEventListener("click",e=>{const l=e.target.closest("[data-level]");if(!l||l.dataset.level==="")return;startJourney(+l.dataset.level);});
 $("journeyReset").addEventListener("click",()=>{if(confirm("Yolculuk ilerlemesi sıfırlansın mı?")){store.del(KEYS.jrnProg);store.del(KEYS.jrnCur);renderJourney();}});
-$("newBtn").addEventListener("click",()=>{if(ctx.mode==="journey")startJourney(ctx.levelIndex);else startFree();});
+$("gameNewBtn").addEventListener("click",()=>{
+  if(!confirm("Yeni bulmaca başlatılsın mı? Mevcut ilerleme kaybolacak."))return;
+  if(ctx.mode==="journey")startJourney(ctx.levelIndex);else startFree();
+});
 $("undoBtn").addEventListener("click",undo);
 $("redoBtn").addEventListener("click",redo);
 $("resetBtn").addEventListener("click",resetBoard);

@@ -7,7 +7,7 @@
 - [x] Task 4: Preset stuck fix + active pill (Phase A.3)
 
 ## Phase B — UX
-- [ ] Task 5: "Yeni" buton topbar + confirm (Phase B.1)
+- [x] Task 5: "Yeni" buton topbar + confirm (Phase B.1)
 - [ ] Task 6: Check (Kontrol) butonu (Phase B.2)
 - [ ] Task 7: Corner auto-X mekaniği (Phase B.3)
 - [ ] Task 8: Map symbol legend toggle (Phase B.4)
