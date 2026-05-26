@@ -110,12 +110,12 @@ svg{width:100%;height:auto;display:block;touch-action:manipulation;}
 /* setup / journey */
 .section-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:var(--muted);margin:20px 0 10px;font-weight:500;}
 .chips{display:flex;flex-wrap:wrap;gap:8px;}
-.opt{background:var(--panel);border:1px solid var(--hairline);color:var(--ink);border-radius:12px;padding:9px 15px;font-weight:700;font-size:14px;cursor:pointer;}
-.opt.sel{background:var(--ink);color:var(--bg);}
+.opt{background:var(--panel);border:1px solid var(--hairline);color:var(--ink);border-radius:12px;padding:9px 14px;font-family:var(--font-body);font-weight:700;font-size:13px;cursor:pointer;transition:background .15s,color .15s;}
+.opt.sel{background:var(--ink);color:var(--bg);border-color:var(--ink);}
 .slider-row{display:flex;align-items:center;gap:14px;margin-top:8px;}
 input[type=range]{flex:1;accent-color:var(--ink);}
 .seedrow{display:flex;gap:8px;margin-top:8px;}
-.seedrow input[type=text]{flex:1;background:var(--panel);border:1px solid var(--hairline);color:var(--ink);border-radius:12px;padding:11px 14px;font-family:"Karla";font-size:15px;}
+.seedrow input[type=text]{flex:1;background:var(--panel);border:1px solid var(--hairline);color:var(--ink);border-radius:12px;padding:11px 14px;font-family:var(--font-mono);font-size:14px;letter-spacing:.02em;}
 .bigbtn{width:100%;background:var(--ink);color:var(--bg);border:none;border-radius:18px;padding:18px;font-family:var(--font-body);font-weight:700;font-size:16px;margin-top:28px;cursor:pointer;letter-spacing:.02em;}
 .bigbtn:active{transform:scale(.99);}
 .level-list{display:flex;flex-direction:column;gap:10px;margin-top:8px;}
@@ -158,7 +158,7 @@ input[type=range]{flex:1;accent-color:var(--ink);}
 .modal .row{display:flex;gap:10px;margin-top:6px;}
 .modal button{flex:1;border-radius:14px;padding:13px;font-family:var(--font-body);font-weight:700;font-size:14px;cursor:pointer;border:1px solid var(--hairline);}
 canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
-.foot-note{text-align:center;color:var(--muted);font-size:12px;font-style:italic;font-family:"Fraunces",serif;padding:8px 24px;line-height:1.5;}
+.foot-note{text-align:center;color:var(--muted);font-size:13px;font-style:italic;font-weight:400;font-family:var(--font-serif);padding:14px 24px;line-height:1.5;text-wrap:pretty;}
 </style>
 </head>
 <body>
