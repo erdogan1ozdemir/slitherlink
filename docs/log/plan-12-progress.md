@@ -2,7 +2,7 @@
 - [x] Task 1: Branch + log
 
 ## Phase A — Diken
-- [ ] Task 2: thorns.js (10 modifier + apply + iz score)
+- [x] Task 2: thorns.js (10 modifier + apply + iz score)
 - [ ] Task 3: Diken Sözleşmesi UI + profile + run start apply
 
 ## Phase B — 6 tile
