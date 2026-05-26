@@ -346,11 +346,51 @@ const CONFIG = {
    2) DEPOLAMA (otomatik kayit / devam)  - localStorage, guvenli sarmalanmis
    ========================================================================= */
 const KEYS={settings:"cember:settings",freeCur:"cember:free:current",
-  jrnProg:"cember:journey:progress",jrnCur:"cember:journey:current",stats:"cember:stats"};
+  jrnProg:"cember:journey:progress",jrnCur:"cember:journey:current",stats:"cember:stats",meta:"cember:meta"};
+const META_DEFAULTS={
+  version:1,
+  hasSeenIntro:false,
+  achievements:{},
+  realms:{
+    "sogut-esigi":  {unlocked:true, timesEntered:0, timesCleared:0, bestFloor:0, bestTime:null, defeatedBosses:0, seenEvents:[], knownRelics:[], compassStars:0, unlockedConstraintTiles:[]},
+    "karanlik-igne":{unlocked:false,timesEntered:0, timesCleared:0, bestFloor:0, bestTime:null, defeatedBosses:0, seenEvents:[], knownRelics:[], compassStars:0, unlockedConstraintTiles:[]},
+    "yildiz-gecidi":{unlocked:false,timesEntered:0, timesCleared:0, bestFloor:0, bestTime:null, defeatedBosses:0, seenEvents:[], knownRelics:[], compassStars:0, unlockedConstraintTiles:[]}
+  },
+  totalStats:{runs:0,solves:0,time:0,hintsUsed:0},
+  permanentStarters:[],
+  jediDiary:[],
+  loomHall:{activeTalents:{},unlockedTalents:[]},
+  thornsContract:{profiles:[]},
+  charms:{equipped:[],unlocked:[]},
+  keepsakes:{discovered:[]},
+  currencies:{thread:0,bead:0,stardust:0}
+};
 const store={
   get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},
-  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},
-  del(k){try{localStorage.removeItem(k);}catch(e){}}
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}idbStore.set(k,v);},
+  del(k){try{localStorage.removeItem(k);}catch(e){}idbStore.del(k);}
+};
+
+/* IDB sarmalayıcı — sessiz ayna; başarısız olursa null/noop */
+const IDB_NAME="cember-db",IDB_STORE="kv",IDB_VERSION=1;
+let _idbReady=null;
+function _idbOpen(){
+  if(_idbReady)return _idbReady;
+  _idbReady=new Promise(res=>{
+    try{
+      const req=indexedDB.open(IDB_NAME,IDB_VERSION);
+      req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(IDB_STORE))db.createObjectStore(IDB_STORE);};
+      req.onsuccess=()=>res(req.result);
+      req.onerror=()=>res(null);
+    }catch(e){res(null);}
+  });
+  return _idbReady;
+}
+const idbStore={
+  async get(k){const db=await _idbOpen();if(!db)return undefined;return new Promise(res=>{try{const tx=db.transaction(IDB_STORE,"readonly");const r=tx.objectStore(IDB_STORE).get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>res(undefined);}catch(e){res(undefined);}});},
+  async set(k,v){const db=await _idbOpen();if(!db)return;return new Promise(res=>{try{const tx=db.transaction(IDB_STORE,"readwrite");tx.objectStore(IDB_STORE).put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>res();}catch(e){res();}});},
+  async del(k){const db=await _idbOpen();if(!db)return;return new Promise(res=>{try{const tx=db.transaction(IDB_STORE,"readwrite");tx.objectStore(IDB_STORE).delete(k);tx.oncomplete=()=>res();tx.onerror=()=>res();}catch(e){res();}});},
+  async keys(){const db=await _idbOpen();if(!db)return [];return new Promise(res=>{try{const tx=db.transaction(IDB_STORE,"readonly");const r=tx.objectStore(IDB_STORE).getAllKeys();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>res([]);}catch(e){res([]);}});}
 };
 
 /* =========================================================================
@@ -390,6 +430,27 @@ function makePuzzle(R,C,keepRatio,rng){
 const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only"};
 let settings=Object.assign({},DEFAULT_SETTINGS,store.get(KEYS.settings,{}));
 function saveSettings(){store.set(KEYS.settings,settings);}
+
+function deepMerge(target,source){
+  if(!source||typeof source!=="object")return target;
+  for(const k in source){
+    if(source[k]&&typeof source[k]==="object"&&!Array.isArray(source[k])){
+      target[k]=deepMerge(typeof target[k]==="object"&&!Array.isArray(target[k])?target[k]:{},source[k]);
+    }else if(target[k]===undefined){
+      target[k]=source[k];
+    }
+  }
+  return target;
+}
+let meta=deepMerge(Object.assign({},store.get(KEYS.meta,{})),META_DEFAULTS);
+function migrateMeta(m){
+  if(!m.version)m.version=1;
+  // v1 = current; future versions: if(m.version<2){...; m.version=2;}
+  return m;
+}
+meta=migrateMeta(meta);
+store.set(KEYS.meta,meta);
+function saveMeta(){store.set(KEYS.meta,meta);}
 const TOGGLE_DEFS=[
   {k:"hints",  t:"İpucu butonu",            d:"Oyunda ipucu butonunu göster"},
   {k:"autoX",  t:"Otomatik çarpı",          d:"Sayı tamamlanınca boş kenarlara çarpı koy"},
@@ -838,12 +899,23 @@ document.addEventListener("visibilitychange",()=>{if(document.hidden&&$("s-game"
 window.addEventListener("pagehide",()=>{if($("s-game").classList.contains("active"))autosave();});
 
 const BACKUP_PREFIX="CEMBER-v1:";
-const BACKUP_KEYS=[KEYS.settings,KEYS.freeCur,KEYS.jrnProg,KEYS.jrnCur,KEYS.stats];
+const BACKUP_KEYS=[KEYS.settings,KEYS.freeCur,KEYS.jrnProg,KEYS.jrnCur,KEYS.stats,KEYS.meta];
 function backupCollect(){
   const data={v:1,t:Date.now(),keys:{}};
   for(const k of BACKUP_KEYS){
     const v=store.get(k,null);
     if(v!==null)data.keys[k]=v;
+  }
+  return data;
+}
+async function backupCollectAsync(){
+  const data=backupCollect();
+  const idbKeys=await idbStore.keys();
+  for(const k of idbKeys){
+    if(typeof k!=="string"||!k.startsWith("cember:"))continue;
+    if(data.keys[k]!==undefined)continue;
+    const v=await idbStore.get(k);
+    if(v!==undefined)data.keys[k]=v;
   }
   return data;
 }
@@ -868,17 +940,26 @@ function backupDecode(code){
 }
 function backupRestore(data){
   if(!data||!data.keys||typeof data.keys!=="object")return false;
+  // store.set zaten LS + IDB'ye yazıyor (Task 3'teki mirror)
   for(const k of BACKUP_KEYS){
     if(data.keys[k]!==undefined)store.set(k,data.keys[k]);
     else store.del(k);
+  }
+  // Yedekten gelen ek anahtarlar (BACKUP_KEYS dışı, örn. ileride eklenecek olanlar)
+  for(const k in data.keys){
+    if(!BACKUP_KEYS.includes(k)&&k.startsWith("cember:")){
+      store.set(k,data.keys[k]);
+    }
   }
   return true;
 }
 
 let backupMode="export";
-function openBackupExport(){
+async function openBackupExport(){
   backupMode="export";
-  const code=backupEncode(backupCollect())||"(kod üretilemedi)";
+  let data;
+  try{data=await backupCollectAsync();}catch(e){data=backupCollect();}
+  const code=backupEncode(data)||"(kod üretilemedi)";
   $("backupTitle").textContent="Yedek Kodu Üret";
   $("backupMsg").textContent="Aşağıdaki kodu kopyala ve güvenli bir yere kaydet (Notes, Mail, Drive). Geri yüklemek için aynı kodu kullanırsın.";
   $("backupTextarea").value=code;
