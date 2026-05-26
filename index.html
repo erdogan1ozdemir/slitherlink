@@ -516,7 +516,7 @@ $("toggleList").addEventListener("click",e=>{const sw=e.target.closest("[data-to
    10) KONFETI (gri tonlu)
    ========================================================================= */
 const cv=$("confetti"),cx=cv.getContext("2d");let parts=[],animId=null;
-function burst(){cv.width=innerWidth;cv.height=innerHeight;parts=[];const cols=["#ededf2","#c9c9d2","#8a8a93","#5a5a63","#ffffff"];
+function burst(){cv.width=innerWidth;cv.height=innerHeight;parts=[];const cols=["#EDEAE3","#A89B8B","#7a7a82","#3a3a42","#B89F8A"];
   for(let i=0;i<130;i++)parts.push({x:innerWidth/2,y:innerHeight*0.42,vx:(Math.random()-.5)*12,vy:Math.random()*-12-3,g:.32,s:5+Math.random()*7,c:cols[(Math.random()*cols.length)|0],rot:Math.random()*6.28,vr:(Math.random()-.5)*.4,life:0});
   if(animId)cancelAnimationFrame(animId);cloop();}
 function cloop(){cx.clearRect(0,0,cv.width,cv.height);let alive=false;for(const p of parts){p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life++;if(p.y<cv.height+30)alive=true;cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.fillStyle=p.c;cx.globalAlpha=Math.max(0,1-p.life/160);cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6);cx.restore();}if(alive)animId=requestAnimationFrame(cloop);else cx.clearRect(0,0,cv.width,cv.height);}
