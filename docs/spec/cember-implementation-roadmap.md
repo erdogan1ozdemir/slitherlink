@@ -1,68 +1,70 @@
-# Çember — Implementation Roadmap
+# Çember — Implementation Roadmap (v2)
 
-Spec (`cember-rogue-design.md`) içeriği **9 ayrı plana** bölündü. Her plan:
+> v2 güncellemesi: research (Slitherlink + Roguelike) sonrası eklenen feature'lar `cember-feature-additions.md` içinde. Plan kapsamları o doğrultuda yeniden çizildi.
+
+Spec (`cember-rogue-design.md` + `cember-feature-additions.md`) içeriği **10 ayrı plana** bölündü. Her plan:
 - Tek bir alt-sisteme odaklı
 - Kendi başına çalışan/test edilebilir yazılım üretir
-- `/superpowers:execute-plan` ile sırayla yürütülür
+- `/superpowers:execute-plan` (veya subagent-driven-development) ile sırayla yürütülür
 - Her plan sonu bir Vercel deploy ile Merve test edebilir
 
 Bu sayfa **sadece roadmap özeti**. Detaylı tasklar ilgili plan MD'lerinde.
 
 ---
 
-## Plan 01 · Sessiz İplik tokens applied
+## Plan 01 · Sessiz İplik tokens applied ✓
 **Dosya:** `docs/spec/plan-01-sessiz-iplik-tokens.md`
-**Çıktı:** Foundation `index.html`, tasarım canvas'ındaki Sessiz İplik diline tam uyumlu.
-**Bağımlılık:** Yok. İlk plan, hemen başlayabilir.
-**Test:** Görsel; tarayıcıda aç + design canvas ile karşılaştır.
+**Durum:** Tamamlandı (merge commit `f7d25f3`).
 
-## Plan 02 · PWA setup (manifest + service worker)
-**Dosya:** `docs/spec/plan-02-pwa.md`
+## Plan 02 · Quick fixes + Slitherlink QoL + How-to-play + Backup code
+**Dosya:** `docs/spec/plan-02-patches-and-features.md`
+**Çıktı:** Türkçe karakter audit + "Merhaba Yarim" + ipucu yoğunluğu 0 + Auto-X + Undo/Redo + Auto-check mode + Nasıl Oynanır sheet + Yedek Kodu sistemi.
+**Bağımlılık:** Plan 01.
+**Test:** Tüm Türkçe stringler doğru; setup'tan 0 yoğunluk başlatılır; auto-X çalışır; undo/redo doğru; help sheet açılır; yedek kodu round-trip restore eder.
+
+## Plan 03 · PWA setup (manifest + service worker)
+**Dosya:** `docs/spec/plan-03-pwa.md`
 **Çıktı:** "Ana Ekrana Ekle" ile tam ekran + offline + persistent storage flag.
-**Bağımlılık:** Plan 01 (görsel netlik sonrası).
+**Bağımlılık:** Plan 02.
 **Test:** iPhone'da Ana Ekrana Ekle → uçak modunda aç.
 
-## Plan 03 · Persistence v2 (IDB mirror + export/import + migration)
-**Dosya:** `docs/spec/plan-03-persistence-v2.md`
-**Çıktı:** Veri kaybı riskinin neredeyse sıfırlanması. Schema versioning, IDB ayna, JSON yedek.
-**Bağımlılık:** Plan 02 (PWA persistent flag avantajı).
-**Test:** DevTools'tan localStorage temizle, IDB'den restore beklendiğini doğrula.
+## Plan 04 · Persistence v2 (IDB mirror + export/import + migration + new schema)
+**Dosya:** `docs/spec/plan-04-persistence-v2.md`
+**Çıktı:** Şema v2 (yeni loomHall + thornsContract + charms + currencies + settings ek toggle'lar). IDB mirror. Migration runtime. Yedek kodu'nu IDB ile de senkronize eder.
+**Bağımlılık:** Plan 03.
+**Test:** localStorage temizlenince IDB'den restore. Eski v1 şemadan v2'ye migration sorunsuz.
 
-## Plan 04 · Modular refactor (src/ yapısı)
-**Dosya:** `docs/spec/plan-04-modular-refactor.md`
-**Çıktı:** Pure logic (generator, checker, RNG) ve UI ayrılmış, `<script type="module">` ile yüklenen `src/` klasörü.
-**Bağımlılık:** Plan 03 (state ayrımı yapılmadan refactor riskli).
-**Test:** Test harness (`tests/test-runner.html`) ile pure functions yeşil + foundation davranışı aynı.
+## Plan 05 · Modular refactor (src/ yapısı)
+**Dosya:** `docs/spec/plan-05-modular-refactor.md`
+**Çıktı:** Pure logic (generator, checker, RNG, constraint solver) ve UI ayrılmış, `<script type="module">` ile yüklenen `src/` klasörü. Test harness.
+**Bağımlılık:** Plan 04.
+**Test:** Test harness yeşil + foundation davranışı aynı.
 
-## Plan 05 · Rogue infrastructure (Yuva + engine + achievement skeleton)
-**Dosya:** `docs/spec/plan-05-rogue-infrastructure.md`
-**Çıktı:** Yuva ekranı, rogue run engine, branching map generator, achievement registry/engine — **stub realm ile** uçtan uca oynanabilir.
-**Bağımlılık:** Plan 04 (modular yapı şart).
-**Test:** Stub realm ile koşu başlat, düğüm gez, autosave doğrula, fake achievement aç.
-
-## Plan 06 · Realm 1 — Söğüt Eşiği
-**Dosya:** `docs/spec/plan-06-realm-sogut-esigi.md`
-**Çıktı:** D1 tam çalışır: 6 relic, 6 event, 1 boss, 5 achievement, pati izi varyant 1.
+## Plan 06 · Rogue infrastructure (Yuva + Karakter + İpliklik shell + Pusula Yıldızı + Engine + Achievement)
+**Dosya:** `docs/spec/plan-06-rogue-infrastructure.md`
+**Çıktı:** Yuva ekranı, Karakter ekranı (Jedi avatarı + istatistik), İpliklik shell (talent grid, boş), Diken Sözleşmesi shell (modifier UI), Pusula Yıldızı progression tracker, Yuva Fısıltısı (Neow), rogue run engine, branching map, achievement registry/engine — **stub realm ile** uçtan uca oynanabilir.
 **Bağımlılık:** Plan 05.
-**Test:** D1'i baştan sona oyna; her relic/event tetiklenebilir; boss yenilir; 5 achievement açılabilir.
+**Test:** Stub realm ile koşu başlat, düğüm gez, autosave doğrula, fake achievement aç, İpliklik'te talent açabil.
 
-## Plan 07 · Realm 2 — Karanlık İğne (+ bronze key mechanic)
-**Dosya:** `docs/spec/plan-07-realm-karanlik-igne.md`
-**Çıktı:** D2 tam çalışır + locked chest mekaniği. Unlock kuralı (D1'de 1 boss) aktif.
+## Plan 07 · Realm 1 — Söğüt Eşiği (+ ilk constraint tiles)
+**Dosya:** `docs/spec/plan-07-realm-sogut-esigi.md`
+**Çıktı:** D1 tam çalışır: 6 relic, 6 event, 1 boss, 5 achievement, pati izi varyant 1, 2 constraint tile tipi (Sis + İkiz), İpliklik'in ilk 4 talent'i, 4 charm.
 **Bağımlılık:** Plan 06.
-**Test:** D1 boss yendikten sonra D2 açılır; bronze key + locked chest çalışır.
 
-## Plan 08 · Realm 3 — Yıldız Geçidi (+ multi-stage boss)
-**Dosya:** `docs/spec/plan-08-realm-yildiz-gecidi.md`
-**Çıktı:** D3 tam çalışır + 3-stage boss + zamanlı node'lar. Unlock kuralı (D2 boss + ≥3 relic) aktif.
+## Plan 08 · Realm 2 — Karanlık İğne (+ bronze key + 2 constraint tile)
+**Dosya:** `docs/spec/plan-08-realm-karanlik-igne.md`
+**Çıktı:** D2 tam + locked chest mekaniği + 2 constraint tile (Donmuş + 2 Konmaz) + 6 relic + 6 event + boss + 5 achievement + İpliklik 2 yeni talent + 3 charm.
 **Bağımlılık:** Plan 07.
-**Test:** D2 boss + relic koşulu sonrası D3 açılır; multi-stage boss + zamanlı node testi.
 
-## Plan 09 · Polish + meta achievements + deploy
-**Dosya:** `docs/spec/plan-09-polish-deploy.md`
-**Çıktı:** Cross-realm meta achievements (10), saklı easter egg'ler (5), permanent starter slot UI, son polish, Vercel production deploy, iPhone end-to-end test.
+## Plan 09 · Realm 3 — Yıldız Geçidi (+ multi-stage boss + Mum Modu)
+**Dosya:** `docs/spec/plan-09-realm-yildiz-gecidi.md`
+**Çıktı:** D3 tam + 3-stage boss + Mum Modu (time pressure) default + 3 constraint tile (Lanetli + Yankı + Kayan) + 6 relic + 6 event + 5 achievement + İpliklik 2 yeni talent + 3 charm.
 **Bağımlılık:** Plan 08.
-**Test:** 7-gün streak achievement, Jedi'yi Gör easter egg, Aralık ayı + D3 = İlk Kar achievement, full game playthrough.
+
+## Plan 10 · Polish + meta achievements + Hediye Boncukları + deploy + a11y
+**Dosya:** `docs/spec/plan-10-polish-deploy.md`
+**Çıktı:** Cross-realm meta achievements (10), saklı easter egg'ler (5), Hediye Boncukları (8 keepsake), permanent starter slot UI, Slitherlink ileri özellikler (segment highlight, tap modes, vertex indicator), renk körü modu, Vercel production deploy, iPhone end-to-end test.
+**Bağımlılık:** Plan 09.
 
 ---
 
@@ -70,8 +72,8 @@ Bu sayfa **sadece roadmap özeti**. Detaylı tasklar ilgili plan MD'lerinde.
 
 Her plan tamamlanınca:
 1. Tüm dosyalar commit edilir
-2. `main` branch'e push
-3. (Plan 02 sonrası her plan'da) Vercel auto-deploy tetikleyicisinden Merve canlı sürümü test edebilir
+2. `main` branch'e merge + push
+3. (Plan 03 sonrası her plan'da) Vercel auto-deploy tetikleyicisinden Merve canlı sürümü test edebilir
 4. Bir sonraki plan'ın detayını yaz (`plan-NN.md`), execute et
 
 > İlerleme bu MD'de TodoWrite görünümüyle takip edilir. Bir token sonrası Claude bu MD'yi okuyup nerede kalındığını anlar.
@@ -80,12 +82,13 @@ Her plan tamamlanınca:
 
 | Plan | Durum | Commit |
 |------|-------|--------|
-| 01 — Sessiz İplik tokens | ✓ tamamlandı | fddf52f |
-| 02 — PWA | bekliyor | – |
-| 03 — Persistence v2 | bekliyor | – |
-| 04 — Modular refactor | bekliyor | – |
-| 05 — Rogue infrastructure | bekliyor | – |
-| 06 — Söğüt Eşiği | bekliyor | – |
-| 07 — Karanlık İğne | bekliyor | – |
-| 08 — Yıldız Geçidi | bekliyor | – |
-| 09 — Polish + deploy | bekliyor | – |
+| 01 — Sessiz İplik tokens | ✓ tamamlandı | f7d25f3 |
+| 02 — Quick fixes + Slitherlink QoL + How-to-play + Backup code | yazıldı, exec hazır | – |
+| 03 — PWA setup | bekliyor | – |
+| 04 — Persistence v2 | bekliyor | – |
+| 05 — Modular refactor | bekliyor | – |
+| 06 — Rogue infrastructure (Yuva + Karakter + İpliklik + Diken + Pusula) | bekliyor | – |
+| 07 — Söğüt Eşiği (D1) | bekliyor | – |
+| 08 — Karanlık İğne (D2) | bekliyor | – |
+| 09 — Yıldız Geçidi (D3) | bekliyor | – |
+| 10 — Polish + Hediye + a11y + deploy | bekliyor | – |
