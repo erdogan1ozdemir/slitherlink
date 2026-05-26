@@ -6,7 +6,7 @@
 - [x] Task 3: Diken Sözleşmesi UI + profile + run start apply
 
 ## Phase B — 6 tile
-- [ ] Task 4: tiles.js genişlet (ikiz, donmuş, ikiKonmaz, lanetli, yanki, kayan)
+- [x] Task 4: tiles.js genişlet (ikiz, donmuş, ikiKonmaz, lanetli, yanki, kayan)
 - [ ] Task 5: Puzzle render integration (her tile için görsel/davranış)
 
 ## Phase C — Hediye Boncukları
