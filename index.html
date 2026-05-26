@@ -306,6 +306,7 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
       <button id="howBtnSettings" class="opt" style="width:100%;background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);">Nasıl Oynanır?</button>
       <button id="backupExportBtn" class="opt" style="width:100%;background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);">Yedek Kodu Üret</button>
       <button id="backupImportBtn" class="opt" style="width:100%;background:transparent;border:1px solid var(--hairline-2);color:var(--ink-dim);">Yedek Yükle</button>
+      <button id="resetAllBtn" class="opt" style="width:100%;background:transparent;border:1px solid var(--bad);color:var(--bad);margin-top:6px;">Tüm Veriyi Sıfırla</button>
     </div>
     <p class="foot-note" style="text-align:left;padding:14px 0 0;">
       iPhone'da tam ekran: Safari'de paylaş butonu → "Ana Ekrana Ekle". Oyun uygulama gibi tam ekran açılır.</p>
@@ -352,16 +353,6 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
     </div>
     <div class="row"><button class="btn-ghost" id="winHome">Ana menü</button>
       <button class="btn-primary" id="winNext" style="border:none">Devam ›</button></div>
-  </div>
-</div>
-
-<!-- START -->
-<div class="overlay center show" id="startOverlay">
-  <div class="modal">
-    <div class="big">🩶</div>
-    <h2 id="startTitle">Merhaba</h2>
-    <p id="startMsg"></p>
-    <button class="btn-primary" id="startBtn" style="border:none;margin-top:10px;">Başla</button>
   </div>
 </div>
 
@@ -1871,12 +1862,11 @@ function cloop(){cx.clearRect(0,0,cv.width,cv.height);let alive=false;for(const 
 /* =========================================================================
    11) OLAY BAGLAMA
    ========================================================================= */
-$("startTitle").textContent="Merhaba "+CONFIG.intimateName;
-$("startMsg").textContent=CONFIG.startMsg;
+// start overlay kaldırıldı — doğrudan ana ekran açılır
 $("winTitle").textContent="Aferin "+CONFIG.name;
 $("winMsg").textContent=CONFIG.winMsg;
 
-$("startBtn").addEventListener("click",()=>{$("startOverlay").classList.remove("show");renderHome();showScreen("s-home");});
+// startBtn handler kaldırıldı — başlangıçta direkt renderHome() çağrılıyor (script sonunda)
 $("homeCards").addEventListener("click",e=>{const c=e.target.closest("[data-card]");if(!c)return;const id=c.dataset.card;
   if(id==="rogue"){
     const rr=store.get(KEYS.rogueRun,null);
@@ -1941,6 +1931,13 @@ $("backupAction").addEventListener("click",handleBackupAction);
 $("backupCancel").addEventListener("click",()=>$("backupOverlay").classList.remove("show"));
 $("backupExportBtn")?.addEventListener("click",openBackupExport);
 $("backupImportBtn")?.addEventListener("click",openBackupImport);
+$("resetAllBtn")?.addEventListener("click",()=>{
+  if(!confirm("Tüm ilerleme (ayarlar, koşular, achievement, currency'ler) SİLİNECEK. Geri alınamaz. Devam edilsin mi?"))return;
+  if(!confirm("Emin misin? Yedek almak istiyor musun? Önce 'Yedek Kodu Üret' ile kopyala."))return;
+  for(const k of Object.values(KEYS))store.del(k);
+  if(idbStore&&idbStore.keys){idbStore.keys().then(ks=>{for(const k of ks)idbStore.del(k);});}
+  location.reload();
+});
 
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&$("s-game").classList.contains("active"))autosave();});
 window.addEventListener("pagehide",()=>{if($("s-game").classList.contains("active"))autosave();});
