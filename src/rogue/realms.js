@@ -118,6 +118,7 @@ export const REALMS={
     bossIntro:"tüm ipleri çözer ya da kopararak biter.",
     unlockedByDefault:false,
     requiresAllRealmsCleared:true,
+    bossMultiStage:4,
   },
 };
 
