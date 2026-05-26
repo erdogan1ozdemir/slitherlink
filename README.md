@@ -29,12 +29,44 @@ npx serve .
 
 ## Yayınla
 
-Vercel (önerilen) — dosyaları sürükle bırak, otomatik `.vercel.app` adresi.
+Vercel (önerilen) — `vercel.json` proje köküne dahil; static deploy, PWA-uyumlu cache headers.
+
+### Vercel ile yayınlama
+
+```bash
+# Tek seferlik: Vercel CLI kur
+npm i -g vercel
+
+# Proje köküne git
+cd /path/to/slitherlink
+
+# İlk deploy (prompts: confirm settings, link to project)
+vercel
+
+# Production deploy
+vercel --prod
+```
+
+Sonuç: `https://<proje-adi>.vercel.app` adresinde canlı.
+
+`vercel.json` içinde:
+- Service worker `no-cache` header'la sunuluyor (PWA güncellemeleri için)
+- HTML/JSON/SVG 1 saatlik cache + revalidate
+- JS modülleri 24 saatlik cache
+
 Alternatif: Cloudflare Pages, Netlify, GitHub Pages.
 
 ## iPhone'da tam ekran
 
-Safari'de oyunu aç → paylaş butonu → "Ana Ekrana Ekle". İkona dokununca tam ekran açılır. PWA katmanı tamamlanınca çevrimdışı da çalışır.
+Safari'de oyunu aç → paylaş butonu → "Ana Ekrana Ekle". İkona dokununca tam ekran açılır. Service worker aktif olduğundan çevrimdışı da çalışır.
+
+### Manuel test (iPhone)
+
+1. Vercel URL'sini Safari'de aç
+2. Paylaş butonu → "Ana Ekrana Ekle"
+3. Ana ekrandan ikonu aç — tam ekran, adres çubuğu yok
+4. Uçak modunu aç, oyunu tekrar başlat → çalışır (service worker cache)
+5. DevTools (PC bağlı): Application → Manifest hatasız + Service Workers active
 
 ## Klasör yapısı
 
