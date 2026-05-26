@@ -36,6 +36,25 @@ export const REALMS={
     bossIntro:"sessiz, hata bağışlayıcı — ama tekrarlanan hata patrona güç verir.",
     unlockedByDefault:true,
   },
+  "karanlik-igne":{
+    id:"karanlik-igne",
+    name:"Karanlık İğne",
+    intro:"tozlu kütüphane, mürekkep, sayfa, fısıltılar.",
+    accent:"--accent",
+    floors:5,
+    floorConfig:[
+      {sizes:[5,5],keep:0.75,nodes:["puzzle"],floorName:"Eşik"},
+      {sizes:[6,6],keep:0.72,nodes:["puzzle","event","locked-chest"],floorName:"Toz Koridoru"},
+      {sizes:[6,6],keep:0.68,nodes:["elite","chest","event"],floorName:"Kayıp Sayfalar"},
+      {sizes:[7,7],keep:0.65,nodes:["rest","locked-chest","event"],floorName:"Mürekkep Havuzu"},
+      {sizes:[7,7],keep:0.60,nodes:["boss"],floorName:"Sessiz Kütüphaneci"},
+    ],
+    relicPool:["murekkep-damlasi","sayfa-kosesi","bronz-anahtar","tuy-kalem","eski-mum","murekkep-lekesi"],
+    eventPool:["kutuphanecinin-uykusu","kayip-mektup","murekkep-kuyusu","bos-koltuk","anahtar-cingirgi","toz-patikasi"],
+    bossName:"Sessiz Kütüphaneci",
+    bossIntro:"uyandırırsan zaman daralır. ipucu sayısı +1 sayar.",
+    unlockedByDefault:false,
+  },
 };
 
 export function getRealm(id){return REALMS[id];}
