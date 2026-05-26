@@ -835,12 +835,16 @@ function backupEncode(data){
   }catch(e){return null;}
 }
 function backupDecode(code){
-  if(!code||!code.startsWith(BACKUP_PREFIX))return null;
+  if(!code)return {error:"empty"};
+  if(!code.startsWith(BACKUP_PREFIX))return {error:"prefix"};
   try{
     const b64=code.slice(BACKUP_PREFIX.length).trim();
     const json=decodeURIComponent(escape(atob(b64)));
-    return JSON.parse(json);
-  }catch(e){return null;}
+    const data=JSON.parse(json);
+    if(typeof data!=="object"||!data.keys)return {error:"format"};
+    if(data.v&&data.v>1)return {error:"version-newer"};
+    return {data};
+  }catch(e){return {error:"corrupted",detail:e.message};}
 }
 function backupRestore(data){
   if(!data||!data.keys||typeof data.keys!=="object")return false;
@@ -882,8 +886,19 @@ function handleBackupAction(){
   }else{
     const code=$("backupTextarea").value.trim();
     if(!code){alert("Lütfen bir kod yapıştır.");return;}
-    const data=backupDecode(code);
-    if(!data){alert("Kod geçersiz veya bozuk. Doğru yedek kodu olduğundan emin ol.");return;}
+    const result=backupDecode(code);
+    if(result.error){
+      const msgs={
+        "empty":"Kod boş görünüyor.",
+        "prefix":"Kod 'CEMBER-v1:' ile başlamalı. Doğru kodu yapıştırdığından emin ol.",
+        "format":"Kod yapısı tanınamadı.",
+        "version-newer":"Bu kod daha yeni bir Çember sürümüne ait. Uygulamayı güncelle.",
+        "corrupted":"Kod bozuk: "+(result.detail||"bilinmeyen hata"),
+      };
+      alert(msgs[result.error]||"Kod geçersiz.");
+      return;
+    }
+    const data=result.data;
     if(!confirm("Mevcut tüm ilerlemenin üzerine yazılacak. Devam edilsin mi?"))return;
     const ok=backupRestore(data);
     if(ok){
