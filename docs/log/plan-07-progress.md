@@ -1,7 +1,7 @@
 # Plan 07 Progress
 - [x] Task 1: Branch + log
 - [x] Task 2: src/rogue/realms.js (registry + Söğüt Eşiği)
-- [ ] Task 3: src/rogue/relics.js (6 relic + effects)
+- [x] Task 3: src/rogue/relics.js (6 relic + effects)
 - [ ] Task 4: src/rogue/events.js (6 event + resolvers)
 - [ ] Task 5: src/rogue/achievements.js (engine + 5 D1 ach)
 - [ ] Task 6: Chest modal + relic offer UI
