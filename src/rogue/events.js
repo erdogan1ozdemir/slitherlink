@@ -123,6 +123,67 @@ export const EVENTS={
     ],
     realm:"karanlik-igne",
   },
+  "sonmus-yildiz":{
+    id:"sonmus-yildiz",
+    title:"Sönmüş Yıldız",
+    text:"Bir yıldız boşluğa kaymış. Yerine ne ekersen artık o.",
+    choices:[
+      {tone:"safe",text:"Bir relic ek",result:"rastgele relic",effect:{type:"relic-offer",count:1}},
+      {tone:"safe",text:"Bir can yenile",result:"+1 can",effect:{type:"heal",amount:1}},
+      {tone:"pass",text:"Boş bırak",result:"hiçbir şey",effect:{type:"none"}},
+    ],
+    realm:"yildiz-gecidi",
+  },
+  "ay-seni-taniyor":{
+    id:"ay-seni-taniyor",
+    title:"Ay Seni Tanıyor",
+    text:"Ay seni daha önce görmüş gibi bakıyor. Selam vermek istersin.",
+    choices:[
+      {tone:"safe",text:"Selam ver",result:"+1 boncuk",effect:{type:"bead",amount:1}},
+      {tone:"pass",text:"Geç",result:"hiçbir şey",effect:{type:"none"}},
+    ],
+    realm:"yildiz-gecidi",
+  },
+  "dus-parcasi":{
+    id:"dus-parcasi",
+    title:"Düş Parçası",
+    text:"Yere düşmüş, yarı saydam bir parça. Tutmak istersen elin titreyecek.",
+    choices:[
+      {tone:"risk",text:"Tut",result:"%60 +nadir relic / %40 -1 can",effect:{type:"chance-relic-or-damage",chance:0.6}},
+      {tone:"pass",text:"Bırak",result:"hiçbir şey",effect:{type:"none"}},
+    ],
+    realm:"yildiz-gecidi",
+  },
+  "kar-tanesi":{
+    id:"kar-tanesi",
+    title:"Kar Tanesi",
+    text:"Tek bir kar tanesi yavaşça düşüyor. Avucuna alırsan eridiğini hissedeceksin.",
+    choices:[
+      {tone:"safe",text:"Avucuna al",result:"+2 yıldız tozu",effect:{type:"stardust",amount:2}},
+      {tone:"pass",text:"Geçmesini bekle",result:"hiçbir şey",effect:{type:"none"}},
+    ],
+    realm:"yildiz-gecidi",
+  },
+  "buzlu-cam":{
+    id:"buzlu-cam",
+    title:"Buzlu Cam",
+    text:"Cama vurursan ne göstereceğini bilmiyorsun.",
+    choices:[
+      {tone:"risk",text:"Vur",result:"%50 +3 boncuk / %50 -1 can",effect:{type:"chance-bead-or-damage",chance:0.5,beadAmount:3}},
+      {tone:"safe",text:"Sadece bak",result:"+1 iplik",effect:{type:"thread",amount:1}},
+    ],
+    realm:"yildiz-gecidi",
+  },
+  "gece-patikasi":{
+    id:"gece-patikasi",
+    title:"Gece Patikası",
+    text:"Ay altında uzanan parıltılı bir patika. Pati izleri seninkilerden farklı — belki de aynı.",
+    choices:[
+      {tone:"safe",text:"İzleri takip et",result:"+3 iplik",effect:{type:"thread",amount:3}},
+      {tone:"safe",text:"Kendi izini bırak",result:"+1 boncuk",effect:{type:"bead",amount:1}},
+    ],
+    realm:"yildiz-gecidi",
+  },
 };
 
 export function getEvent(id){return EVENTS[id];}
