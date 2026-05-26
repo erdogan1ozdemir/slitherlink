@@ -246,6 +246,39 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
       <button class="btn-primary" id="newBtn">✦ Yeni</button>
     </div>
   </section>
+
+  <!-- YUVA (Rogue hub) -->
+  <section class="screen" id="s-yuva">
+    <div class="topbar"><button class="iconbtn" data-back>‹</button><div class="ttl">Yuva</div>
+      <button class="iconbtn" id="yuvaSettings">⚙</button></div>
+    <div class="scroll">
+      <div id="yuvaContent"></div>
+    </div>
+  </section>
+
+  <!-- KARAKTER -->
+  <section class="screen" id="s-karakter">
+    <div class="topbar"><button class="iconbtn" data-back>‹</button><div class="ttl">Karakter</div></div>
+    <div class="scroll"><div id="karakterContent"></div></div>
+  </section>
+
+  <!-- IPLIKLIK -->
+  <section class="screen" id="s-ipliklik">
+    <div class="topbar"><button class="iconbtn" data-back>‹</button><div class="ttl">İpliklik</div></div>
+    <div class="scroll"><div id="ipliklikContent"></div></div>
+  </section>
+
+  <!-- DIKEN SOZLESMESI -->
+  <section class="screen" id="s-diken">
+    <div class="topbar"><button class="iconbtn" data-back>‹</button><div class="ttl">Diken Sözleşmesi</div></div>
+    <div class="scroll"><div id="dikenContent"></div></div>
+  </section>
+
+  <!-- ROGUE MAP -->
+  <section class="screen" id="s-rogue-map">
+    <div class="topbar"><button class="iconbtn" data-back>‹</button><div class="ttl" id="rogueMapTitle">Koşu</div></div>
+    <div class="scroll"><div id="rogueMapContent"></div></div>
+  </section>
 </div>
 
 <!-- SETTINGS -->
@@ -727,7 +760,7 @@ function renderHome(){
   const cards=[
     {id:"free",emo:"✦",h:"Serbest Oyun",p:"Boyut, yoğunluk ve seed seç",resume:freeResume},
     {id:"journey",emo:"⬢",h:"Yolculuk",p:prog.unlocked+" / "+TOTAL_LEVELS+" bölüm açıldı",resume:jrnResume},
-    {id:"rogue",emo:"☠",h:"Rogue Modu",p:"Yakında — canlar, eşyalar, rastgele kat",locked:true},
+    {id:"rogue",emo:"☠",h:"Rogue Modu",p:"Yuva'na git, bir diyar seç"},
   ];
   $("homeCards").innerHTML=cards.map(c=>`
     <div class="card ${c.locked?'locked':''}" data-card="${c.id}">
@@ -831,11 +864,18 @@ $("winMsg").textContent=CONFIG.winMsg;
 
 $("startBtn").addEventListener("click",()=>{$("startOverlay").classList.remove("show");renderHome();showScreen("s-home");});
 $("homeCards").addEventListener("click",e=>{const c=e.target.closest("[data-card]");if(!c)return;const id=c.dataset.card;
-  if(id==="rogue")return;
+  if(id==="rogue"){renderYuva();showScreen("s-yuva");return;}
   if(id==="free"){const r=loadResume(KEYS.freeCur);if(r)startGame(r.puzzle,r.ctx,r);else{renderSetup();showScreen("s-setup");}}
   if(id==="journey"){const r=loadResume(KEYS.jrnCur);if(r)startGame(r.puzzle,r.ctx,r);else{renderJourney();showScreen("s-journey");}}
 });
-document.querySelectorAll("[data-back]").forEach(b=>b.addEventListener("click",()=>{renderHome();showScreen("s-home");}));
+document.querySelectorAll("[data-back]").forEach(b=>b.addEventListener("click",e=>{
+  const screen=e.target.closest(".screen");
+  if(screen&&["s-karakter","s-ipliklik","s-diken","s-rogue-map"].includes(screen.id)){
+    renderYuva();showScreen("s-yuva");
+  }else{
+    renderHome();showScreen("s-home");
+  }
+}));
 $("sizeChips").addEventListener("click",e=>{const o=e.target.closest("[data-size]");if(!o)return;setupSize=+o.dataset.size;renderSetup();});
 $("presetChips").addEventListener("click",e=>{const o=e.target.closest("[data-preset]");if(!o)return;const p=PRESETS[+o.dataset.preset];if(p.rand){setupSize=SIZE_OPTS[(Math.random()*SIZE_OPTS.length)|0];setupDens=40+((Math.random()*45)|0);}else{setupSize=p.size;setupDens=p.dens;}renderSetup();});
 $("density").addEventListener("input",e=>{setupDens=+e.target.value;$("densVal").textContent="%"+setupDens;});
