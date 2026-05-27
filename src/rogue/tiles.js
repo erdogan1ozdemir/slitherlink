@@ -24,7 +24,13 @@ const REALM_TILE_POOL={
 export function applyTiles(puzzle,realmId,rng,density=0.18){
   if(!puzzle.tiles)puzzle.tiles={};
   const pool=REALM_TILE_POOL[realmId]||[];
-  if(!pool.length)return puzzle;
+  // Yalnızca solver-uyumlu tile'lar (v1.5: sadece Sis)
+  // Diğer constraint tile'lar (lanetli, ikiz, donmus, iki-konmaz, yanki, kayan)
+  // solH/solV ile uyumsuz olduğu için puzzle invalid yapıyordu — Plan 16+'da
+  // solver-aware yeniden uygulanacak.
+  const SAFE_TILES=["sis"];
+  const filteredPool=pool.filter(t=>SAFE_TILES.includes(t));
+  if(!filteredPool.length)return puzzle;
   // Pre-compute solution lineCounts so we only place lanetli on actual 4-edge cells
   // and donmus on actual 0-edge cells (keeps puzzle solvable).
   const solLines=(r,c)=>{
@@ -33,7 +39,7 @@ export function applyTiles(puzzle,realmId,rng,density=0.18){
   for(let r=0;r<puzzle.R;r++)for(let c=0;c<puzzle.C;c++){
     if(puzzle.clue[r][c]<0)continue;
     if(rng()<density){
-      const type=pool[(rng()*pool.length)|0];
+      const type=filteredPool[(rng()*filteredPool.length)|0];
       const sLines=solLines(r,c);
       // Solvability-preserving filters:
       if(type==="iki-konmaz"&&sLines===2)continue; // can't add (sol has 2 lines)
