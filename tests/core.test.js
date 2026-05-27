@@ -2,6 +2,7 @@
 import {hashSeed, mulberry32} from "../src/core/rng.js";
 import {makePuzzle} from "../src/core/generator.js";
 import {validateLoop} from "../src/core/checker.js";
+import {countSolutions} from "../src/core/solver.js";
 import {TALENTS, purchase as purchaseTalent, aggregateEffects as talentEffects} from "../src/rogue/talents.js";
 import {CHARMS, purchase as purchaseCharm, equip as equipCharm, aggregateEffects as charmEffects} from "../src/rogue/charms.js";
 import {NEOW_BLESSINGS, rollBlessings, applyBlessing} from "../src/rogue/neow.js";
@@ -68,6 +69,14 @@ test("validateLoop returns false for empty edges",()=>{
   const hEmpty=Array.from({length:5},()=>Array(4).fill(0));
   const vEmpty=Array.from({length:4},()=>Array(5).fill(0));
   assert(!validateLoop(p,hEmpty,vEmpty));
+});
+
+// Solver: full-clue puzzle should have at least one solution
+test("solver counts solution",()=>{
+  const rng=mulberry32(hashSeed("solver-test"));
+  const p=makePuzzle(4,4,1.0,rng);
+  const n=countSolutions(p,2,2000);
+  assert(n>=1,"solver finds at least one solution, got "+n);
 });
 
 // === Plan 11 — talents + charms + neow + tiles ===
