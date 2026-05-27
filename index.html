@@ -1016,7 +1016,7 @@ function renderRogueMap(run){
   const floorSpacing=90;
   const H=80+floorSpacing*Math.max(1,run.mapGraph.floors-1);
   const COLS=Math.max(2,run.mapGraph.maxWidth||3);
-  const cx=c=>56+c*((W-72)/(COLS-1||1));
+  const cx=c=>50+c*((W-100)/Math.max(1,COLS-1));
   const cy=f=>50+f*floorSpacing;
   const accessible=new Set(nextAccessibleNodes(run.mapGraph,run.currentNodeId));
   const visited=new Set(run.visited);
