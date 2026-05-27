@@ -259,6 +259,7 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
     <div class="topbar">
       <button class="iconbtn" data-back aria-label="Geri">‹</button>
       <div class="ttl" id="gameTitle">Bulmaca</div>
+      <button class="iconbtn" id="gameResetBtn" aria-label="Sıfırla" title="Tahtayı sıfırla">↺</button>
       <button class="iconbtn" id="gameNewBtn" aria-label="Yeni bulmaca" title="Yeni bulmaca">✦</button>
       <button class="iconbtn" id="gameSettings" aria-label="Ayarlar">⚙</button>
     </div>
@@ -270,7 +271,6 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
     <div class="controls">
       <button class="btn-ghost" id="undoBtn" title="Geri al" aria-label="Geri al">↶</button>
       <button class="btn-ghost" id="redoBtn" title="İleri al" aria-label="İleri al">↷</button>
-      <button class="btn-ghost" id="resetBtn" title="Temizle" aria-label="Tahtayı temizle">↺</button>
       <button class="btn-ghost" id="checkBtn" title="Kontrol et" aria-label="Kontrol et">✓</button>
       <button class="btn-ghost hidden" id="hintBtn" aria-label="İpucu al">💡 İpucu</button>
     </div>
@@ -2283,7 +2283,10 @@ $("gameNewBtn").addEventListener("click",()=>{
 });
 $("undoBtn").addEventListener("click",undo);
 $("redoBtn").addEventListener("click",redo);
-$("resetBtn").addEventListener("click",resetBoard);
+$("gameResetBtn").addEventListener("click",()=>{
+  if(!confirm("Tahta sıfırlansın mı? Yapılan tüm hamleler silinecek."))return;
+  resetBoard();
+});
 $("checkBtn").addEventListener("click",runCheck);
 $("hintBtn").addEventListener("click",hint);
 function updateUndoRedoButtons(){
