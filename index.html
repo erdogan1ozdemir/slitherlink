@@ -2217,7 +2217,7 @@ function renderJourney(){
 }
 function startJourney(i){
   const lp=levelParams(i);const rng=mulberry32(hashSeed(lp.seed));
-  startGame(makePuzzle(lp.R,lp.C,lp.keep,rng),{mode:"journey",levelIndex:i});
+  startGame(makePuzzle(lp.R,lp.C,lp.keep,rng,{checkUnique:settings.uniquePuzzle}),{mode:"journey",levelIndex:i});
 }
 
 /* =========================================================================
@@ -2296,7 +2296,7 @@ $("homeCards").addEventListener("click",e=>{const c=e.target.closest("[data-card
     if(todayHasPlayed(store)){showDailyLeaderboard();return;}
     const seed=todaySeed();
     const rng=mulberry32(hashSeed(seed));
-    startGame(makePuzzle(7,7,0.7,rng),{mode:"daily",seed,date:todayDate()});
+    startGame(makePuzzle(7,7,0.7,rng,{checkUnique:settings.uniquePuzzle}),{mode:"daily",seed,date:todayDate()});
   }
 });
 document.querySelectorAll("[data-back]").forEach(b=>b.addEventListener("click",e=>{
