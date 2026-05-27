@@ -1,5 +1,7 @@
 // src/core/generator.js — Slitherlink puzzle generator (single-loop guaranteed)
-export function makePuzzle(R,C,keepRatio,rng){
+import {countSolutions} from "./solver.js";
+
+export function makePuzzle(R,C,keepRatio,rng,options){
   rng=rng||Math.random;
   const filled=Array.from({length:R},()=>Array(C).fill(false));
   filled[(R/2)|0][(C/2)|0]=true;
@@ -17,5 +19,20 @@ export function makePuzzle(R,C,keepRatio,rng){
   const clue=Array.from({length:R},()=>Array(C).fill(-1));
   for(let r=0;r<R;r++)for(let c=0;c<C;c++)clue[r][c]=hE[r][c]+hE[r+1][c]+vE[r][c]+vE[r][c+1];
   for(let r=0;r<R;r++)for(let c=0;c<C;c++)if(rng()>keepRatio)clue[r][c]=-1;
+  // Uniqueness check: eğer birden fazla çözüm varsa, geri clue ekle (en fazla 3 deneme)
+  // Solver timeout 1500ms — büyük puzzle'larda fail edip clue eklemez (acceptable degradation).
+  if(options&&options.checkUnique){
+    let attempts=0;
+    let solCount=countSolutions({R,C,clue},2,1500);
+    while(solCount>1&&attempts<3){
+      const candidates=[];
+      for(let r=0;r<R;r++)for(let c=0;c<C;c++)if(clue[r][c]<0)candidates.push([r,c]);
+      if(!candidates.length)break;
+      const[ar,ac]=candidates[(rng()*candidates.length)|0];
+      clue[ar][ac]=hE[ar][ac]+hE[ar+1][ac]+vE[ar][ac]+vE[ar][ac+1];
+      attempts++;
+      solCount=countSolutions({R,C,clue},2,1500);
+    }
+  }
   return {R,C,solH:hE,solV:vE,clue};
 }
