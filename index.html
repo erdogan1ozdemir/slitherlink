@@ -100,6 +100,7 @@ svg{width:100%;height:auto;display:block;touch-action:manipulation;}
 .dotc{fill:var(--faint);}
 .clue{font-family:var(--font-body);font-weight:700;text-anchor:middle;dominant-baseline:central;fill:var(--ink);transition:fill .18s,opacity .18s;font-variant-numeric:tabular-nums;}
 .clue.done{fill:var(--ink);opacity:.22;}
+.clue.decided{fill:var(--ink);opacity:.22;}
 .clue.err{fill:var(--bad);}
 .clue.sis-hidden{fill:var(--accent);font-style:italic;opacity:.7;}
 .clue.tile-donmus{fill:#99A3B0;font-style:normal;}
@@ -502,7 +503,7 @@ const idbStore={
 /* =========================================================================
    5) AYARLAR
    ========================================================================= */
-const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true,mumModu:false,preventOverflow:true,uniquePuzzle:true};
+const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true,mumModu:false,preventOverflow:true,uniquePuzzle:true,fadeDecided:false};
 let settings=Object.assign({},DEFAULT_SETTINGS,store.get(KEYS.settings,{}));
 function saveSettings(){store.set(KEYS.settings,settings);}
 
@@ -533,6 +534,7 @@ const TOGGLE_DEFS=[
   {k:"preventOverflow", t:"Kural ihlali engelle", d:"Bir hücrenin clue'unu aşacak çizgi konulamaz"},
   {k:"uniquePuzzle",t:"Tek çözüm garantili",     d:"Yeni bulmacalar tek çözümlü oluşturulur (üretim biraz uzayabilir)"},
   {k:"fade",        t:"Tamamlananı soluklaştır", d:"Çizgisi biten sayıyı soluklaştır"},
+  {k:"fadeDecided", t:"Hücre kapanınca soluklaştır", d:"4 kenarı da çizilen/çarpılan hücre soluklaşır (clue tatmin etmese de)"},
   {k:"errors",      t:"Hataları kırmızı göster", d:"Fazla/yanlış çizgide sayıyı kırmızı yap"},
   {k:"haptics",     t:"Titreşim",                d:"Dokununca küçük titreşim (destekleyen cihazda)"},
   {k:"mumModu",     t:"Mum Modu (Rogue)",        d:"Rogue koşusunda süre baskısı: 10dk + her kat +90s"},
@@ -870,22 +872,21 @@ function updateClueStates(){
     const tile=P.tiles&&P.tiles[r+","+c];
     // Sis/donmus tiles: don't apply done/err highlighting
     if(tile&&(tile.type==="donmus"||(tile.type==="sis"&&!tile.revealed))){
-      t.classList.remove("done","err");
+      t.classList.remove("done","err","decided");
       return;
     }
     const n=P.clue[r][c];
-    if(n<0){t.classList.remove("done","err");return;}
+    if(n<0){t.classList.remove("done","err","decided");return;}
     const lc=lineCount(r,c);
-    t.classList.remove("done","err");
+    t.classList.remove("done","err","decided");
     const mode=settings.autoCheckMode||"mistakes-only";
     let isErr=false;
-    if(mode==="live"){
-      isErr=(lc>n)||(decided(r,c)&&lc!==n);
-    }else if(mode==="mistakes-only"){
+    if(mode==="live"||mode==="mistakes-only"){
       isErr=(lc>n)||(decided(r,c)&&lc!==n);
     }
     if(settings.errors&&isErr)t.classList.add("err");
     else if(settings.fade&&lc===n)t.classList.add("done");
+    else if(settings.fadeDecided&&decided(r,c))t.classList.add("decided");
   });
 }
 
