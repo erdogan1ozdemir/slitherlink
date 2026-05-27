@@ -96,4 +96,4 @@ Her plan tamamlanınca:
 | 12 — Diken + 6 tile + Hediye + Mum tick + Daily + 4. diyar | ✓ tamamlandı | d76ab97 |
 | 13 — Bug fix + UX + cache reset | ✓ tamamlandı | 49aed30 |
 | 14 — Rogue overhaul (sequential lock + map + content) | ✓ tamamlandı | c5af63a |
-| 15 — Kural uyumu + uniqueness + reset | ✓ tamamlandı | <SHA> |
+| 15 — Kural uyumu + uniqueness + reset | ✓ tamamlandı | 90ee4ba |
