@@ -97,3 +97,4 @@ Her plan tamamlanınca:
 | 13 — Bug fix + UX + cache reset | ✓ tamamlandı | 49aed30 |
 | 14 — Rogue overhaul (sequential lock + map + content) | ✓ tamamlandı | c5af63a |
 | 15 — Kural uyumu + uniqueness + reset | ✓ tamamlandı | 90ee4ba |
+| 16 — Rogue map fix + uniqueness + boss modal | ✓ tamamlandı | 1a08a13 |
