@@ -502,7 +502,7 @@ const idbStore={
 /* =========================================================================
    5) AYARLAR
    ========================================================================= */
-const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true,mumModu:false};
+const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true,mumModu:false,preventOverflow:true};
 let settings=Object.assign({},DEFAULT_SETTINGS,store.get(KEYS.settings,{}));
 function saveSettings(){store.set(KEYS.settings,settings);}
 
@@ -530,6 +530,7 @@ const TOGGLE_DEFS=[
   {k:"hints",       t:"İpucu butonu",            d:"Oyunda ipucu butonunu göster"},
   {k:"undoButtons", t:"Geri al / İleri al",      d:"Oyun barında ↶ ↷ butonlarını göster"},
   {k:"autoX",       t:"Otomatik çarpı",          d:"Sayı tamamlanınca boş kenarlara çarpı koy"},
+  {k:"preventOverflow", t:"Kural ihlali engelle", d:"Bir hücrenin clue'unu aşacak çizgi konulamaz"},
   {k:"fade",        t:"Tamamlananı soluklaştır", d:"Çizgisi biten sayıyı soluklaştır"},
   {k:"errors",      t:"Hataları kırmızı göster", d:"Fazla/yanlış çizgide sayıyı kırmızı yap"},
   {k:"haptics",     t:"Titreşim",                d:"Dokununca küçük titreşim (destekleyen cihazda)"},
@@ -793,11 +794,32 @@ function restoreState(s){
 }
 function toggle(k,r,c){
   if(solved)return;
+  const arr=k==="h"?hState:vState;
+  const cur=arr[r][c];
+  const next=(cur+1)%3; // boş→çizgi→çarpı→boş
+  // Real-time overflow prevention: yeni state line ise ve hücrenin clue'u dolacaksa engelle
+  if(settings.preventOverflow&&next===1){
+    const cellsTouched=k==="h"
+      ? [[r-1,c],[r,c]] // h-edge r,c → cells (r-1,c) ve (r,c)
+      : [[r,c-1],[r,c]]; // v-edge r,c → cells (r,c-1) ve (r,c)
+    for(const [tr,tc] of cellsTouched){
+      if(tr<0||tr>=P.R||tc<0||tc>=P.C)continue;
+      const clue=P.clue[tr][tc];
+      if(clue<0)continue;
+      // Geçici olarak ekle, count
+      arr[r][c]=1;
+      const lc=lineCount(tr,tc);
+      arr[r][c]=cur; // restore
+      if(lc>clue){
+        buzz([8,30,8]); // feedback
+        return;
+      }
+    }
+  }
   undoStack.push(snapshotState());
   if(undoStack.length>200)undoStack.shift();
   redoStack=[];
-  const arr=k==="h"?hState:vState;
-  arr[r][c]=(arr[r][c]+1)%3;
+  arr[r][c]=next;
   if(settings.autoX){
     if(k==="h"){applyAutoXAround(r,c);applyAutoXAround(r,c+1);}
     else{applyAutoXAround(r,c);applyAutoXAround(r+1,c);}
