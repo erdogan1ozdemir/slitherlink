@@ -394,10 +394,10 @@ import {KEEPSAKES, allUnlockedKeepsakes, checkAutoUnlock as checkKeepsakeUnlock}
 import {todaySeed, todayDate, hasPlayedToday as todayHasPlayed, recordResult as recordDaily, getLeaderboard as getDailyLB} from "./src/rogue/daily.js";
 
 /* =========================================================================
-   0) ONE-TIME RESET (v3 cache bust + clean state)
+   0) ONE-TIME RESET (v4 cache bust + clean state)
    ========================================================================= */
 (function(){
-  const RESET_FLAG="cember:reset:v3";
+  const RESET_FLAG="cember:reset:v4";
   try{
     if(!localStorage.getItem(RESET_FLAG)){
       const toRemove=[];
