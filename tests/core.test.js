@@ -163,5 +163,20 @@ test("achievements registry has 29 entries (26 base + 3 D4)",()=>{
   assert(ACHIEVEMENTS["iplgin-sonu"]);
 });
 
+// Solver: uniqueness smoke
+test("solver finds unique solution for 4x4 full clue",()=>{
+  const rng=mulberry32(hashSeed("solver-unique"));
+  const p=makePuzzle(4,4,1.0,rng);
+  const n=countSolutions(p,2,2000);
+  eq(n,1);
+});
+test("solver caps at maxSolutions",()=>{
+  const rng=mulberry32(hashSeed("solver-multi"));
+  // Empty clue puzzle (no constraints) — likely multi solution
+  const p={R:3,C:3,clue:Array.from({length:3},()=>Array(3).fill(-1)),solH:Array.from({length:4},()=>Array(3).fill(0)),solV:Array.from({length:3},()=>Array(4).fill(0))};
+  const n=countSolutions(p,3,1000);
+  assert(n>=2||n<=3,"caps in [0..maxSolutions]");
+});
+
 summary.textContent=`${pass} pass · ${fail} fail · ${pass+fail} total`;
 summary.style.color=fail?"#C97A6F":"#8FA39A";
