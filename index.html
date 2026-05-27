@@ -1150,6 +1150,15 @@ function handleRogueNode(nodeId){
   const prevFloor=run.floor;
 
   if(node.type==="puzzle"||node.type==="elite"||node.type==="boss"){
+    // Boss pre-fight intro: ilk girişte uyarı modali (run başına bir kez)
+    if(node.type==="boss"&&!run.bossIntroShown){
+      run.bossIntroShown=true;
+      store.set(KEYS.rogueRun,run);
+      showBossIntro(run,()=>{
+        handleRogueNode(nodeId);
+      });
+      return;
+    }
     // Bekletme: moveTo win()'e ertelendi. Sadece pending olarak işaretle.
     // Farklı bir puzzle node'a geçildiyse midPuzzle'ı temizle.
     if(run.pendingNodeId&&run.pendingNodeId!==nodeId){
@@ -1448,6 +1457,29 @@ function openRogueModal(html,onClick){
 function closeRogueModal(){
   const o=$("rogueModal");
   if(o)o.classList.remove("show");
+}
+
+function showBossIntro(run,callback){
+  const realm=getRealm(run.realmId)||{};
+  const bossName=realm.bossName||"Patron";
+  const bossIntro=realm.bossIntro||"Kat sonu büyük bulmaca.";
+  const stages=realm.bossMultiStage&&realm.bossMultiStage>1?realm.bossMultiStage:0;
+  const html=`
+    <div style="text-align:center;padding:8px 0 4px;">
+      <div style="font-family:var(--font-serif);font-size:36px;color:var(--bad);">☠</div>
+    </div>
+    <h2 style="text-align:center;">${bossName}</h2>
+    <p style="font-family:var(--font-serif);font-style:italic;color:var(--ink-dim);text-align:center;line-height:1.5;">${bossIntro}</p>
+    ${stages?`<p style="text-align:center;font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);">${stages} aşama</p>`:""}
+    <div class="row" style="margin-top:14px;display:flex;gap:10px;justify-content:center;">
+      <button class="opt" data-boss-cancel="1" style="background:transparent;border:1px dashed var(--hairline);color:var(--muted);padding:10px 18px;">Vazgeç</button>
+      <button class="opt" data-boss-go="1" style="background:var(--accent);border:none;color:var(--bg);padding:10px 22px;font-weight:600;">Başla</button>
+    </div>
+  `;
+  openRogueModal(html,e=>{
+    if(e.target.closest("[data-boss-cancel]")){closeRogueModal();}
+    else if(e.target.closest("[data-boss-go]")){closeRogueModal();callback();}
+  });
 }
 
 function win(){solved=true;stopTimer();buzz([16,40,24]);
