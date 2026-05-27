@@ -544,16 +544,27 @@ const HOW_CONTENT={
   rules:`
     <h3>Slitherlink Kuralları</h3>
     <p class="quote">Tek ve kapalı bir çember çiz. İplikten kaybolma.</p>
+    <h4>Temel kurallar (Resmi)</h4>
     <ul>
       <li>Noktalardan oluşan ızgaranın kenarlarına çizgi çekersin.</li>
-      <li>Hücredeki sayı, o hücrenin etrafındaki çizgi adedini söyler (0-3).</li>
-      <li>Tüm çizilen kenarlar <b>tek ve kapalı</b> bir döngü oluşturmalı.</li>
-      <li>Çizgiler kesişemez, dallanamaz.</li>
+      <li>Hücredeki sayı, o hücrenin etrafındaki çizgi adedini söyler — <b>0, 1, 2 veya 3</b> olabilir.</li>
+      <li><b>4 değeri yoktur</b> — bir hücrenin tüm 4 kenarı çizili olursa o cell kapalı bir mini-loop oluşturur, kural ihlali.</li>
+      <li>Boş hücreler (rakamsız) herhangi sayıda kenarla çevrelenebilir.</li>
+      <li>Tüm çizgili kenarlar <b>tek ve kapalı</b> bir döngü oluşturmalı.</li>
+      <li>Çizgiler kesişemez, dallanamaz (her köşe noktasında <b>0 veya 2 çizgi</b> olabilir).</li>
     </ul>
     <h4>Üç durum</h4>
-    <p>Bir kenara dokun → <b>boş</b> → <b>çizgi</b> → <b>çarpı</b> → boş. Çarpı senin "burada kesin çizgi yok" notun; çözümü etkilemez, akıl yürütmene yardım eder.</p>
+    <p>Bir kenara dokun → <b>boş</b> → <b>çizgi</b> → <b>çarpı</b> → boş. Çarpı senin "burada kesin çizgi yok" notun.</p>
+    <h4>Yardımcılar</h4>
+    <ul>
+      <li><b>Otomatik çarpı:</b> Bir rakamın çizgi sayısı dolduğunda kalan kenarlar otomatik çarpılanır.</li>
+      <li><b>Köşe otomasyonu:</b> Bir köşede 2 çizgi varsa, kalan kenarlar otomatik çarpılanır.</li>
+      <li><b>Kontrol et (✓):</b> Hatalı kenarları 3 saniye kırmızı gösterir, çözümü açıklamaz.</li>
+      <li><b>Kural ihlali engelle:</b> Bir sayıyı aşacak çizgi konmaz (Ayarlar'dan kapatılabilir).</li>
+    </ul>
     <h4>Kazanma</h4>
     <p>Tüm gösterilen sayılar tatmin olduğunda + tüm çizgili kenarlar tek bir kapalı döngü oluşturduğunda kazandın.</p>
+    <p style="margin-top:14px;font-size:11px;color:var(--muted);font-style:italic;">Klasik Slitherlink (Conceptis) resmi kurallarına uyumlu.</p>
   `,
   modes:`
     <h3>Üç Mod</h3>
