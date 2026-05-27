@@ -100,6 +100,7 @@ svg{width:100%;height:auto;display:block;touch-action:manipulation;}
 .dotc{fill:var(--faint);}
 .clue{font-family:var(--font-body);font-weight:700;text-anchor:middle;dominant-baseline:central;fill:var(--ink);transition:fill .18s,opacity .18s;font-variant-numeric:tabular-nums;}
 .clue.done{fill:var(--ink);opacity:.22;}
+.clue.decided{fill:var(--ink);opacity:.22;}
 .clue.err{fill:var(--bad);}
 .clue.sis-hidden{fill:var(--accent);font-style:italic;opacity:.7;}
 .clue.tile-donmus{fill:#99A3B0;font-style:normal;}
@@ -259,6 +260,7 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
     <div class="topbar">
       <button class="iconbtn" data-back aria-label="Geri">‹</button>
       <div class="ttl" id="gameTitle">Bulmaca</div>
+      <button class="iconbtn" id="gameResetBtn" aria-label="Sıfırla" title="Tahtayı sıfırla">↺</button>
       <button class="iconbtn" id="gameNewBtn" aria-label="Yeni bulmaca" title="Yeni bulmaca">✦</button>
       <button class="iconbtn" id="gameSettings" aria-label="Ayarlar">⚙</button>
     </div>
@@ -270,7 +272,6 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
     <div class="controls">
       <button class="btn-ghost" id="undoBtn" title="Geri al" aria-label="Geri al">↶</button>
       <button class="btn-ghost" id="redoBtn" title="İleri al" aria-label="İleri al">↷</button>
-      <button class="btn-ghost" id="resetBtn" title="Temizle" aria-label="Tahtayı temizle">↺</button>
       <button class="btn-ghost" id="checkBtn" title="Kontrol et" aria-label="Kontrol et">✓</button>
       <button class="btn-ghost hidden" id="hintBtn" aria-label="İpucu al">💡 İpucu</button>
     </div>
@@ -394,10 +395,10 @@ import {KEEPSAKES, allUnlockedKeepsakes, checkAutoUnlock as checkKeepsakeUnlock}
 import {todaySeed, todayDate, hasPlayedToday as todayHasPlayed, recordResult as recordDaily, getLeaderboard as getDailyLB} from "./src/rogue/daily.js";
 
 /* =========================================================================
-   0) ONE-TIME RESET (v3 cache bust + clean state)
+   0) ONE-TIME RESET (v4 cache bust + clean state)
    ========================================================================= */
 (function(){
-  const RESET_FLAG="cember:reset:v3";
+  const RESET_FLAG="cember:reset:v4";
   try{
     if(!localStorage.getItem(RESET_FLAG)){
       const toRemove=[];
@@ -445,6 +446,7 @@ const KEYS={settings:"cember:settings",freeCur:"cember:free:current",
 const META_DEFAULTS={
   version:1,
   hasSeenIntro:false,
+  constraintNoticeShown:false,
   achievements:{},
   realms:{
     "sogut-esigi":  {unlocked:true, timesEntered:0, timesCleared:0, bestFloor:0, bestTime:null, defeatedBosses:0, seenEvents:[], knownRelics:[], compassStars:0, unlockedConstraintTiles:[]},
@@ -502,7 +504,7 @@ const idbStore={
 /* =========================================================================
    5) AYARLAR
    ========================================================================= */
-const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true,mumModu:false};
+const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true,mumModu:false,preventOverflow:true,uniquePuzzle:true,fadeDecided:false};
 let settings=Object.assign({},DEFAULT_SETTINGS,store.get(KEYS.settings,{}));
 function saveSettings(){store.set(KEYS.settings,settings);}
 
@@ -530,7 +532,10 @@ const TOGGLE_DEFS=[
   {k:"hints",       t:"İpucu butonu",            d:"Oyunda ipucu butonunu göster"},
   {k:"undoButtons", t:"Geri al / İleri al",      d:"Oyun barında ↶ ↷ butonlarını göster"},
   {k:"autoX",       t:"Otomatik çarpı",          d:"Sayı tamamlanınca boş kenarlara çarpı koy"},
+  {k:"preventOverflow", t:"Kural ihlali engelle", d:"Bir hücrenin clue'unu aşacak çizgi konulamaz"},
+  {k:"uniquePuzzle",t:"Tek çözüm garantili",     d:"Yeni bulmacalar tek çözümlü oluşturulur (üretim biraz uzayabilir)"},
   {k:"fade",        t:"Tamamlananı soluklaştır", d:"Çizgisi biten sayıyı soluklaştır"},
+  {k:"fadeDecided", t:"Hücre kapanınca soluklaştır", d:"4 kenarı da çizilen/çarpılan hücre soluklaşır (clue tatmin etmese de)"},
   {k:"errors",      t:"Hataları kırmızı göster", d:"Fazla/yanlış çizgide sayıyı kırmızı yap"},
   {k:"haptics",     t:"Titreşim",                d:"Dokununca küçük titreşim (destekleyen cihazda)"},
   {k:"mumModu",     t:"Mum Modu (Rogue)",        d:"Rogue koşusunda süre baskısı: 10dk + her kat +90s"},
@@ -540,16 +545,27 @@ const HOW_CONTENT={
   rules:`
     <h3>Slitherlink Kuralları</h3>
     <p class="quote">Tek ve kapalı bir çember çiz. İplikten kaybolma.</p>
+    <h4>Temel kurallar (Resmi)</h4>
     <ul>
       <li>Noktalardan oluşan ızgaranın kenarlarına çizgi çekersin.</li>
-      <li>Hücredeki sayı, o hücrenin etrafındaki çizgi adedini söyler (0-3).</li>
-      <li>Tüm çizilen kenarlar <b>tek ve kapalı</b> bir döngü oluşturmalı.</li>
-      <li>Çizgiler kesişemez, dallanamaz.</li>
+      <li>Hücredeki sayı, o hücrenin etrafındaki çizgi adedini söyler — <b>0, 1, 2 veya 3</b> olabilir.</li>
+      <li><b>4 değeri yoktur</b> — bir hücrenin tüm 4 kenarı çizili olursa o cell kapalı bir mini-loop oluşturur, kural ihlali.</li>
+      <li>Boş hücreler (rakamsız) herhangi sayıda kenarla çevrelenebilir.</li>
+      <li>Tüm çizgili kenarlar <b>tek ve kapalı</b> bir döngü oluşturmalı.</li>
+      <li>Çizgiler kesişemez, dallanamaz (her köşe noktasında <b>0 veya 2 çizgi</b> olabilir).</li>
     </ul>
     <h4>Üç durum</h4>
-    <p>Bir kenara dokun → <b>boş</b> → <b>çizgi</b> → <b>çarpı</b> → boş. Çarpı senin "burada kesin çizgi yok" notun; çözümü etkilemez, akıl yürütmene yardım eder.</p>
+    <p>Bir kenara dokun → <b>boş</b> → <b>çizgi</b> → <b>çarpı</b> → boş. Çarpı senin "burada kesin çizgi yok" notun.</p>
+    <h4>Yardımcılar</h4>
+    <ul>
+      <li><b>Otomatik çarpı:</b> Bir rakamın çizgi sayısı dolduğunda kalan kenarlar otomatik çarpılanır.</li>
+      <li><b>Köşe otomasyonu:</b> Bir köşede 2 çizgi varsa, kalan kenarlar otomatik çarpılanır.</li>
+      <li><b>Kontrol et (✓):</b> Hatalı kenarları 3 saniye kırmızı gösterir, çözümü açıklamaz.</li>
+      <li><b>Kural ihlali engelle:</b> Bir sayıyı aşacak çizgi konmaz (Ayarlar'dan kapatılabilir).</li>
+    </ul>
     <h4>Kazanma</h4>
     <p>Tüm gösterilen sayılar tatmin olduğunda + tüm çizgili kenarlar tek bir kapalı döngü oluşturduğunda kazandın.</p>
+    <p style="margin-top:14px;font-size:11px;color:var(--muted);font-style:italic;">Klasik Slitherlink (Conceptis) resmi kurallarına uyumlu.</p>
   `,
   modes:`
     <h3>Üç Mod</h3>
@@ -793,11 +809,32 @@ function restoreState(s){
 }
 function toggle(k,r,c){
   if(solved)return;
+  const arr=k==="h"?hState:vState;
+  const cur=arr[r][c];
+  const next=(cur+1)%3; // boş→çizgi→çarpı→boş
+  // Real-time overflow prevention: yeni state line ise ve hücrenin clue'u dolacaksa engelle
+  if(settings.preventOverflow&&next===1){
+    const cellsTouched=k==="h"
+      ? [[r-1,c],[r,c]] // h-edge r,c → cells (r-1,c) ve (r,c)
+      : [[r,c-1],[r,c]]; // v-edge r,c → cells (r,c-1) ve (r,c)
+    for(const [tr,tc] of cellsTouched){
+      if(tr<0||tr>=P.R||tc<0||tc>=P.C)continue;
+      const clue=P.clue[tr][tc];
+      if(clue<0)continue;
+      // Geçici olarak ekle, count
+      arr[r][c]=1;
+      const lc=lineCount(tr,tc);
+      arr[r][c]=cur; // restore
+      if(lc>clue){
+        buzz([8,30,8]); // feedback
+        return;
+      }
+    }
+  }
   undoStack.push(snapshotState());
   if(undoStack.length>200)undoStack.shift();
   redoStack=[];
-  const arr=k==="h"?hState:vState;
-  arr[r][c]=(arr[r][c]+1)%3;
+  arr[r][c]=next;
   if(settings.autoX){
     if(k==="h"){applyAutoXAround(r,c);applyAutoXAround(r,c+1);}
     else{applyAutoXAround(r,c);applyAutoXAround(r+1,c);}
@@ -847,22 +884,21 @@ function updateClueStates(){
     const tile=P.tiles&&P.tiles[r+","+c];
     // Sis/donmus tiles: don't apply done/err highlighting
     if(tile&&(tile.type==="donmus"||(tile.type==="sis"&&!tile.revealed))){
-      t.classList.remove("done","err");
+      t.classList.remove("done","err","decided");
       return;
     }
     const n=P.clue[r][c];
-    if(n<0){t.classList.remove("done","err");return;}
+    if(n<0){t.classList.remove("done","err","decided");return;}
     const lc=lineCount(r,c);
-    t.classList.remove("done","err");
+    t.classList.remove("done","err","decided");
     const mode=settings.autoCheckMode||"mistakes-only";
     let isErr=false;
-    if(mode==="live"){
-      isErr=(lc>n)||(decided(r,c)&&lc!==n);
-    }else if(mode==="mistakes-only"){
+    if(mode==="live"||mode==="mistakes-only"){
       isErr=(lc>n)||(decided(r,c)&&lc!==n);
     }
     if(settings.errors&&isErr)t.classList.add("err");
     else if(settings.fade&&lc===n)t.classList.add("done");
+    else if(settings.fadeDecided&&decided(r,c))t.classList.add("decided");
   });
 }
 
@@ -1134,7 +1170,7 @@ function handleRogueNode(nodeId){
     const size=floorCfg?floorCfg.sizes[0]:5;
     const keep=floorCfg?floorCfg.keep:0.75;
     const rng=mulberry32(hashSeed(run.seed+"-"+nodeId));
-    const puzzle=makePuzzle(size,size,keep,rng);
+    const puzzle=makePuzzle(size,size,keep,rng,{checkUnique:settings.uniquePuzzle});
     // Constraint tile density — realm bazlı, boss x1.5
     const tileDensity=({
       "sogut-esigi":0.15,
@@ -1145,6 +1181,13 @@ function handleRogueNode(nodeId){
     const isBoss=node.type==="boss";
     const finalDensity=isBoss?tileDensity*1.5:tileDensity;
     applyTiles(puzzle,run.realmId,mulberry32(hashSeed(run.seed+"-"+nodeId+"-tiles")),finalDensity);
+    // İlk kez constraint tile içeren diyara girişte bilgi ver (v1.5: yalnızca Sis aktif)
+    const realmHasConstraints=["karanlik-igne","yildiz-gecidi","dugumun-ardi"].includes(run.realmId);
+    if(realmHasConstraints && !meta.constraintNoticeShown){
+      meta.constraintNoticeShown=true;
+      saveMeta();
+      alert("Bu diyarda bazı hücrelerde 'Sis' kısıtı olabilir — sayı geçici olarak gizlenir, dokununca 3 saniye açılır. Klasik Slitherlink kuralı dışında ek bir mekanik.");
+    }
     startGame(puzzle,{mode:"rogue",realmId:run.realmId,nodeId,runRef:true});
     return;
   }
@@ -1437,7 +1480,7 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
             const stageRng=mulberry32(hashSeed(run.seed+"-"+ctx.nodeId+"-stage"+run.bossStage));
             setTimeout(()=>{
               $("winOverlay").classList.remove("show");
-              startGame(makePuzzle(stageSize,stageSize,stageKeep,stageRng),{mode:"rogue",realmId:run.realmId,nodeId:ctx.nodeId,runRef:true,bossStage:run.bossStage});
+              startGame(makePuzzle(stageSize,stageSize,stageKeep,stageRng,{checkUnique:settings.uniquePuzzle}),{mode:"rogue",realmId:run.realmId,nodeId:ctx.nodeId,runRef:true,bossStage:run.bossStage});
             },1200);
             $("winTime").textContent=fmt(elapsed);$("winHints").textContent=hints;
             setTimeout(()=>{$("winOverlay").classList.add("show");burst();},420);
@@ -2154,7 +2197,7 @@ function startFree(){
   const seedStr=$("seedInput").value.trim();
   const seed=seedStr?seedStr:("r"+Math.floor(Math.random()*1e9));
   const rng=mulberry32(hashSeed(seed));
-  startGame(makePuzzle(setupSize,setupSize,setupDens/100,rng),{mode:"free",levelIndex:null,seed});
+  startGame(makePuzzle(setupSize,setupSize,setupDens/100,rng,{checkUnique:settings.uniquePuzzle}),{mode:"free",levelIndex:null,seed});
 }
 
 /* journey */
@@ -2283,7 +2326,10 @@ $("gameNewBtn").addEventListener("click",()=>{
 });
 $("undoBtn").addEventListener("click",undo);
 $("redoBtn").addEventListener("click",redo);
-$("resetBtn").addEventListener("click",resetBoard);
+$("gameResetBtn").addEventListener("click",()=>{
+  if(!confirm("Tahta sıfırlansın mı? Yapılan tüm hamleler silinecek."))return;
+  resetBoard();
+});
 $("checkBtn").addEventListener("click",runCheck);
 $("hintBtn").addEventListener("click",hint);
 function updateUndoRedoButtons(){
