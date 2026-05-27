@@ -446,6 +446,7 @@ const KEYS={settings:"cember:settings",freeCur:"cember:free:current",
 const META_DEFAULTS={
   version:1,
   hasSeenIntro:false,
+  constraintNoticeShown:false,
   achievements:{},
   realms:{
     "sogut-esigi":  {unlocked:true, timesEntered:0, timesCleared:0, bestFloor:0, bestTime:null, defeatedBosses:0, seenEvents:[], knownRelics:[], compassStars:0, unlockedConstraintTiles:[]},
@@ -1180,6 +1181,13 @@ function handleRogueNode(nodeId){
     const isBoss=node.type==="boss";
     const finalDensity=isBoss?tileDensity*1.5:tileDensity;
     applyTiles(puzzle,run.realmId,mulberry32(hashSeed(run.seed+"-"+nodeId+"-tiles")),finalDensity);
+    // İlk kez constraint tile içeren diyara girişte bilgi ver (v1.5: yalnızca Sis aktif)
+    const realmHasConstraints=["karanlik-igne","yildiz-gecidi","dugumun-ardi"].includes(run.realmId);
+    if(realmHasConstraints && !meta.constraintNoticeShown){
+      meta.constraintNoticeShown=true;
+      saveMeta();
+      alert("Bu diyarda bazı hücrelerde 'Sis' kısıtı olabilir — sayı geçici olarak gizlenir, dokununca 3 saniye açılır. Klasik Slitherlink kuralı dışında ek bir mekanik.");
+    }
     startGame(puzzle,{mode:"rogue",realmId:run.realmId,nodeId,runRef:true});
     return;
   }
