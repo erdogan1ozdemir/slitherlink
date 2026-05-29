@@ -240,6 +240,10 @@ export const ACHIEVEMENTS={
  *   - event_chain:<id>:<chainId>
  */
 export function emit(triggerId, meta, onUnlock){
+  if(!meta)return false;
+  // Defensive init — legacy/partial meta objects may lack these containers
+  if(!meta.achievements)meta.achievements={};
+  if(!meta.jediDiary)meta.jediDiary=[];
   // No early return — iterate and let per-achievement guard handle duplicates
   for(const ach of Object.values(ACHIEVEMENTS)){
     if(ach.trigger!==triggerId)continue;

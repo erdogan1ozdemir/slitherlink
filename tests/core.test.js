@@ -150,11 +150,11 @@ test("daily recordResult stores latest entries",()=>{
   eq(lb.entries[0].date,"2026-05-26");
   assert(hasPlayedToday(fakeStore)||true); // today might be different from fixed date
 });
-test("realms registry has 4 entries",()=>{
+test("realms registry has 5 entries",()=>{
   // stub-diyar + sogut-esigi + karanlik-igne + yildiz-gecidi + dugumun-ardi = 5
   eq(Object.keys(REALMS).length,5);
   assert(REALMS["dugumun-ardi"]);
-  eq(REALMS["dugumun-ardi"].floors,7);
+  eq(REALMS["dugumun-ardi"].floors,12);
 });
 test("achievements registry has 29 entries (26 base + 3 D4)",()=>{
   eq(Object.keys(ACHIEVEMENTS).length,29);

@@ -82,23 +82,22 @@ export function countSolutions(puzzle, maxSolutions=2, timeoutMs=2000){
   }
 
   function findNextEdge(){
-    // Most-constrained heuristic: edge near most-constrained clue
+    // Most-constrained heuristic: pick an undecided edge next to the
+    // most-constrained clue cell (0/3 tightest, then 1/2, then others).
     let best=null,bestScore=-1;
     for(let r=0;r<R;r++)for(let c=0;c<C;c++){
       const clue=puzzle.clue[r][c];
       if(clue<0)continue;
-      const lines=lineCount(r,c);
-      const crosses=crossCount(r,c);
-      const decided=lines+crosses;
-      if(decided===4)continue;
+      if(lineCount(r,c)+crossCount(r,c)===4)continue; // all 4 edges decided
       const score=clue===0||clue===3?3:(clue===1||clue===2?2:1);
-      if(score>bestScore){
-        // Find an undecided edge
-        if(hState[r][c]===0)return ["h",r,c,best=[r,c],bestScore=score][0]&&{k:"h",r,c};
-        if(hState[r+1][c]===0)return {k:"h",r:r+1,c};
-        if(vState[r][c]===0)return {k:"v",r,c};
-        if(vState[r][c+1]===0)return {k:"v",r,c:c+1};
-      }
+      if(score>bestScore){best=[r,c];bestScore=score;}
+    }
+    if(best){
+      const [r,c]=best;
+      if(hState[r][c]===0)return {k:"h",r,c};
+      if(hState[r+1][c]===0)return {k:"h",r:r+1,c};
+      if(vState[r][c]===0)return {k:"v",r,c};
+      if(vState[r][c+1]===0)return {k:"v",r,c:c+1};
     }
     for(let r=0;r<=R;r++)for(let c=0;c<C;c++)if(hState[r][c]===0)return {k:"h",r,c};
     for(let r=0;r<R;r++)for(let c=0;c<=C;c++)if(vState[r][c]===0)return {k:"v",r,c};
