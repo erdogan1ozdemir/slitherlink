@@ -6,7 +6,7 @@ import {countSolutions} from "../src/core/solver.js";
 import {TALENTS, purchase as purchaseTalent, aggregateEffects as talentEffects} from "../src/rogue/talents.js";
 import {CHARMS, purchase as purchaseCharm, equip as equipCharm, aggregateEffects as charmEffects} from "../src/rogue/charms.js";
 import {NEOW_BLESSINGS, rollBlessings, applyBlessing} from "../src/rogue/neow.js";
-import {TILE_TYPES, applyTiles, revealTile} from "../src/rogue/tiles.js";
+import {TILE_TYPES, applyTiles, revealTile, tickKayanTiles} from "../src/rogue/tiles.js";
 import {THORNS, totalIzScore, rewardMultiplier} from "../src/rogue/thorns.js";
 import {KEEPSAKES, allUnlockedKeepsakes, checkAutoUnlock} from "../src/rogue/keepsakes.js";
 import {todaySeed, todayDate, hasPlayedToday, recordResult, getLeaderboard} from "../src/rogue/daily.js";
@@ -150,11 +150,11 @@ test("daily recordResult stores latest entries",()=>{
   eq(lb.entries[0].date,"2026-05-26");
   assert(hasPlayedToday(fakeStore)||true); // today might be different from fixed date
 });
-test("realms registry has 4 entries",()=>{
+test("realms registry has 5 entries",()=>{
   // stub-diyar + sogut-esigi + karanlik-igne + yildiz-gecidi + dugumun-ardi = 5
   eq(Object.keys(REALMS).length,5);
   assert(REALMS["dugumun-ardi"]);
-  eq(REALMS["dugumun-ardi"].floors,7);
+  eq(REALMS["dugumun-ardi"].floors,12);
 });
 test("achievements registry has 29 entries (26 base + 3 D4)",()=>{
   eq(Object.keys(ACHIEVEMENTS).length,29);
@@ -176,6 +176,53 @@ test("solver caps at maxSolutions",()=>{
   const p={R:3,C:3,clue:Array.from({length:3},()=>Array(3).fill(-1)),solH:Array.from({length:4},()=>Array(3).fill(0)),solV:Array.from({length:3},()=>Array(4).fill(0))};
   const n=countSolutions(p,3,1000);
   assert(n>=2||n<=3,"caps in [0..maxSolutions]");
+});
+test("checkUnique on large board does not hang (timeout-aware)",()=>{
+  // Big sparse boss-style board: solver times out, but generation must bail fast
+  // (single check, no pointless clue-add loop). Bound well under the old 4×1500ms.
+  const rng=mulberry32(hashSeed("boss-unique-12"));
+  const t0=Date.now();
+  const p=makePuzzle(12,12,0.36,rng,{checkUnique:true,uniqueTimeoutMs:600});
+  const dt=Date.now()-t0;
+  assert(validateLoop(p,p.solH,p.solV),"generated puzzle solution still valid");
+  assert(dt<1500,"generation must bail fast on timeout, took "+dt+"ms");
+});
+
+// === Constraint tiles: solvability preserved across all realms (Paket B) ===
+test("all constraint tiles keep the real solution valid",()=>{
+  const realms=["sogut-esigi","karanlik-igne","yildiz-gecidi","dugumun-ardi"];
+  for(const realm of realms){
+    for(let seed=1;seed<=15;seed++){
+      const rng=mulberry32(hashSeed(realm+"-tile-"+seed));
+      const p=makePuzzle(6,6,0.85,rng);
+      applyTiles(p,realm,mulberry32(hashSeed(realm+"-apply-"+seed)),0.4);
+      assert(validateLoop(p,p.solH,p.solV),
+        "real solution must still validate after tiles ("+realm+" seed "+seed+")");
+    }
+  }
+});
+test("non-sis tiles actually get placed (gate removed)",()=>{
+  // yildiz-gecidi pool has all 7 types; high density should surface non-sis tiles.
+  const types=new Set();
+  for(let seed=1;seed<=30;seed++){
+    const rng=mulberry32(hashSeed("place-"+seed));
+    const p=makePuzzle(7,7,0.9,rng);
+    applyTiles(p,"yildiz-gecidi",mulberry32(hashSeed("place-apply-"+seed)),0.5);
+    for(const k in (p.tiles||{}))types.add(p.tiles[k].type);
+  }
+  assert(types.size>1,"more than just sis should appear, got: "+[...types].join(","));
+  assert([...types].some(t=>t!=="sis"),"at least one non-sis tile type");
+});
+test("kayan drift keeps solution valid",()=>{
+  // Force a puzzle with kayan tiles, tick many times, solution must stay valid.
+  const rng=mulberry32(hashSeed("kayan-stress"));
+  const p=makePuzzle(7,7,0.9,rng);
+  applyTiles(p,"yildiz-gecidi",mulberry32(hashSeed("kayan-apply")),0.5);
+  const tickRng=mulberry32(hashSeed("kayan-ticks"));
+  for(let i=0;i<60;i++){
+    tickKayanTiles(p,tickRng);
+    assert(validateLoop(p,p.solH,p.solV),"solution valid after "+i+" kayan ticks");
+  }
 });
 
 summary.textContent=`${pass} pass · ${fail} fail · ${pass+fail} total`;

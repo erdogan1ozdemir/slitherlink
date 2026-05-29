@@ -114,6 +114,10 @@ svg{width:100%;height:auto;display:block;touch-action:manipulation;}
 .edge-hit{stroke:transparent;cursor:pointer;}
 .ex{stroke:var(--muted);stroke-width:2.4;stroke-linecap:round;opacity:.55;}
 .ex.wrong{stroke:var(--bad);opacity:.9;}
+/* Renk körü modu: hata sinyali renge ek olarak şekille de verilir */
+body.cb .edge-line.wrong{stroke-dasharray:7 4;}
+body.cb .ex.wrong{stroke-dasharray:3 2;stroke-width:3;}
+body.cb .clue.err{font-style:italic;text-decoration:underline;text-decoration-thickness:2px;}
 .seg-appear{animation:pop .14s ease-out;}
 @keyframes pop{from{opacity:0}to{opacity:1}}
 @keyframes pawTrail {
@@ -504,7 +508,7 @@ const idbStore={
 /* =========================================================================
    5) AYARLAR
    ========================================================================= */
-const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true,mumModu:false,preventOverflow:true,uniquePuzzle:true,fadeDecided:false};
+const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true,mumModu:false,preventOverflow:true,uniquePuzzle:true,fadeDecided:false,colorblind:false};
 let settings=Object.assign({},DEFAULT_SETTINGS,store.get(KEYS.settings,{}));
 function saveSettings(){store.set(KEYS.settings,settings);}
 
@@ -538,8 +542,10 @@ const TOGGLE_DEFS=[
   {k:"fadeDecided", t:"Hücre kapanınca soluklaştır", d:"4 kenarı da çizilen/çarpılan hücre soluklaşır (clue tatmin etmese de)"},
   {k:"errors",      t:"Hataları kırmızı göster", d:"Fazla/yanlış çizgide sayıyı kırmızı yap"},
   {k:"haptics",     t:"Titreşim",                d:"Dokununca küçük titreşim (destekleyen cihazda)"},
+  {k:"colorblind",  t:"Renk körü modu",          d:"Hatalar renge ek olarak desenle gösterilir (kesik çizgi + altı çizili sayı)"},
   {k:"mumModu",     t:"Mum Modu (Rogue)",        d:"Rogue koşusunda süre baskısı: 10dk + her kat +90s"},
 ];
+function applyColorblind(){document.body.classList.toggle("cb",!!settings.colorblind);}
 
 const HOW_CONTENT={
   rules:`
@@ -671,6 +677,7 @@ let elapsed=0,timerId=null,timerBase=0;
 let ctx={mode:"free",levelIndex:null};
 let undoStack=[],redoStack=[];
 let wrongSet=null;
+let lastToggle=null; // son değiştirilen kenarın anahtarı (yalnızca onu animasyonla)
 const $=id=>document.getElementById(id);
 const boardEl=$("board");
 
@@ -738,11 +745,14 @@ function render(){
     boardEl.appendChild(t);
   }
   function seg(x1,y1,x2,y2,st,k,r,c){
-    const isWrong=wrongSet&&wrongSet.has(k+":"+r+":"+c);
+    const key=k+":"+r+":"+c;
+    const isWrong=wrongSet&&wrongSet.has(key);
     if(st===1){
       const l=document.createElementNS(NS,"line");
       l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);
-      l.setAttribute("class","edge-line seg-appear"+(isWrong?" wrong":""));
+      // Pop animasyonu yalnızca yeni eklenen kenarda — büyük tahtada her render'da
+      // tüm çizgileri yeniden boyamayı önler (12×12 performansı).
+      l.setAttribute("class","edge-line"+(lastToggle===key?" seg-appear":"")+(isWrong?" wrong":""));
       boardEl.appendChild(l);
     }else if(st===2){
       const mx=(x1+x2)/2,my=(y1+y2)/2,s=g.S*0.13;
@@ -842,7 +852,7 @@ function toggle(k,r,c){
   }
   // Kayan tile tick — bir hamlede tüm kayan tile'ların sayacı azalır
   if(P.tiles){tickKayanTiles(P,Math.random);}
-  buzz(8);render();autosave();checkWin();
+  buzz(8);lastToggle=k+":"+r+":"+c;render();lastToggle=null;autosave();checkWin();
 }
 function undo(){
   if(!undoStack.length||solved)return;
@@ -1117,7 +1127,7 @@ function renderRogueMap(run){
       <div>${livesHtml}</div>
       <div style="font-family:var(--font-mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);">KAT ${run.floor+1}/${run.mapGraph.floors}</div>
       ${candleHtml}
-      <div style="font-family:var(--font-mono);font-size:14px;color:var(--accent);">◇ ${run.relics.length}</div>
+      <button id="rogueRelicBtn" aria-label="Relic'leri gör" style="background:transparent;border:none;padding:0;font-family:var(--font-mono);font-size:14px;color:var(--accent);cursor:pointer;">◇ ${run.relics.length}</button>
     </div>
     <div style="background:var(--panel);border:1px solid var(--hairline);border-radius:18px;padding:14px;">
       ${svg}
@@ -1140,6 +1150,30 @@ function renderRogueMap(run){
   };
   const newBtn=$("rogueNewBtn");
   if(newBtn)newBtn.addEventListener("click",()=>{store.del(KEYS.rogueRun);renderYuva();showScreen("s-yuva");});
+  const relicBtn=$("rogueRelicBtn");
+  if(relicBtn)relicBtn.addEventListener("click",()=>openRunRelics(run));
+}
+
+/** Show the relics carried in the current run (HUD ◇ tap). */
+function openRunRelics(run){
+  const starter=meta.permanentStarters&&meta.permanentStarters[0];
+  const items=(run.relics||[]).map(id=>RELICS[id]).filter(Boolean);
+  const body=items.length?items.map(r=>`
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--panel);border:1px solid ${r.id===starter?'var(--accent)':'var(--hairline)'};border-radius:10px;">
+      <span style="color:var(--accent);font-family:var(--font-serif);font-size:20px;line-height:1;">${r.glyph||"◇"}</span>
+      <div style="min-width:0;">
+        <b style="font-family:var(--font-serif);font-weight:600;color:var(--ink);">${r.name}</b>${r.id===starter?' <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:.16em;color:var(--accent);text-transform:uppercase;">başlangıç</span>':""}
+        <div style="color:var(--muted);font-size:12px;margin-top:3px;font-family:var(--font-serif);font-style:italic;line-height:1.35;">${r.desc||""}</div>
+      </div>
+    </div>`).join(""):`<p style="font-family:var(--font-serif);font-style:italic;color:var(--ink-dim);text-align:center;">Henüz relic yok. Sandık ve event'lerden toplanır.</p>`;
+  openRogueModal(`
+    <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;">koşu relic'leri</div>
+    <h2 style="margin:6px 0 10px;">◇ ${items.length}</h2>
+    <div style="display:flex;flex-direction:column;gap:8px;max-height:55dvh;overflow-y:auto;">${body}</div>
+    <div style="margin-top:14px;display:flex;justify-content:center;">
+      <button class="opt" data-relics-close="1" style="background:transparent;border:1px solid var(--hairline);color:var(--ink);padding:9px 20px;border-radius:10px;">Kapat</button>
+    </div>
+  `,e=>{if(e.target.closest("[data-relics-close]"))closeRogueModal();});
 }
 
 function handleRogueNode(nodeId){
@@ -1188,14 +1222,22 @@ function handleRogueNode(nodeId){
     const isBoss=node.type==="boss";
     const finalDensity=isBoss?tileDensity*1.5:tileDensity;
     applyTiles(puzzle,run.realmId,mulberry32(hashSeed(run.seed+"-"+nodeId+"-tiles")),finalDensity);
-    // İlk kez constraint tile içeren diyara girişte bilgi ver (v1.5: yalnızca Sis aktif)
-    const realmHasConstraints=["karanlik-igne","yildiz-gecidi","dugumun-ardi"].includes(run.realmId);
+    // İlk kez kısıt mührü içeren diyara girişte bir kez bilgi ver.
+    const realmHasConstraints=["sogut-esigi","karanlik-igne","yildiz-gecidi","dugumun-ardi"].includes(run.realmId);
+    startGame(puzzle,{mode:"rogue",realmId:run.realmId,nodeId,runRef:true});
     if(realmHasConstraints && !meta.constraintNoticeShown){
       meta.constraintNoticeShown=true;
       saveMeta();
-      alert("Bu diyarda bazı hücrelerde 'Sis' kısıtı olabilir — sayı geçici olarak gizlenir, dokununca 3 saniye açılır. Klasik Slitherlink kuralı dışında ek bir mekanik.");
+      openRogueModal(`
+        <div style="text-align:center;font-family:var(--font-mono);font-size:9px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;">kısıt mührü</div>
+        <h2 style="text-align:center;margin:6px 0 8px;">Özel hücreler</h2>
+        <p style="font-family:var(--font-serif);font-style:italic;color:var(--ink-dim);text-align:center;line-height:1.55;">Bu diyarda bazı hücreler özel kurallar taşır — gizli sayı (dokun, 3sn açılır), donmuş hücre (etrafına çizgi konmaz), kayan ipucu ve daha fazlası. Klasik kuralın üstüne ek mekanikler.</p>
+        <p style="text-align:center;font-family:var(--font-body);font-size:12px;color:var(--muted);margin-top:6px;">Tüm mühürler için <b>?</b> menüsüne bakabilirsin.</p>
+        <div style="margin-top:14px;display:flex;justify-content:center;">
+          <button class="opt" data-notice-ok="1" style="background:var(--accent);border:none;color:var(--bg);padding:10px 22px;font-weight:600;border-radius:10px;">Anladım</button>
+        </div>
+      `,e=>{if(e.target.closest("[data-notice-ok]"))closeRogueModal();});
     }
-    startGame(puzzle,{mode:"rogue",realmId:run.realmId,nodeId,runRef:true});
     return;
   }
 
@@ -1435,6 +1477,17 @@ function showAchievementToast(ach){
   document.body.appendChild(t);
   setTimeout(()=>{t.style.transition="opacity .6s, transform .6s";t.style.opacity="0";t.style.transform="translateX(-50%) translateY(-20px)";},2800);
   setTimeout(()=>t.remove(),3500);
+}
+
+/** Lightweight, on-brand toast — replaces alert() for transient notices. */
+function toast(msg,kind){
+  const col=kind==="bad"?"var(--bad)":"var(--accent)";
+  const t=document.createElement("div");
+  t.style.cssText="position:fixed;top:calc(var(--safe-t,0px) + 16px);left:50%;transform:translateX(-50%);z-index:300;background:var(--panel-2);border:1px solid "+col+";border-radius:14px;padding:12px 18px;color:var(--ink);font-family:var(--font-body);max-width:340px;box-shadow:0 8px 24px rgba(0,0,0,.5);text-align:center;font-size:13.5px;line-height:1.45;";
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.transition="opacity .5s, transform .5s";t.style.opacity="0";t.style.transform="translateX(-50%) translateY(-16px)";},2700);
+  setTimeout(()=>t.remove(),3300);
 }
 
 let _rogueModalHandler=null;
@@ -1693,8 +1746,14 @@ function startTimer(){
           run.ended=true;run.endReason="timeout";run.timeRemaining=0;
           store.set(KEYS.rogueRun,run);
           stopTimer();
-          alert("Mum söndü. Koşu bitti.");
-          renderRogueMap(run);showScreen("s-rogue-map");
+          openRogueModal(`
+            <div style="text-align:center;font-family:var(--font-mono);font-size:9px;letter-spacing:.22em;color:var(--bad);text-transform:uppercase;">koşu sonu</div>
+            <h2 style="text-align:center;margin:6px 0 8px;">Mum söndü</h2>
+            <p style="font-family:var(--font-serif);font-style:italic;color:var(--ink-dim);text-align:center;line-height:1.55;">Süre doldu — bu koşu burada bitti. İpliğin izi Yuva'da kalır.</p>
+            <div style="margin-top:14px;display:flex;justify-content:center;">
+              <button class="opt" data-end-ok="1" style="background:var(--accent);border:none;color:var(--bg);padding:10px 22px;font-weight:600;border-radius:10px;">Yuva'ya dön</button>
+            </div>
+          `,e=>{if(e.target.closest("[data-end-ok]")){closeRogueModal();renderRogueMap(run);showScreen("s-rogue-map");}});
         }
       }
     }
@@ -2049,7 +2108,7 @@ function openStarterPicker(){
   }
   const items=Array.from(seenRelics).map(id=>RELICS[id]).filter(Boolean);
   if(!items.length){
-    alert("Henüz hiç relic görmedin. Bir koşuda chest aç ya da event'ten kazan.");
+    toast("Henüz hiç relic görmedin. Bir koşuda sandık aç ya da event'ten kazan.");
     return;
   }
   const current=meta.permanentStarters&&meta.permanentStarters[0];
@@ -2275,6 +2334,7 @@ $("toggleList").addEventListener("click",e=>{
     const k=sw.dataset.tog;settings[k]=!settings[k];saveSettings();
     sw.classList.toggle("on",settings[k]);
     sw.setAttribute("aria-checked",settings[k]?"true":"false");
+    if(k==="colorblind")applyColorblind();
     if($("s-game").classList.contains("active")){applyHintVisibility();applyUndoVisibility();updateClueStates();render();}
     return;
   }
@@ -2486,10 +2546,10 @@ function handleBackupAction(){
   if(backupMode==="export"){
     const ta=$("backupTextarea");ta.select();
     try{document.execCommand("copy");$("backupAction").textContent="Kopyalandı ✓";setTimeout(()=>{$("backupOverlay").classList.remove("show");$("backupAction").textContent="Kopyala";},900);}
-    catch(e){alert("Kopyalama başarısız. Manuel olarak seçip kopyala.");}
+    catch(e){toast("Kopyalama başarısız. Manuel olarak seçip kopyala.","bad");}
   }else{
     const code=$("backupTextarea").value.trim();
-    if(!code){alert("Lütfen bir kod yapıştır.");return;}
+    if(!code){toast("Lütfen bir kod yapıştır.","bad");return;}
     const result=backupDecode(code);
     if(result.error){
       const msgs={
@@ -2499,7 +2559,7 @@ function handleBackupAction(){
         "version-newer":"Bu kod daha yeni bir Çember sürümüne ait. Uygulamayı güncelle.",
         "corrupted":"Kod bozuk: "+(result.detail||"bilinmeyen hata"),
       };
-      alert(msgs[result.error]||"Kod geçersiz.");
+      toast(msgs[result.error]||"Kod geçersiz.","bad");
       return;
     }
     const data=result.data;
@@ -2508,7 +2568,7 @@ function handleBackupAction(){
     if(ok){
       $("backupAction").textContent="Yüklendi ✓";
       setTimeout(()=>{$("backupOverlay").classList.remove("show");settings=Object.assign({},DEFAULT_SETTINGS,store.get(KEYS.settings,{}));renderHome();showScreen("s-home");$("backupAction").textContent="Yükle";},900);
-    }else{alert("Yükleme başarısız. Kod formatı doğru ama içerik tanınamadı.");}
+    }else{toast("Yükleme başarısız. Kod formatı doğru ama içerik tanınamadı.","bad");}
   }
 }
 
@@ -2533,6 +2593,14 @@ function handleBackupAction(){
   if(hr>=3&&hr<4)achievementUnlock("played_in_hour:3");
 })();
 
+// Esc — açık olan en üstteki overlay'i kapat (rogue modal dahil)
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape")return;
+  const open=[...document.querySelectorAll(".overlay.show")];
+  if(open.length)open[open.length-1].classList.remove("show");
+});
+
+applyColorblind();
 renderHome();
 </script>
 </body>

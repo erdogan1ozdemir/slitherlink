@@ -10,10 +10,12 @@ Tek dosyalık, sunucu-gerektirmez, mobil-öncelikli bir web oyunu. Görsel siste
 |--------|-------|
 | Foundation (puzzle generator + game loop) | ✓ çalışıyor (`index.html`) |
 | Görsel tasarım (12 ekran, design tokens) | ✓ teslim (`Sliterhlink Claude design/`) |
-| Rogue mode + Persistence + PWA spec | ✓ yazıldı (`docs/spec/cember-rogue-design.md`) |
-| Implementation plan | ⏳ sonraki adım |
-| Sessiz İplik giydirmesi | ⏳ planlanıyor |
-| Rogue mode kodu | ⏳ planlanıyor |
+| Sessiz İplik giydirmesi | ✓ uygulandı (`index.html`) |
+| Persistence v2 (localStorage + IndexedDB + yedek kodu) | ✓ çalışıyor |
+| PWA (manifest + service worker) | ✓ çalışıyor |
+| Modüler çekirdek (`src/core`, `src/rogue`) | ✓ ayrıştırıldı |
+| Rogue mode kodu (4 diyar, relic/talent/charm/event/achievement) | ✓ entegre (`index.html` + `src/rogue/`) |
+| Kısıt mühürleri (constraint tiles) | ⏳ Sis aktif; diğer 6 tile solver-uyumlu hale getiriliyor |
 
 ## Yerelde çalıştır
 
