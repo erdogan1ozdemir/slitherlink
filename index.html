@@ -114,6 +114,10 @@ svg{width:100%;height:auto;display:block;touch-action:manipulation;}
 .edge-hit{stroke:transparent;cursor:pointer;}
 .ex{stroke:var(--muted);stroke-width:2.4;stroke-linecap:round;opacity:.55;}
 .ex.wrong{stroke:var(--bad);opacity:.9;}
+/* Renk körü modu: hata sinyali renge ek olarak şekille de verilir */
+body.cb .edge-line.wrong{stroke-dasharray:7 4;}
+body.cb .ex.wrong{stroke-dasharray:3 2;stroke-width:3;}
+body.cb .clue.err{font-style:italic;text-decoration:underline;text-decoration-thickness:2px;}
 .seg-appear{animation:pop .14s ease-out;}
 @keyframes pop{from{opacity:0}to{opacity:1}}
 @keyframes pawTrail {
@@ -504,7 +508,7 @@ const idbStore={
 /* =========================================================================
    5) AYARLAR
    ========================================================================= */
-const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true,mumModu:false,preventOverflow:true,uniquePuzzle:true,fadeDecided:false};
+const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true,mumModu:false,preventOverflow:true,uniquePuzzle:true,fadeDecided:false,colorblind:false};
 let settings=Object.assign({},DEFAULT_SETTINGS,store.get(KEYS.settings,{}));
 function saveSettings(){store.set(KEYS.settings,settings);}
 
@@ -538,8 +542,10 @@ const TOGGLE_DEFS=[
   {k:"fadeDecided", t:"Hücre kapanınca soluklaştır", d:"4 kenarı da çizilen/çarpılan hücre soluklaşır (clue tatmin etmese de)"},
   {k:"errors",      t:"Hataları kırmızı göster", d:"Fazla/yanlış çizgide sayıyı kırmızı yap"},
   {k:"haptics",     t:"Titreşim",                d:"Dokununca küçük titreşim (destekleyen cihazda)"},
+  {k:"colorblind",  t:"Renk körü modu",          d:"Hatalar renge ek olarak desenle gösterilir (kesik çizgi + altı çizili sayı)"},
   {k:"mumModu",     t:"Mum Modu (Rogue)",        d:"Rogue koşusunda süre baskısı: 10dk + her kat +90s"},
 ];
+function applyColorblind(){document.body.classList.toggle("cb",!!settings.colorblind);}
 
 const HOW_CONTENT={
   rules:`
@@ -671,6 +677,7 @@ let elapsed=0,timerId=null,timerBase=0;
 let ctx={mode:"free",levelIndex:null};
 let undoStack=[],redoStack=[];
 let wrongSet=null;
+let lastToggle=null; // son değiştirilen kenarın anahtarı (yalnızca onu animasyonla)
 const $=id=>document.getElementById(id);
 const boardEl=$("board");
 
@@ -738,11 +745,14 @@ function render(){
     boardEl.appendChild(t);
   }
   function seg(x1,y1,x2,y2,st,k,r,c){
-    const isWrong=wrongSet&&wrongSet.has(k+":"+r+":"+c);
+    const key=k+":"+r+":"+c;
+    const isWrong=wrongSet&&wrongSet.has(key);
     if(st===1){
       const l=document.createElementNS(NS,"line");
       l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);
-      l.setAttribute("class","edge-line seg-appear"+(isWrong?" wrong":""));
+      // Pop animasyonu yalnızca yeni eklenen kenarda — büyük tahtada her render'da
+      // tüm çizgileri yeniden boyamayı önler (12×12 performansı).
+      l.setAttribute("class","edge-line"+(lastToggle===key?" seg-appear":"")+(isWrong?" wrong":""));
       boardEl.appendChild(l);
     }else if(st===2){
       const mx=(x1+x2)/2,my=(y1+y2)/2,s=g.S*0.13;
@@ -842,7 +852,7 @@ function toggle(k,r,c){
   }
   // Kayan tile tick — bir hamlede tüm kayan tile'ların sayacı azalır
   if(P.tiles){tickKayanTiles(P,Math.random);}
-  buzz(8);render();autosave();checkWin();
+  buzz(8);lastToggle=k+":"+r+":"+c;render();lastToggle=null;autosave();checkWin();
 }
 function undo(){
   if(!undoStack.length||solved)return;
@@ -2324,6 +2334,7 @@ $("toggleList").addEventListener("click",e=>{
     const k=sw.dataset.tog;settings[k]=!settings[k];saveSettings();
     sw.classList.toggle("on",settings[k]);
     sw.setAttribute("aria-checked",settings[k]?"true":"false");
+    if(k==="colorblind")applyColorblind();
     if($("s-game").classList.contains("active")){applyHintVisibility();applyUndoVisibility();updateClueStates();render();}
     return;
   }
@@ -2582,6 +2593,14 @@ function handleBackupAction(){
   if(hr>=3&&hr<4)achievementUnlock("played_in_hour:3");
 })();
 
+// Esc — açık olan en üstteki overlay'i kapat (rogue modal dahil)
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape")return;
+  const open=[...document.querySelectorAll(".overlay.show")];
+  if(open.length)open[open.length-1].classList.remove("show");
+});
+
+applyColorblind();
 renderHome();
 </script>
 </body>
