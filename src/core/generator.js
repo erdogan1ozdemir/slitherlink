@@ -19,19 +19,25 @@ export function makePuzzle(R,C,keepRatio,rng,options){
   const clue=Array.from({length:R},()=>Array(C).fill(-1));
   for(let r=0;r<R;r++)for(let c=0;c<C;c++)clue[r][c]=hE[r][c]+hE[r+1][c]+vE[r][c]+vE[r][c+1];
   for(let r=0;r<R;r++)for(let c=0;c<C;c++)if(rng()>keepRatio)clue[r][c]=-1;
-  // Uniqueness check: eğer birden fazla çözüm varsa, geri clue ekle (en fazla 3 deneme)
-  // Solver timeout 1500ms — büyük puzzle'larda fail edip clue eklemez (acceptable degradation).
+  // Uniqueness check: birden fazla çözüm varsa geri clue ekle.
+  // Solver timeout'a düşerse "çoklu çözüm" değil "karar verilemedi" demektir —
+  // bu durumda clue eklemek de aynı şekilde timeout'a düşer (boşuna ~timeout×attempts
+  // donma). O yüzden her çağrının süresini ölçüp, timeout algılanınca döngüyü
+  // hemen durduruyoruz (bulmaca olduğu gibi kabul edilir — kabul edilebilir degradasyon).
   if(options&&options.checkUnique){
+    const uniqTimeout=options.uniqueTimeoutMs||1200;
+    const maxAttempts=options.uniqueAttempts!=null?options.uniqueAttempts:3;
+    const ran=fn=>{const t=Date.now();const v=fn();return [v,Date.now()-t>=uniqTimeout*0.9];};
     let attempts=0;
-    let solCount=countSolutions({R,C,clue},2,1500);
-    while(solCount>1&&attempts<3){
+    let [solCount,timedOut]=ran(()=>countSolutions({R,C,clue},2,uniqTimeout));
+    while(!timedOut&&solCount>1&&attempts<maxAttempts){
       const candidates=[];
       for(let r=0;r<R;r++)for(let c=0;c<C;c++)if(clue[r][c]<0)candidates.push([r,c]);
       if(!candidates.length)break;
       const[ar,ac]=candidates[(rng()*candidates.length)|0];
       clue[ar][ac]=hE[ar][ac]+hE[ar+1][ac]+vE[ar][ac]+vE[ar][ac+1];
       attempts++;
-      solCount=countSolutions({R,C,clue},2,1500);
+      [solCount,timedOut]=ran(()=>countSolutions({R,C,clue},2,uniqTimeout));
     }
   }
   return {R,C,solH:hE,solV:vE,clue};

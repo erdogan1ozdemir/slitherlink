@@ -177,6 +177,16 @@ test("solver caps at maxSolutions",()=>{
   const n=countSolutions(p,3,1000);
   assert(n>=2||n<=3,"caps in [0..maxSolutions]");
 });
+test("checkUnique on large board does not hang (timeout-aware)",()=>{
+  // Big sparse boss-style board: solver times out, but generation must bail fast
+  // (single check, no pointless clue-add loop). Bound well under the old 4×1500ms.
+  const rng=mulberry32(hashSeed("boss-unique-12"));
+  const t0=Date.now();
+  const p=makePuzzle(12,12,0.36,rng,{checkUnique:true,uniqueTimeoutMs:600});
+  const dt=Date.now()-t0;
+  assert(validateLoop(p,p.solH,p.solV),"generated puzzle solution still valid");
+  assert(dt<1500,"generation must bail fast on timeout, took "+dt+"ms");
+});
 
 // === Constraint tiles: solvability preserved across all realms (Paket B) ===
 test("all constraint tiles keep the real solution valid",()=>{
