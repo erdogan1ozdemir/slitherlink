@@ -508,7 +508,7 @@ const idbStore={
 /* =========================================================================
    5) AYARLAR
    ========================================================================= */
-const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true,mumModu:false,preventOverflow:true,uniquePuzzle:true,fadeDecided:false,colorblind:false};
+const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true,mumModu:false,preventOverflow:true,preventVertex:true,uniquePuzzle:true,fadeDecided:false,colorblind:false};
 let settings=Object.assign({},DEFAULT_SETTINGS,store.get(KEYS.settings,{}));
 function saveSettings(){store.set(KEYS.settings,settings);}
 
@@ -537,6 +537,7 @@ const TOGGLE_DEFS=[
   {k:"undoButtons", t:"Geri al / İleri al",      d:"Oyun barında ↶ ↷ butonlarını göster"},
   {k:"autoX",       t:"Otomatik çarpı",          d:"Sayı tamamlanınca boş kenarlara çarpı koy"},
   {k:"preventOverflow", t:"Kural ihlali engelle", d:"Bir hücrenin clue'unu aşacak çizgi konulamaz"},
+  {k:"preventVertex", t:"Nokta çizgi ihlali engelle", d:"Bir noktadan ikiden fazla çizgi geçemez (çember dallanamaz)"},
   {k:"uniquePuzzle",t:"Tek çözüm garantili",     d:"Yeni bulmacalar tek çözümlü oluşturulur (üretim biraz uzayabilir)"},
   {k:"fade",        t:"Tamamlananı soluklaştır", d:"Çizgisi biten sayıyı soluklaştır"},
   {k:"fadeDecided", t:"Hücre kapanınca soluklaştır", d:"4 kenarı da çizilen/çarpılan hücre soluklaşır (clue tatmin etmese de)"},
@@ -839,6 +840,21 @@ function toggle(k,r,c){
         buzz([8,30,8]); // feedback
         return;
       }
+    }
+  }
+  // Nokta (vertex) ihlali: bir noktadan en fazla 2 çizgi geçebilir (çember dallanamaz).
+  if(settings.preventVertex&&next===1){
+    const ends=k==="h"?[[r,c],[r,c+1]]:[[r,c],[r+1,c]];
+    const vdeg=(vr,vc)=>{
+      let d=0;
+      if(vc>0&&hState[vr][vc-1]===1)d++;
+      if(vc<P.C&&hState[vr][vc]===1)d++;
+      if(vr>0&&vState[vr-1][vc]===1)d++;
+      if(vr<P.R&&vState[vr][vc]===1)d++;
+      return d;
+    };
+    for(const [vr,vc] of ends){
+      if(vdeg(vr,vc)>=2){buzz([8,30,8]);return;}
     }
   }
   undoStack.push(snapshotState());
