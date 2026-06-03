@@ -992,7 +992,10 @@ function startRogueRun(realmId){
       }
     }
     store.set(KEYS.rogueRun,activeRun);
-    meta.totalStats.runs=(meta.totalStats.runs||0)+1;saveMeta();
+    meta.totalStats.runs=(meta.totalStats.runs||0)+1;
+    if(!meta.realms[realmId])meta.realms[realmId]={};
+    meta.realms[realmId].timesEntered=(meta.realms[realmId].timesEntered||0)+1;
+    saveMeta();
     achievementUnlock("run_started");
   }
   // Yuva Fısıltısı (Neow) — yeni koşularda armağan modal'ı
@@ -1290,6 +1293,8 @@ function enterRogueNode(nodeId){
 
   // Non-puzzle nodes: moveTo immediately
   run=moveTo(run,nodeId);
+  // bestFloor güncelle (node geçişi sonrası)
+  {const rm=meta.realms[run.realmId];if(rm){rm.bestFloor=Math.max(rm.bestFloor||0,run.floor);saveMeta();}}
   // Charm: Pati İzi — her visited node'dan +1 iplik
   if(run.visitedThread){
     meta.currencies.thread=(meta.currencies.thread||0)+run.visitedThread;
@@ -1670,6 +1675,8 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
         try{
           const prevFloor=run.floor;
           run=moveTo(run,ctx.nodeId);
+          // bestFloor güncelle (node geçişi sonrası)
+          {const rm=meta.realms[run.realmId];if(rm){rm.bestFloor=Math.max(rm.bestFloor||0,run.floor);}}
           // Charm: Pati İzi — visited node'dan +iplik
           if(run.visitedThread){
             meta.currencies.thread=(meta.currencies.thread||0)+run.visitedThread;
