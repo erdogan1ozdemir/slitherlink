@@ -1560,9 +1560,26 @@ function closeRogueModal(){
 }
 
 function win(){solved=true;stopTimer();buzz([16,40,24]);
-  meta.totalStats.solves=(meta.totalStats.solves||0)+1;saveMeta();
-  // Solve milestones
-  [10,100].forEach(n=>{if(meta.totalStats.solves===n)achievementUnlock("solve_count:"+n);});
+  // Multi-stage boss ara aşaması mı? Öyleyse tek bir "solve" sayılsın diye
+  // global solves++ ve milestone'lar SADECE son aşamada/non-boss'ta işler.
+  let _isIntermediateBossStage=false;
+  if(ctx.mode==="rogue"){
+    const _r=store.get(KEYS.rogueRun,null);
+    if(_r){
+      const _n=_r.mapGraph.nodes.find(n=>n.id===ctx.nodeId);
+      if(_n&&_n.type==="boss"){
+        const _rb=getRealm(_r.realmId);
+        if(_rb&&_rb.bossMultiStage&&_rb.bossMultiStage>1&&(_r.bossStage||1)<_rb.bossMultiStage){
+          _isIntermediateBossStage=true;
+        }
+      }
+    }
+  }
+  if(!_isIntermediateBossStage){
+    meta.totalStats.solves=(meta.totalStats.solves||0)+1;saveMeta();
+    // Solve milestones
+    [10,100].forEach(n=>{if(meta.totalStats.solves===n)achievementUnlock("solve_count:"+n);});
+  }
   if(ctx.mode==="journey"){const p=journeyProgress();p.unlocked=Math.max(p.unlocked,ctx.levelIndex+1);
     const bt=p.times[ctx.levelIndex];if(bt==null||elapsed<bt)p.times[ctx.levelIndex]=elapsed;store.set(KEYS.jrnProg,p);store.del(KEYS.jrnCur);}
   else if(ctx.mode==="rogue"){
