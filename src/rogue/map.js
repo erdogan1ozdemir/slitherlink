@@ -67,6 +67,33 @@ export function generateMap(seed, config={}){
     }
   }
 
+  // Orphan fix: her node (floor 0 hariç) en az bir önceki-kat node'undan erişilebilsin
+  for(let f=1;f<F;f++){
+    const cur=nodes.filter(n=>n.floor===f);
+    const prev=nodes.filter(n=>n.floor===f-1);
+    for(const node of cur){
+      const hasIncoming=edges.some(([a,b])=>b===node.id);
+      if(!hasIncoming&&prev.length){
+        let best=prev[0],bestD=Infinity;
+        for(const p of prev){const d=Math.abs(p.col-node.col);if(d<bestD){bestD=d;best=p;}}
+        edges.push([best.id,node.id]);
+      }
+    }
+  }
+  // Dead-end fix: her node (son floor hariç) en az bir sonraki-kat node'una bağlansın
+  for(let f=0;f<F-1;f++){
+    const cur=nodes.filter(n=>n.floor===f);
+    const nxt=nodes.filter(n=>n.floor===f+1);
+    for(const node of cur){
+      const hasOutgoing=edges.some(([a,b])=>a===node.id);
+      if(!hasOutgoing&&nxt.length){
+        let best=nxt[0],bestD=Infinity;
+        for(const p of nxt){const d=Math.abs(p.col-node.col);if(d<bestD){bestD=d;best=p;}}
+        edges.push([node.id,best.id]);
+      }
+    }
+  }
+
   return {nodes,edges,floors:F,maxWidth:W};
 }
 
