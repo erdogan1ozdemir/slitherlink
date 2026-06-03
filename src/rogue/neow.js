@@ -25,7 +25,8 @@ export function applyBlessing(run,meta,blessing){
   if(!e)return;
   if(e.type==="bonus-life"){run.lives.max+=e.amount;run.lives.current+=e.amount;}
   else if(e.type==="trade"){
-    run.lives.max-=e.cost.life;run.lives.current-=e.cost.life;
+    run.lives.max=Math.max(1,run.lives.max-e.cost.life);
+    run.lives.current=Math.max(1,run.lives.current-e.cost.life);
     run.relicTierBonus=(run.relicTierBonus||0)+(e.gain.relicTier||0);
   }
   else if(e.type==="thread-mult")run.threadMultiplier=(run.threadMultiplier||1)*e.amount;
