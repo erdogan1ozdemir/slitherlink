@@ -6,19 +6,20 @@ Hedef: Çoklu-çözüm bug'ının kök çözümü (propagating solver + dig gene
 
 ---
 
-## Phase A — Solver rewrite (propagation)
+## Phase A — Solver rewrite (propagation) ✅
 
-- [ ] `src/core/solver.js` constraint propagation + trail-based backtracking ile tamamen değiştirildi
-- [ ] `node --check src/core/solver.js` geçti
-- Commit: `feat(solver): constraint propagation + trail backtracking — uniqueness 50-100x hızlandı`
+- [x] `src/core/solver.js` constraint propagation + trail-based backtracking ile tamamen değiştirildi
+- [x] `node --check src/core/solver.js` geçti
+- Commit: `a32e1c5` `feat(solver): constraint propagation + trail backtracking — uniqueness 50-100x hızlandı`
 
-## Phase B — Generator dig rewrite
+## Phase B — Generator dig rewrite ✅
 
-- [ ] `src/core/generator.js` dig algoritması ile tamamen değiştirildi (generateLoop iç fonksiyonu + dig)
-- [ ] `node --check src/core/generator.js` geçti
-- [ ] Acceptance test: `non-unique: 0/20` (7×7, 20 seed)
-- [ ] Solver doğruluk testi (full-clue=1, empty 2x2=çoklu)
-- Commit: `feat(generator): dig algoritması — tam clue'dan başla, tekil kalırken çıkar (uniqueness garantili)`
+- [x] `src/core/generator.js` dig algoritması ile tamamen değiştirildi (generateLoop iç fonksiyonu + dig)
+- [x] `node --check src/core/generator.js` geçti
+- [x] Acceptance test: `non-unique: 0/20` (7×7, 20 seed) — gen avg 12ms
+- [x] Solver doğruluk testi (full-clue=1 ✓, empty 2x2=2 çoklu ✓)
+- [x] Ek robustness sweep (6x6/7x7/12x12/4x4): TOTAL non-unique=0
+- Commit: `3d44ddc` `feat(generator): dig algoritması — tam clue'dan başla, tekil kalırken çıkar (uniqueness garantili)`
 
 ## Phase C — Node preview modal
 
