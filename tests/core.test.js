@@ -177,21 +177,34 @@ test("solver caps at maxSolutions",()=>{
   const n=countSolutions(p,3,1000);
   assert(n>=2||n<=3,"caps in [0..maxSolutions]");
 });
-test("checkUnique on large board does not hang (timeout-aware)",()=>{
-  // Big sparse boss-style board: solver times out, but generation must bail fast
-  // (single check, no pointless clue-add loop). Bound well under the old 4×1500ms.
+test("checkUnique on large board stays unique within size-aware budget",()=>{
+  // Plan 18: uniqueness is MANDATORY. Large boards get a bigger (area-scaled)
+  // budget instead of fast-bailing. Result must be a valid, single-solution
+  // board, and total work stays bounded by the budget (well under ~15s).
   const rng=mulberry32(hashSeed("boss-unique-12"));
   const t0=Date.now();
-  const p=makePuzzle(12,12,0.36,rng,{checkUnique:true,uniqueTimeoutMs:600});
+  const p=makePuzzle(12,12,0.36,rng,{checkUnique:true});
   const dt=Date.now()-t0;
   assert(validateLoop(p,p.solH,p.solV),"generated puzzle solution still valid");
-  assert(dt<1500,"generation must bail fast on timeout, took "+dt+"ms");
+  eq(countSolutions(p,2,5000),1,"large board must ship a single-solution puzzle");
+  assert(dt<15000,"generation stays within size-aware budget, took "+dt+"ms");
 });
 test("dig generator produces unique puzzles (10x 6x6)",()=>{
   let bad=0;
   for(let s=0;s<10;s++){
     const p=makePuzzle(6,6,0.6,mulberry32(hashSeed("uniq"+s)),{checkUnique:true,digMs:3000,checkMs:500,verifyMs:1500});
     if(countSolutions(p,2,3000)!==1)bad++;
+  }
+  eq(bad,0);
+});
+test("uniqueness across sizes/densities (no multi-solution ships)",()=>{
+  let bad=0;
+  const cases=[[5,0.5],[6,0.5],[7,0.6],[7,0.4],[9,0.55]];
+  for(const [sz,dens] of cases){
+    for(let s=0;s<4;s++){
+      const p=makePuzzle(sz,sz,dens,mulberry32(hashSeed("acc"+sz+"-"+dens+"-"+s)),{checkUnique:true});
+      if(countSolutions(p,2,4000)!==1)bad++;
+    }
   }
   eq(bad,0);
 });
