@@ -98,4 +98,4 @@ Her plan tamamlanınca:
 | 14 — Rogue overhaul (sequential lock + map + content) | ✓ tamamlandı | c5af63a |
 | 15 — Kural uyumu + uniqueness + reset | ✓ tamamlandı | 90ee4ba |
 | 16 — Rogue map fix + uniqueness + boss modal | ✓ tamamlandı | 1a08a13 |
-| 17 — Uniqueness rewrite + node preview + orphan fix + bugs | ✓ tamamlandı | PENDING_MERGE_SHA |
+| 17 — Uniqueness rewrite + node preview + orphan fix + bugs | ✓ tamamlandı | 719b44c |
