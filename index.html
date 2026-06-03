@@ -1193,6 +1193,46 @@ function openRunRelics(run){
 }
 
 function handleRogueNode(nodeId){
+  const run=store.get(KEYS.rogueRun,null);
+  if(!run||run.ended)return;
+  const node=run.mapGraph.nodes.find(n=>n.id===nodeId);
+  if(!node)return;
+  showNodePreview(run,node,()=>enterRogueNode(nodeId));
+}
+
+function showNodePreview(run,node,onStart){
+  const realm=getRealm(run.realmId)||REALMS["stub-diyar"];
+  const glyph={puzzle:"◇",elite:"☆",chest:"⬚","locked-chest":"⚿",rest:"◐",event:"?",boss:"☠"};
+  const fc=realm.floorConfig&&realm.floorConfig[node.floor];
+  const size=fc?fc.sizes[0]:5;
+  let title="",desc="",btn="Başla",extra="";
+  if(node.type==="puzzle"){title="Bulmaca";desc=`${size}×${size} bulmaca. Çözersen +3 İplik ve relic şansı.`;btn="Başla";}
+  else if(node.type==="elite"){title="Elit Bulmaca";desc=`${size}×${size} zor bulmaca. Çözersen +5 İplik ve daha iyi relic.`;btn="Başla";}
+  else if(node.type==="chest"){title="Sandık";desc="Bulmaca yok. Üç relic'ten birini seç.";btn="Aç";}
+  else if(node.type==="locked-chest"){title="Kilitli Sandık";desc=hasRelic(run,"bronz-anahtar")?"Bronz Anahtarın var — açabilirsin.":"Bronz Anahtar gerekir; yoksa geçilir.";btn="Aç";}
+  else if(node.type==="rest"){const heal=1+(run.restBonusHeal||0);title="Dinlenme";desc=`+${heal} can yenilenir.`;btn="Dinlen";}
+  else if(node.type==="event"){title="Olay";desc="Bir karar — risk ya da ödül.";btn="Gör";}
+  else if(node.type==="boss"){title=realm.bossName||"Patron";desc=realm.bossIntro||"Kat sonu büyük bulmaca.";btn="Karşılaş";if(realm.bossMultiStage&&realm.bossMultiStage>1)extra=`<div style="text-align:center;font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-top:4px;">${realm.bossMultiStage} aşama</div>`;}
+  const isBoss=node.type==="boss";
+  const html=`
+    <div style="text-align:center;padding:6px 0 2px;">
+      <div style="font-family:var(--font-serif);font-size:42px;color:${isBoss?'var(--bad)':'var(--accent)'};line-height:1;">${glyph[node.type]||"?"}</div>
+    </div>
+    <h2 style="text-align:center;">${title}</h2>
+    <p style="text-align:center;font-family:var(--font-serif);font-style:italic;color:var(--ink-dim);line-height:1.5;font-size:14.5px;">${desc}</p>
+    ${extra}
+    <div class="row" style="margin-top:16px;">
+      <button class="btn-ghost" data-node-cancel="1">Vazgeç</button>
+      <button class="btn-primary" data-node-go="1" style="border:none;">${btn}</button>
+    </div>
+  `;
+  openRogueModal(html,e=>{
+    if(e.target.closest("[data-node-cancel]")){closeRogueModal();}
+    else if(e.target.closest("[data-node-go]")){closeRogueModal();onStart();}
+  });
+}
+
+function enterRogueNode(nodeId){
   let run=store.get(KEYS.rogueRun,null);
   if(!run||run.ended)return;
   const node=run.mapGraph.nodes.find(n=>n.id===nodeId);
@@ -1200,15 +1240,6 @@ function handleRogueNode(nodeId){
   const prevFloor=run.floor;
 
   if(node.type==="puzzle"||node.type==="elite"||node.type==="boss"){
-    // Boss pre-fight intro: ilk girişte uyarı modali (run başına bir kez)
-    if(node.type==="boss"&&!run.bossIntroShown){
-      run.bossIntroShown=true;
-      store.set(KEYS.rogueRun,run);
-      showBossIntro(run,()=>{
-        handleRogueNode(nodeId);
-      });
-      return;
-    }
     // Bekletme: moveTo win()'e ertelendi. Sadece pending olarak işaretle.
     // Farklı bir puzzle node'a geçildiyse midPuzzle'ı temizle.
     if(run.pendingNodeId&&run.pendingNodeId!==nodeId){
@@ -1526,29 +1557,6 @@ function openRogueModal(html,onClick){
 function closeRogueModal(){
   const o=$("rogueModal");
   if(o)o.classList.remove("show");
-}
-
-function showBossIntro(run,callback){
-  const realm=getRealm(run.realmId)||{};
-  const bossName=realm.bossName||"Patron";
-  const bossIntro=realm.bossIntro||"Kat sonu büyük bulmaca.";
-  const stages=realm.bossMultiStage&&realm.bossMultiStage>1?realm.bossMultiStage:0;
-  const html=`
-    <div style="text-align:center;padding:8px 0 4px;">
-      <div style="font-family:var(--font-serif);font-size:36px;color:var(--bad);">☠</div>
-    </div>
-    <h2 style="text-align:center;">${bossName}</h2>
-    <p style="font-family:var(--font-serif);font-style:italic;color:var(--ink-dim);text-align:center;line-height:1.5;">${bossIntro}</p>
-    ${stages?`<p style="text-align:center;font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);">${stages} aşama</p>`:""}
-    <div class="row" style="margin-top:14px;display:flex;gap:10px;justify-content:center;">
-      <button class="opt" data-boss-cancel="1" style="background:transparent;border:1px dashed var(--hairline);color:var(--muted);padding:10px 18px;">Vazgeç</button>
-      <button class="opt" data-boss-go="1" style="background:var(--accent);border:none;color:var(--bg);padding:10px 22px;font-weight:600;">Başla</button>
-    </div>
-  `;
-  openRogueModal(html,e=>{
-    if(e.target.closest("[data-boss-cancel]")){closeRogueModal();}
-    else if(e.target.closest("[data-boss-go]")){closeRogueModal();callback();}
-  });
 }
 
 function win(){solved=true;stopTimer();buzz([16,40,24]);
