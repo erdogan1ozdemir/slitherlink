@@ -187,6 +187,14 @@ test("checkUnique on large board does not hang (timeout-aware)",()=>{
   assert(validateLoop(p,p.solH,p.solV),"generated puzzle solution still valid");
   assert(dt<1500,"generation must bail fast on timeout, took "+dt+"ms");
 });
+test("dig generator produces unique puzzles (10x 6x6)",()=>{
+  let bad=0;
+  for(let s=0;s<10;s++){
+    const p=makePuzzle(6,6,0.6,mulberry32(hashSeed("uniq"+s)),{checkUnique:true,digMs:3000,checkMs:500,verifyMs:1500});
+    if(countSolutions(p,2,3000)!==1)bad++;
+  }
+  eq(bad,0);
+});
 
 // === Constraint tiles: solvability preserved across all realms (Paket B) ===
 test("all constraint tiles keep the real solution valid",()=>{
