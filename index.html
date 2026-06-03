@@ -446,7 +446,7 @@ const CONFIG = {
    2) DEPOLAMA (otomatik kayit / devam)  - localStorage, guvenli sarmalanmis
    ========================================================================= */
 const KEYS={settings:"cember:settings",freeCur:"cember:free:current",
-  jrnProg:"cember:journey:progress",jrnCur:"cember:journey:current",stats:"cember:stats",meta:"cember:meta",rogueRun:"cember:rogue:run"};
+  jrnProg:"cember:journey:progress",jrnCur:"cember:journey:current",dailyCur:"cember:daily:current",stats:"cember:stats",meta:"cember:meta",rogueRun:"cember:rogue:run"};
 const META_DEFAULTS={
   version:1,
   hasSeenIntro:false,
@@ -1676,6 +1676,7 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
   }
   else if(ctx.mode==="daily"){
     recordDaily(store,{date:ctx.date,time:elapsed,solves:1,realmId:null,success:true});
+    store.del(KEYS.dailyCur);
   }
   else store.del(KEYS.freeCur);
   $("winTime").textContent=fmt(elapsed);$("winHints").textContent=hints;
@@ -1793,6 +1794,8 @@ function autosave(){
   if(ctx.mode==="rogue"){
     const run=store.get(KEYS.rogueRun,null);
     if(run){run.midPuzzle=snapshot();store.set(KEYS.rogueRun,run);}
+  }else if(ctx.mode==="daily"){
+    store.set(KEYS.dailyCur,snapshot());
   }else{
     store.set(ctx.mode==="journey"?KEYS.jrnCur:KEYS.freeCur,snapshot());
   }
