@@ -99,4 +99,4 @@ Her plan tamamlanınca:
 | 15 — Kural uyumu + uniqueness + reset | ✓ tamamlandı | 90ee4ba |
 | 16 — Rogue map fix + uniqueness + boss modal | ✓ tamamlandı | 1a08a13 |
 | 17 — Uniqueness rewrite + node preview + orphan fix + bugs | ✓ tamamlandı | 719b44c |
-| 18 — Uniqueness bulletproof (zorunlu + final guard + size-aware budget + üretiliyor göstergesi) | ✓ tamamlandı | (merge SHA) |
+| 18 — Uniqueness bulletproof (zorunlu + final guard + size-aware budget + üretiliyor göstergesi) | ✓ tamamlandı | c9b0214 |
