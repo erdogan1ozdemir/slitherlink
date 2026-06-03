@@ -21,35 +21,44 @@ Hedef: Çoklu-çözüm bug'ının kök çözümü (propagating solver + dig gene
 - [x] Ek robustness sweep (6x6/7x7/12x12/4x4): TOTAL non-unique=0
 - Commit: `3d44ddc` `feat(generator): dig algoritması — tam clue'dan başla, tekil kalırken çıkar (uniqueness garantili)`
 
-## Phase C — Node preview modal
+## Phase C — Node preview modal ✅
 
-- [ ] `index.html` `handleRogueNode` → preview + `enterRogueNode` ayrımı
-- [ ] Plan 16 boss-intro pre-check kaldırıldı
-- Commit: `feat(rogue): node preview modal — tıklayınca ne verdiğini gösterir, Başla deyince başlar`
+- [x] `index.html` `handleRogueNode` → preview wrapper + `enterRogueNode` gövdesi ayrıldı
+- [x] Plan 16 boss-intro pre-check kaldırıldı (preview boss'u da kapsıyor)
+- Commit: `2ca1795` `feat(rogue): node preview modal — tıklayınca ne verdiğini gösterir, Başla deyince başlar`
 
-## Phase D — Orphan node fix (K3)
+## Phase D — Orphan node fix (K3) ✅
 
-- [ ] `src/rogue/map.js` orphan + dead-end fix pass'i eklendi
-- Commit: `fix(rogue): orphan + dead-end node fix — her node bir önceki kattan erişilebilir, her node ilerler`
+- [x] `src/rogue/map.js` orphan + dead-end fix pass'i eklendi
+- Commit: `dbcebdc` `fix(rogue): orphan + dead-end node fix — her node erişilebilir + ilerler`
 
-## Phase E — Bug fixes
+## Phase E — Bug fixes ✅
 
-- [ ] E.1 Daily key bug (ayrı `dailyCur` key)
-- [ ] E.2 Multi-stage boss solve count
-- [ ] E.3 bestFloor + timesEntered
-- [ ] E.4 META_DEFAULTS dugumun-ardi
-- [ ] E.5 Yardım metni hizalama
-- [ ] E.6 Neow "Aç Tilki" can clamp
-- [ ] E.7 SW v5 + reset flag
+- [x] E.1 Daily key bug (ayrı `dailyCur` key) — `0b66158`
+- [x] E.2 Multi-stage boss solve count — `003f5d4`
+- [x] E.3 bestFloor + timesEntered — `b37d3a0`
+- [x] E.4 META_DEFAULTS dugumun-ardi — `d9408ad`
+- [x] E.5 Yardım metni hizalama — `6dc3c4a`
+- [x] E.6 Neow "Aç Tilki" can clamp — `c58ef90`
+- [x] E.7 SW v5 + reset flag — `38eaa39`
 
-## Phase F — Tests + Final
+Not: Paralel oturum (repo review + nokta-çizgi ihlali) merge edilmişti; her E task'i önce grep/Read ile
+doğrulandı. Doğrulama sonucu hepsi HENÜZ DÜZELTİLMEMİŞTİ (dailyCur key yoktu; timesEntered/bestFloor hiç
+yazılmıyordu; dugumun-ardi META_DEFAULTS'ta yoktu; neow trade clamp yoktu; SW v4'tü) → 7'si de uygulandı.
 
-- [ ] F.1 Uniqueness acceptance test (`tests/core.test.js`)
-- [ ] F.2 Roadmap satırı + merge + push
+## Phase F — Tests + Final ✅
+
+- [x] F.1 Uniqueness acceptance test (`tests/core.test.js`, 10×6×6) — `bf0fb8f`
+  - node ile eşdeğer doğrulama: `bad: 0/10`
+- [x] F.2 Roadmap satırı + merge + push
+- [x] Final acceptance (15×6×6): `FINAL non-unique: 0/15`
+- [x] `node --check`: tüm src/*.js + index.html inline module + tests/core.test.js geçti
 
 ---
 
 ## Notlar
 
-- Bu dispatch sadece **Phase A + B** yürütüyor. Phase C-F başka dispatch'lerde gelecek.
-- Branch main'e MERGE EDİLMEYECEK — sadece Phase A+B commit'leri bırakılacak.
+- Phase A+B+C+D önceki dispatch'lerde tamamlandı (son commit `dbcebdc`).
+- Bu dispatch: Phase E (7 bug fix, atomik commit'ler) + Phase F (test + final merge).
+- Generator: dig algoritması yalnızca `countSolutions===1` ise clue çıkarır → uniqueness garantili.
+- Branch `plan-17-uniqueness-preview-bugs` main'e `--no-ff` merge edildi.
