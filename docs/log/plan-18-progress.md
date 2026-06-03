@@ -56,8 +56,15 @@ Hedef: Tek-çözüm garantisini kuşkusuz hale getir. (1) Uniqueness zorunlu (to
 - **non-unique: 0** ✓
 - max gen ms: **~9976** (12×12 worst case, digMs cap ~8760'a yakın — plan kabul ediyor)
 
-## Phase E — Final + merge ⏳
+## Phase E — Final + merge ✅
 
-- [ ] SW v6 + reset flag `cember:reset:v6`
-- [ ] Roadmap satırı
-- [ ] Branch push + main merge + push
+- [x] SW v6: `service-worker.js` VERSION → `slitherlink-shell-v6`
+- [x] Reset flag: `index.html` RESET_FLAG → `cember:reset:v6` (yeni generator davranışı + temiz başlangıç)
+- [x] Roadmap satırı eklendi (18 — Uniqueness bulletproof)
+- [x] index.html JS parse OK, generator --check OK
+- Commit (SW): `chore(pwa): SW v6 + reset flag`
+- [x] Branch push + main merge --no-ff + push
+
+### Acceptance özeti (kritik)
+- Node smoke: **non-unique: 0** | max gen ms ~9976 (12×12)
+- Full test suite (headless Node): 33 pass · 0 fail · 33 total
