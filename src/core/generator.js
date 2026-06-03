@@ -31,25 +31,32 @@ export function makePuzzle(R,C,keepRatio,rng,options){
     return {R,C,solH:hE,solV:vE,clue};
   }
 
-  // Unique path: generate loop with unique full-clue set, then dig.
-  const verifyMs=options.verifyMs||1200;
-  const checkMs=options.checkMs||500;
-  const digMs=options.digMs||4000;
-  const maxLoops=options.maxLoops||5;
+  // Unique path — uniqueness MANDATORY. Budgets scale with board area.
+  const area=R*C;
+  const verifyMs=options.verifyMs|| Math.min(3000, 600+area*15);
+  const checkMs =options.checkMs || Math.min(1200, 250+area*6);
+  const digMs   =options.digMs   || Math.min(9000, 2000+area*45);
+  const finalMs =options.finalMs || Math.min(3000, 800+area*15);
+  const maxLoops=options.maxLoops|| 8;
 
-  let chosen=null;
+  // Density clamp: çok düşük yoğunluk büyük tahtalarda uniqueness'i zorlaştırır
+  // ve üretimi yavaşlatır. Boyuta göre minimum keep oranı uygula.
+  // (Kullanıcı isteği: "yoğunluk bunu bozacaksa diğer parametreleri sınırla")
+  let effKeep=keepRatio;
+  const keepFloor = area>=100 ? 0.45 : (area>=64 ? 0.38 : 0.30);
+  if(effKeep<keepFloor)effKeep=keepFloor;
+
+  // 1) Full clue set'i VERIFIED-UNIQUE olan bir loop bul.
+  let base=null;
   for(let attempt=0;attempt<maxLoops;attempt++){
     const lp=generateLoop();
-    const fu=countSolutions({R,C,clue:lp.clue},2,verifyMs);
-    if(fu===1){ chosen=lp; break; }
-    if(!chosen)chosen=lp; // fallback: keep first even if not verified-unique
+    if(countSolutions({R,C,clue:lp.clue},2,verifyMs)===1){ base=lp; break; }
+    if(!base)base=lp; // densest fallback
   }
-  const {hE,vE,clue}=chosen;
+  const {hE,vE,clue}=base;
 
-  // Dig: start from full clues, remove while uniqueness preserved.
-  // Each removal kept ONLY if countSolutions==1 afterwards → result is guaranteed unique
-  // (or as-dense-as-the-verified-base if base wasn't verified unique).
-  const targetRemovals=Math.floor(R*C*(1-keepRatio));
+  // 2) Dig: yalnızca uniqueness korunursa clue çıkar.
+  const targetRemovals=Math.floor(area*(1-effKeep));
   const cells=[];
   for(let r=0;r<R;r++)for(let c=0;c<C;c++)cells.push([r,c]);
   for(let i=cells.length-1;i>0;i--){const j=(rng()*(i+1))|0;const t=cells[i];cells[i]=cells[j];cells[j]=t;}
@@ -61,8 +68,16 @@ export function makePuzzle(R,C,keepRatio,rng,options){
     const saved=clue[r][c];
     if(saved<0)continue;
     clue[r][c]=-1;
-    const n=countSolutions({R,C,clue},2,checkMs);
-    if(n===1){removed++;} else {clue[r][c]=saved;}
+    if(countSolutions({R,C,clue},2,checkMs)===1){removed++;}
+    else{clue[r][c]=saved;}
+  }
+
+  // 3) FINAL GUARD: sonuç MUTLAKA tek çözümlü olmalı. Değilse (base verify
+  //    edilememişse) full clue'a geri dön — en kısıtlı, neredeyse her zaman tekil form.
+  if(countSolutions({R,C,clue},2,finalMs)!==1){
+    for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+      clue[r][c]=hE[r][c]+hE[r+1][c]+vE[r][c]+vE[r][c+1];
+    }
   }
   return {R,C,solH:hE,solV:vE,clue};
 }
