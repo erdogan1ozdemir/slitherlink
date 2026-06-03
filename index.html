@@ -378,6 +378,13 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
   </div>
 </div>
 
+<div class="overlay center" id="genOverlay">
+  <div style="text-align:center;">
+    <div style="font-family:var(--font-serif);font-style:italic;font-size:20px;color:var(--accent);">Üretiliyor…</div>
+    <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:8px;">tek çözümlü bulmaca hazırlanıyor</div>
+  </div>
+</div>
+
 <canvas id="confetti"></canvas>
 
 <script type="module">
@@ -402,7 +409,7 @@ import {todaySeed, todayDate, hasPlayedToday as todayHasPlayed, recordResult as 
    0) ONE-TIME RESET (v4 cache bust + clean state)
    ========================================================================= */
 (function(){
-  const RESET_FLAG="cember:reset:v5";
+  const RESET_FLAG="cember:reset:v6";
   try{
     if(!localStorage.getItem(RESET_FLAG)){
       const toRemove=[];
@@ -539,7 +546,6 @@ const TOGGLE_DEFS=[
   {k:"autoX",       t:"Otomatik çarpı",          d:"Sayı tamamlanınca boş kenarlara çarpı koy"},
   {k:"preventOverflow", t:"Kural ihlali engelle", d:"Bir hücrenin clue'unu aşacak çizgi konulamaz"},
   {k:"preventVertex", t:"Nokta çizgi ihlali engelle", d:"Bir noktadan ikiden fazla çizgi geçemez (çember dallanamaz)"},
-  {k:"uniquePuzzle",t:"Tek çözüm garantili",     d:"Yeni bulmacalar tek çözümlü oluşturulur (üretim biraz uzayabilir)"},
   {k:"fade",        t:"Tamamlananı soluklaştır", d:"Çizgisi biten sayıyı soluklaştır"},
   {k:"fadeDecided", t:"Hücre kapanınca soluklaştır", d:"4 kenarı da çizilen/çarpılan hücre soluklaşır (clue tatmin etmese de)"},
   {k:"errors",      t:"Hataları kırmızı göster", d:"Fazla/yanlış çizgide sayıyı kırmızı yap"},
@@ -573,6 +579,7 @@ const HOW_CONTENT={
     </ul>
     <h4>Kazanma</h4>
     <p>Tüm gösterilen sayılar tatmin olduğunda + tüm çizgili kenarlar tek bir kapalı döngü oluşturduğunda kazandın.</p>
+    <p>Her bulmaca <b>tek çözümlüdür</b> — tahtanın iki türlü bitirilme ihtimali yoktur. Doğru mantıkla tek bir geçerli döngüye ulaşırsın.</p>
     <p style="margin-top:14px;font-size:11px;color:var(--muted);font-style:italic;">Klasik Slitherlink (Conceptis) resmi kurallarına uyumlu.</p>
   `,
   modes:`
@@ -1262,7 +1269,7 @@ function enterRogueNode(nodeId){
     const size=floorCfg?floorCfg.sizes[0]:5;
     const keep=floorCfg?floorCfg.keep:0.75;
     const rng=mulberry32(hashSeed(run.seed+"-"+nodeId));
-    const puzzle=makePuzzle(size,size,keep,rng,{checkUnique:settings.uniquePuzzle});
+    const puzzle=makePuzzle(size,size,keep,rng,{checkUnique:true});
     // Constraint tile density — realm bazlı, boss x1.5
     const tileDensity=({
       "sogut-esigi":0.15,
@@ -1610,7 +1617,7 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
             const stageRng=mulberry32(hashSeed(run.seed+"-"+ctx.nodeId+"-stage"+run.bossStage));
             setTimeout(()=>{
               $("winOverlay").classList.remove("show");
-              startGame(makePuzzle(stageSize,stageSize,stageKeep,stageRng,{checkUnique:settings.uniquePuzzle}),{mode:"rogue",realmId:run.realmId,nodeId:ctx.nodeId,runRef:true,bossStage:run.bossStage});
+              startGame(makePuzzle(stageSize,stageSize,stageKeep,stageRng,{checkUnique:true}),{mode:"rogue",realmId:run.realmId,nodeId:ctx.nodeId,runRef:true,bossStage:run.bossStage});
             },1200);
             $("winTime").textContent=fmt(elapsed);$("winHints").textContent=hints;
             setTimeout(()=>{$("winOverlay").classList.add("show");burst();},420);
@@ -2334,11 +2341,26 @@ function renderSetup(){
   $("presetChips").innerHTML=PRESETS.map((p,i)=>`<div class="opt ${setupActivePreset===i?'sel':''}" data-preset="${i}">${p.n}</div>`).join("");
   $("density").value=setupDens;$("densVal").textContent="%"+setupDens;
 }
+// Uniqueness her zaman açık → büyük tahtalarda üretim 1-5s sürebilir.
+// Donma yerine kısa overlay göster, üretimi bir tick erteleyerek paint'e izin ver.
+function buildPuzzleThen(genFn, then){
+  $("genOverlay").classList.add("show");
+  setTimeout(()=>{
+    let p=null;
+    try{ p=genFn(); }
+    catch(e){ console.error("puzzle gen failed",e); }
+    $("genOverlay").classList.remove("show");
+    if(p)then(p);
+  },24);
+}
 function startFree(){
   const seedStr=$("seedInput").value.trim();
   const seed=seedStr?seedStr:("r"+Math.floor(Math.random()*1e9));
   const rng=mulberry32(hashSeed(seed));
-  startGame(makePuzzle(setupSize,setupSize,setupDens/100,rng,{checkUnique:settings.uniquePuzzle}),{mode:"free",levelIndex:null,seed});
+  buildPuzzleThen(
+    ()=>makePuzzle(setupSize,setupSize,setupDens/100,rng,{checkUnique:true}),
+    (puzzle)=>startGame(puzzle,{mode:"free",levelIndex:null,seed})
+  );
 }
 
 /* journey */
@@ -2360,7 +2382,10 @@ function renderJourney(){
 }
 function startJourney(i){
   const lp=levelParams(i);const rng=mulberry32(hashSeed(lp.seed));
-  startGame(makePuzzle(lp.R,lp.C,lp.keep,rng,{checkUnique:settings.uniquePuzzle}),{mode:"journey",levelIndex:i});
+  buildPuzzleThen(
+    ()=>makePuzzle(lp.R,lp.C,lp.keep,rng,{checkUnique:true}),
+    (puzzle)=>startGame(puzzle,{mode:"journey",levelIndex:i})
+  );
 }
 
 /* =========================================================================
@@ -2440,7 +2465,10 @@ $("homeCards").addEventListener("click",e=>{const c=e.target.closest("[data-card
     if(todayHasPlayed(store)){showDailyLeaderboard();return;}
     const seed=todaySeed();
     const rng=mulberry32(hashSeed(seed));
-    startGame(makePuzzle(7,7,0.7,rng,{checkUnique:settings.uniquePuzzle}),{mode:"daily",seed,date:todayDate()});
+    buildPuzzleThen(
+      ()=>makePuzzle(7,7,0.7,rng,{checkUnique:true}),
+      (puzzle)=>startGame(puzzle,{mode:"daily",seed,date:todayDate()})
+    );
   }
 });
 document.querySelectorAll("[data-back]").forEach(b=>b.addEventListener("click",e=>{
