@@ -378,6 +378,13 @@ canvas#confetti{position:fixed;inset:0;z-index:40;pointer-events:none;}
   </div>
 </div>
 
+<div class="overlay center" id="genOverlay">
+  <div style="text-align:center;">
+    <div style="font-family:var(--font-serif);font-style:italic;font-size:20px;color:var(--accent);">Üretiliyor…</div>
+    <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:8px;">tek çözümlü bulmaca hazırlanıyor</div>
+  </div>
+</div>
+
 <canvas id="confetti"></canvas>
 
 <script type="module">
@@ -2334,11 +2341,26 @@ function renderSetup(){
   $("presetChips").innerHTML=PRESETS.map((p,i)=>`<div class="opt ${setupActivePreset===i?'sel':''}" data-preset="${i}">${p.n}</div>`).join("");
   $("density").value=setupDens;$("densVal").textContent="%"+setupDens;
 }
+// Uniqueness her zaman açık → büyük tahtalarda üretim 1-5s sürebilir.
+// Donma yerine kısa overlay göster, üretimi bir tick erteleyerek paint'e izin ver.
+function buildPuzzleThen(genFn, then){
+  $("genOverlay").classList.add("show");
+  setTimeout(()=>{
+    let p=null;
+    try{ p=genFn(); }
+    catch(e){ console.error("puzzle gen failed",e); }
+    $("genOverlay").classList.remove("show");
+    if(p)then(p);
+  },24);
+}
 function startFree(){
   const seedStr=$("seedInput").value.trim();
   const seed=seedStr?seedStr:("r"+Math.floor(Math.random()*1e9));
   const rng=mulberry32(hashSeed(seed));
-  startGame(makePuzzle(setupSize,setupSize,setupDens/100,rng,{checkUnique:true}),{mode:"free",levelIndex:null,seed});
+  buildPuzzleThen(
+    ()=>makePuzzle(setupSize,setupSize,setupDens/100,rng,{checkUnique:true}),
+    (puzzle)=>startGame(puzzle,{mode:"free",levelIndex:null,seed})
+  );
 }
 
 /* journey */
@@ -2360,7 +2382,10 @@ function renderJourney(){
 }
 function startJourney(i){
   const lp=levelParams(i);const rng=mulberry32(hashSeed(lp.seed));
-  startGame(makePuzzle(lp.R,lp.C,lp.keep,rng,{checkUnique:true}),{mode:"journey",levelIndex:i});
+  buildPuzzleThen(
+    ()=>makePuzzle(lp.R,lp.C,lp.keep,rng,{checkUnique:true}),
+    (puzzle)=>startGame(puzzle,{mode:"journey",levelIndex:i})
+  );
 }
 
 /* =========================================================================
@@ -2440,7 +2465,10 @@ $("homeCards").addEventListener("click",e=>{const c=e.target.closest("[data-card
     if(todayHasPlayed(store)){showDailyLeaderboard();return;}
     const seed=todaySeed();
     const rng=mulberry32(hashSeed(seed));
-    startGame(makePuzzle(7,7,0.7,rng,{checkUnique:true}),{mode:"daily",seed,date:todayDate()});
+    buildPuzzleThen(
+      ()=>makePuzzle(7,7,0.7,rng,{checkUnique:true}),
+      (puzzle)=>startGame(puzzle,{mode:"daily",seed,date:todayDate()})
+    );
   }
 });
 document.querySelectorAll("[data-back]").forEach(b=>b.addEventListener("click",e=>{
