@@ -1757,7 +1757,7 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
   else store.del(KEYS.freeCur);
   $("winTime").textContent=fmt(elapsed);$("winHints").textContent=hints;
   const next=$("winNext");
-  const showNext=(ctx.mode==="journey"&&ctx.levelIndex+1<TOTAL_LEVELS)||ctx.mode==="rogue";
+  const showNext=(ctx.mode==="journey"&&ctx.levelIndex+1<TOTAL_LEVELS)||ctx.mode==="rogue"||ctx.mode==="free"; // free: Devam = yeni puzzle (Plan 19, Task 15)
   next.style.display=showNext?"block":"none";
   setTimeout(()=>{$("winOverlay").classList.add("show");burst();},420);
   setTimeout(()=>{showPawTrail();},900);
@@ -2418,8 +2418,9 @@ function buildPuzzleThen(genFn, then){
     if(p)then(p);
   },24);
 }
-function startFree(){
-  const seedStr=$("seedInput").value.trim();
+function startFree(forceNewSeed){
+  // forceNewSeed=true (✦ Yeni / win Devam): seed input'u yok say, her seferinde taze rastgele seed (Plan 19, Task 15)
+  const seedStr=forceNewSeed?"":$("seedInput").value.trim();
   const seed=seedStr?seedStr:("r"+Math.floor(Math.random()*1e9));
   const rng=mulberry32(hashSeed(seed));
   buildPuzzleThen(
@@ -2558,12 +2559,12 @@ $("sizeChips").addEventListener("click",e=>{const o=e.target.closest("[data-size
 $("presetChips").addEventListener("click",e=>{const o=e.target.closest("[data-preset]");if(!o)return;const idx=+o.dataset.preset;const p=PRESETS[idx];if(p.rand){setupSize=SIZE_OPTS[(Math.random()*SIZE_OPTS.length)|0];setupDens=40+((Math.random()*45)|0);}else{setupSize=p.size;setupDens=p.dens;}setupActivePreset=idx;renderSetup();});
 $("density").addEventListener("input",e=>{setupDens=+e.target.value;$("densVal").textContent="%"+setupDens;if(setupActivePreset!==-1){setupActivePreset=-1;$("presetChips").innerHTML=PRESETS.map((p,i)=>`<div class="opt ${setupActivePreset===i?'sel':''}" data-preset="${i}">${p.n}</div>`).join("");}});
 $("seedRand").addEventListener("click",()=>{$("seedInput").value="merve-"+(Math.floor(Math.random()*900)+100);});
-$("startFreeBtn").addEventListener("click",startFree);
+$("startFreeBtn").addEventListener("click",()=>startFree()); // event objesi forceNewSeed sanılmasın
 $("levelList").addEventListener("click",e=>{const l=e.target.closest("[data-level]");if(!l||l.dataset.level==="")return;startJourney(+l.dataset.level);});
 $("journeyReset").addEventListener("click",()=>{if(confirm("Yolculuk ilerlemesi sıfırlansın mı?")){store.del(KEYS.jrnProg);store.del(KEYS.jrnCur);renderJourney();}});
 $("gameNewBtn").addEventListener("click",()=>{
   if(!confirm("Yeni bulmaca başlatılsın mı? Mevcut ilerleme kaybolacak."))return;
-  if(ctx.mode==="journey")startJourney(ctx.levelIndex);else startFree();
+  if(ctx.mode==="journey")startJourney(ctx.levelIndex);else startFree(true);
 });
 $("undoBtn").addEventListener("click",undo);
 $("redoBtn").addEventListener("click",redo);
@@ -2589,7 +2590,8 @@ $("winNext").addEventListener("click",()=>{
     const run=store.get(KEYS.rogueRun,null);
     if(run){renderRogueMap(run);showScreen("s-rogue-map");}
   }
-  else startFree();
+  else if(ctx.mode==="daily"){renderHome();showScreen("s-home");} // güvenlik dalı — daily'de Devam ana ekrana (Plan 19, Task 15)
+  else startFree(true);
 });
 function openHow(){renderHowTab("rules");$("howTabs").querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("sel",i===0));$("howOverlay").classList.add("show");}
 $("howBtn")?.addEventListener("click",openHow);
