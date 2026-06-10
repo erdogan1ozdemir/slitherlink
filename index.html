@@ -1647,6 +1647,8 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
                 (p)=>startGame(p,{mode:"rogue",realmId:run.realmId,nodeId:ctx.nodeId,runRef:true,bossStage:run.bossStage})
               );
             },1200);
+            saveMeta(); // ara aşama iplik ödülü persist (Plan 19, Task 12)
+            const wn=$("winNext");if(wn)wn.style.display="none"; // ara aşamada Devam gizli — otomatik geçişle yarışmasın
             $("winTime").textContent=fmt(elapsed);$("winHints").textContent=hints;
             setTimeout(()=>{$("winOverlay").classList.add("show");burst();},420);
             return;
