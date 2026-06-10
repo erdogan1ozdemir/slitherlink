@@ -24,15 +24,30 @@ Not (Task 4/7 kapsam genişlemesi): `hint()` rogue dalı da `activeCandleRun||st
 
 ## Dispatch 2 — UI/akış fixleri
 
-- [ ] Task 9 (KRİTİK): Daily resume
-- [ ] Task 10 (KRİTİK): Daily'de ✦ Yeni gizle
-- [ ] Task 11 (ÖNEMLİ): Boss multi-stage re-entry
-- [ ] Task 12 (ÖNEMLİ): Ara boss aşaması modal + persist
-- [ ] Task 13 (ÖNEMLİ): Neow blessing kaybı
-- [ ] Task 14 (ÖNEMLİ): Realm değişimi confirm + reset LB + Esc genOverlay
-- [ ] Task 15 (ÖNEMLİ): Win modal free Devam + seed'li Yeni + daily dal
-- [ ] Task 16 (MİNÖR paketi — UI)
+- [x] Task 9 (KRİTİK): Daily resume — dailyCur resume + stale temizleme (`3ba5984`)
+- [x] Task 10 (KRİTİK): Daily'de ✦ Yeni gizle (`311b8c4`)
+- [x] Task 11 (ÖNEMLİ): Boss multi-stage re-entry — `bossStageParams` helper, win() + enterRogueNode ortak (`3c69d77`)
+- [x] Task 12 (ÖNEMLİ): Ara boss aşaması modal + persist — winNext gizli + saveMeta (`024646c`)
+- [x] Task 13 (ÖNEMLİ): Neow blessing kaybı — `neowPending` flag + `maybeShowNeow` re-sun (`d1dfca5`)
+- [x] Task 14 (ÖNEMLİ): Realm değişimi confirm + reset LB + Esc genOverlay (`c2cbf02`)
+- [x] Task 15 (ÖNEMLİ): Win modal free Devam + seed'li Yeni + daily dal (`af3b373`)
+- [x] Task 16 (MİNÖR paketi — UI): timeout metni, yuva durumu, backup kapsamı, hintChip, wasResumed (`efb07bd`)
+
+### Dispatch 2 notları
+
+- Task 9: `loadResume(KEYS.dailyCur)` free/journey ile aynı desen; `dr.ctx.date!==todayDate()` ise stale silinir.
+- Task 11 kapsam notu: win() stage-advance `applyTiles` çağırmaz; re-entry de stage>1'de tile uygulamaz — birebir aynı puzzle. Re-entry ctx'ine `bossStage` eklendi (win() stage-advance ile aynı).
+- Task 15 dikkat: `$("startFreeBtn").addEventListener("click",startFree)` event objesini `forceNewSeed` sanırdı — `()=>startFree()` ile sarıldı.
+- Task 16 wasResumed: home kartı handler'ından kaldırıldı; init bloğunda sayfa yüklenirken bir kez işaretlenir (gerçek "farklı oturumda devam" semantiği).
 
 ## Final
 
-- [ ] Task 17: Acceptance + SW v7 + roadmap + merge/push
+- [x] Task 17: Acceptance + SW v7 + roadmap + merge/push (`ecaee5b` SW v7)
+
+### Task 17 doğrulama sonuçları (2026-06-10)
+
+- `node --check` src/core/*.js + src/rogue/*.js → **SRC_OK** ✓
+- index.html inline module script → **INDEX_OK** ✓
+- Spot check: 500× 4×4 `{checkUnique:true}` → **clue4: 0** ✓; 6× 6×6 → **non-unique: 0** ✓
+- tests/core.test.js (DOM shim ile) → **33 pass · 0 fail · 33 total** ✓
+- SW `slitherlink-shell-v7` + `cember:reset:v7` ✓
