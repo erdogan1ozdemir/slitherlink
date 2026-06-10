@@ -702,7 +702,7 @@ function startGame(puzzle,context,restore){
   $("gameTitle").textContent = ctx.mode==="journey" ? levelParams(ctx.levelIndex).title : (ctx.mode==="rogue" ? (getRealm(ctx.realmId)?.name||"Rogue") : "Serbest");
   applyHintVisibility();applyUndoVisibility();applyNewBtnVisibility();render();startTimer();showScreen("s-game");
 }
-function applyHintVisibility(){$("hintBtn").classList.toggle("hidden",!settings.hints);}
+function applyHintVisibility(){$("hintBtn").classList.toggle("hidden",!settings.hints);$("hintChip").classList.toggle("hidden",!settings.hints);}
 function applyUndoVisibility(){const v=settings.undoButtons!==false;$("undoBtn").classList.toggle("hidden",!v);$("redoBtn").classList.toggle("hidden",!v);}
 function applyNewBtnVisibility(){$("gameNewBtn").classList.toggle("hidden",ctx.mode==="rogue"||ctx.mode==="daily");}
 
@@ -1867,7 +1867,7 @@ function startTimer(){
             <h2 style="text-align:center;margin:6px 0 8px;">Mum söndü</h2>
             <p style="font-family:var(--font-serif);font-style:italic;color:var(--ink-dim);text-align:center;line-height:1.55;">Süre doldu — bu koşu burada bitti. İpliğin izi Yuva'da kalır.</p>
             <div style="margin-top:14px;display:flex;justify-content:center;">
-              <button class="opt" data-end-ok="1" style="background:var(--accent);border:none;color:var(--bg);padding:10px 22px;font-weight:600;border-radius:10px;">Yuva'ya dön</button>
+              <button class="opt" data-end-ok="1" style="background:var(--accent);border:none;color:var(--bg);padding:10px 22px;font-weight:600;border-radius:10px;">Haritaya dön</button>
             </div>
           `,e=>{if(e.target.closest("[data-end-ok]")){closeRogueModal();renderRogueMap(run);showScreen("s-rogue-map");}});
         }
@@ -1979,7 +1979,7 @@ function renderYuva(){
         <path d="M58 44 Q66 38 64 30" fill="none" stroke="var(--accent)" stroke-width="1.2" opacity=".6"/>
       </svg>
       <div style="font-family:var(--font-serif);font-style:italic;font-size:14px;color:var(--ink-dim);margin-top:6px;">
-        ${activeRun?"koşu yarıda kaldı":"yeni bir iplik bekler"}
+        ${(activeRun&&!activeRun.ended)?"koşu yarıda kaldı":"yeni bir iplik bekler"}
       </div>
     </div>
     <div class="cards" style="margin-top:18px;">
@@ -2519,8 +2519,6 @@ $("homeCards").addEventListener("click",e=>{const c=e.target.closest("[data-card
   if(id==="rogue"){
     const rr=store.get(KEYS.rogueRun,null);
     if(rr&&!rr.ended){
-      rr.wasResumed=true;
-      store.set(KEYS.rogueRun,rr);
       renderRogueMap(rr);showScreen("s-rogue-map");return;
     }
     renderYuva();showScreen("s-yuva");return;
@@ -2625,7 +2623,7 @@ document.addEventListener("visibilitychange",()=>{if(document.hidden&&$("s-game"
 window.addEventListener("pagehide",()=>{if($("s-game").classList.contains("active"))autosave();});
 
 const BACKUP_PREFIX="CEMBER-v1:";
-const BACKUP_KEYS=[KEYS.settings,KEYS.freeCur,KEYS.jrnProg,KEYS.jrnCur,KEYS.stats,KEYS.meta];
+const BACKUP_KEYS=[KEYS.settings,KEYS.freeCur,KEYS.jrnProg,KEYS.jrnCur,KEYS.stats,KEYS.meta,KEYS.rogueRun,KEYS.dailyCur];
 function backupCollect(){
   const data={v:1,t:Date.now(),keys:{}};
   for(const k of BACKUP_KEYS){
@@ -2763,6 +2761,12 @@ document.addEventListener("keydown",e=>{
   const open=[...document.querySelectorAll(".overlay.show")].filter(o=>o.id!=="genOverlay");
   if(open.length)open[open.length-1].classList.remove("show");
 });
+
+// wasResumed: sayfa yüklenirken bir kez işaretle — gerçek "farklı oturumda devam edildi" anlamı (Plan 19, Task 16)
+(function markResumedRun(){
+  const r0=store.get(KEYS.rogueRun,null);
+  if(r0&&!r0.ended&&!r0.wasResumed){r0.wasResumed=true;store.set(KEYS.rogueRun,r0);}
+})();
 
 applyColorblind();
 renderHome();
