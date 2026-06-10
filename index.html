@@ -998,6 +998,8 @@ function startRogueRun(realmId){
         if(idx>=0)activeRun.relics.splice(idx,1);
       }
     }
+    // Neow armağanı seçilene kadar pending — backdrop/Esc ile kaybolmasın (Plan 19, Task 13)
+    activeRun.neowPending=true;
     store.set(KEYS.rogueRun,activeRun);
     meta.totalStats.runs=(meta.totalStats.runs||0)+1;
     if(!meta.realms[realmId])meta.realms[realmId]={};
@@ -1007,19 +1009,27 @@ function startRogueRun(realmId){
   }
   // Yuva Fısıltısı (Neow) — yeni koşularda armağan modal'ı
   if(wasNewRun){
-    const neowSeed=activeRun.seed+"-neow";
-    let h=2166136261>>>0;for(let i=0;i<neowSeed.length;i++){h^=neowSeed.charCodeAt(i);h=Math.imul(h,16777619);}
-    const neowRng=mulberry32(h>>>0);
-    const blessings=neowBlessings(neowRng,3);
-    openNeowModal(activeRun,blessings,()=>{
-      store.set(KEYS.rogueRun,activeRun);
-      renderRogueMap(activeRun);
-      showScreen("s-rogue-map");
-    });
+    maybeShowNeow(activeRun);
     return;
   }
   renderRogueMap(activeRun);
   showScreen("s-rogue-map");
+}
+
+// Neow blessing sunumu — seed deterministik olduğu için her çağrıda aynı 3 seçenek gelir.
+// startRogueRun (yeni koşu) ve renderRogueMap (pending re-sun) ortak kullanır (Plan 19, Task 13).
+function maybeShowNeow(run){
+  if(!run||!run.neowPending||run.ended)return false;
+  const neowSeed=run.seed+"-neow";
+  let h=2166136261>>>0;for(let i=0;i<neowSeed.length;i++){h^=neowSeed.charCodeAt(i);h=Math.imul(h,16777619);}
+  const neowRng=mulberry32(h>>>0);
+  const blessings=neowBlessings(neowRng,3);
+  openNeowModal(run,blessings,()=>{
+    store.set(KEYS.rogueRun,run);
+    renderRogueMap(run);
+    showScreen("s-rogue-map");
+  });
+  return true;
 }
 
 function openNeowModal(run,blessings,after){
@@ -1040,6 +1050,8 @@ function openNeowModal(run,blessings,after){
     if(!btn)return;
     const b=blessings.find(x=>x.id===btn.dataset.bless);
     applyNeowBlessing(run,meta,b);
+    run.neowPending=false; // seçim yapıldı — artık yeniden sunulmaz (Plan 19, Task 13)
+    store.set(KEYS.rogueRun,run);
     saveMeta();
     closeRogueModal();
     if(after)after();
@@ -1047,6 +1059,8 @@ function openNeowModal(run,blessings,after){
 }
 
 function renderRogueMap(run){
+  // Neow armağanı hâlâ bekliyorsa yeniden sun (backdrop/Esc ile kapatılmış olabilir) (Plan 19, Task 13)
+  if(run&&run.neowPending&&!run.ended)maybeShowNeow(run);
   const realm=getRealm(run.realmId)||REALMS["stub-diyar"];
   const W=360;
   const floorSpacing=90;
