@@ -1784,17 +1784,23 @@ function resetBoard(){
 
 /* sure */
 function fmt(s){const m=(s/60)|0,ss=s%60;return m+":"+(ss<10?"0":"")+ss;}
+let activeCandleRun=null; // Mum Modu: run bellekte tutulur, tick azaltımı kaybolmaz (Plan 19)
 function startTimer(){
   timerBase=Date.now()-elapsed*1000;stopTimer();
   let lastCandleSec=elapsed;
+  activeCandleRun=null;
+  if(ctx.mode==="rogue"){
+    const r=store.get(KEYS.rogueRun,null);
+    if(r&&r.candleMode&&!r.ended)activeCandleRun=r;
+  }
   timerId=setInterval(()=>{
     elapsed=((Date.now()-timerBase)/1000)|0;
     $("timer").textContent=fmt(elapsed);
-    // Mum Modu — puzzle içi tick (her saniye -1)
+    // Mum Modu — puzzle içi tick (her saniye -1); okuma hep bellekten
     if(ctx.mode==="rogue"&&elapsed!==lastCandleSec){
       const deltaSec=elapsed-lastCandleSec;
       lastCandleSec=elapsed;
-      const run=store.get(KEYS.rogueRun,null);
+      const run=activeCandleRun;
       if(run&&run.candleMode&&!run.ended&&(run.timeRemaining||0)>0){
         run.timeRemaining=Math.max(0,(run.timeRemaining||0)-deltaSec);
         // throttle saves — her 5sn'de bir
@@ -1802,6 +1808,7 @@ function startTimer(){
         if(run.timeRemaining<=0){
           run.ended=true;run.endReason="timeout";run.timeRemaining=0;
           store.set(KEYS.rogueRun,run);
+          activeCandleRun=null;
           stopTimer();
           openRogueModal(`
             <div style="text-align:center;font-family:var(--font-mono);font-size:9px;letter-spacing:.22em;color:var(--bad);text-transform:uppercase;">koşu sonu</div>
@@ -1817,14 +1824,15 @@ function startTimer(){
   },500);
   $("timer").textContent=fmt(elapsed);
 }
-function stopTimer(){if(timerId)clearInterval(timerId);timerId=null;}
+function stopTimer(){if(timerId)clearInterval(timerId);timerId=null;if(activeCandleRun){store.set(KEYS.rogueRun,activeCandleRun);activeCandleRun=null;}}
 
 /* otomatik kayit */
 function snapshot(){return {puzzle:P,ctx,hState,vState,hints,elapsed};}
 function autosave(){
   if(solved)return;
   if(ctx.mode==="rogue"){
-    const run=store.get(KEYS.rogueRun,null);
+    // activeCandleRun varsa onu kullan — store'dan taze okuma bellekteki timeRemaining'i ezer (Plan 19)
+    const run=activeCandleRun||store.get(KEYS.rogueRun,null);
     if(run){run.midPuzzle=snapshot();store.set(KEYS.rogueRun,run);}
   }else if(ctx.mode==="daily"){
     store.set(KEYS.dailyCur,snapshot());
