@@ -2489,6 +2489,12 @@ $("homeCards").addEventListener("click",e=>{const c=e.target.closest("[data-card
   if(id==="journey"){const r=loadResume(KEYS.jrnCur);if(r)startGame(r.puzzle,r.ctx,r);else{renderJourney();showScreen("s-journey");}}
   if(id==="daily"){
     if(todayHasPlayed(store)){showDailyLeaderboard();return;}
+    const dr=loadResume(KEYS.dailyCur);
+    if(dr&&dr.ctx&&dr.ctx.date===todayDate()){
+      startGame(dr.puzzle,dr.ctx,dr);
+      return;
+    }
+    if(dr)store.del(KEYS.dailyCur); // stale (dünden kalan)
     const seed=todaySeed();
     const rng=mulberry32(hashSeed(seed));
     buildPuzzleThen(
