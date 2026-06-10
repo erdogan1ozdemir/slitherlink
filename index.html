@@ -516,7 +516,7 @@ const idbStore={
 /* =========================================================================
    5) AYARLAR
    ========================================================================= */
-const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true,mumModu:false,preventOverflow:true,preventVertex:true,uniquePuzzle:true,fadeDecided:false,colorblind:false};
+const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true,mumModu:false,preventOverflow:true,preventVertex:true,fadeDecided:false,colorblind:false};
 let settings=Object.assign({},DEFAULT_SETTINGS,store.get(KEYS.settings,{}));
 function saveSettings(){store.set(KEYS.settings,settings);}
 
@@ -962,7 +962,6 @@ function startRogueRun(realmId){
     if(settings.mumModu){
       activeRun.candleMode=true;
       activeRun.timeRemaining=600; // 10 dakika
-      activeRun.candleTickAt=Date.now();
     }
     // Permanent starter relic ekle (yeni koşuysa)
     if(meta.permanentStarters&&meta.permanentStarters[0]&&!activeRun.relics.includes(meta.permanentStarters[0])){
@@ -1594,6 +1593,7 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
       }
     }
   }
+  meta.totalStats.time=(meta.totalStats.time||0)+elapsed;saveMeta(); // Karakter ekranı SÜRE gerçek (Plan 19)
   if(!_isIntermediateBossStage){
     meta.totalStats.solves=(meta.totalStats.solves||0)+1;saveMeta();
     // Solve milestones
@@ -1770,10 +1770,17 @@ function hint(){
   if(!cand.length)return;
   const[k,r,c]=cand[(Math.random()*cand.length)|0];
   (k==="h"?hState:vState)[r][c]=1;
+  // Hint çizgisi de manuel çizgiyle tutarlı autoX uygular (Plan 19)
+  if(settings.autoX){
+    if(k==="h"){applyAutoXAround(r,c);applyAutoXAround(r,c+1);}
+    else{applyAutoXAround(r,c);applyAutoXAround(r+1,c);}
+    applyCornerAutoX();
+  }
+  meta.totalStats.hintsUsed=(meta.totalStats.hintsUsed||0)+1;saveMeta(); // Karakter ekranı İPUCU gerçek (Plan 19)
   // İpliklik talent "Sezgi": ilk hint ücretsiz — sayılmaz
   let freeHint=false;
   if(ctx.mode==="rogue"){
-    const run=store.get(KEYS.rogueRun,null);
+    const run=activeCandleRun||store.get(KEYS.rogueRun,null); // bellekteki mum run'ını ezme (Plan 19)
     if(run&&run.firstHintFree&&!run.firstHintUsed){
       freeHint=true;
       run.firstHintUsed=true;
@@ -1784,6 +1791,7 @@ function hint(){
   $("hintsUsed").textContent=hints;render();autosave();checkWin();
 }
 function resetBoard(){
+  if(solved)return;
   undoStack.push(snapshotState());
   if(undoStack.length>200)undoStack.shift();
   redoStack=[];
