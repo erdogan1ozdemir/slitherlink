@@ -7,6 +7,8 @@ export function makePuzzle(R,C,keepRatio,rng,options){
   const inb=(r,c)=>r>=0&&r<R&&c>=0&&c<C;
 
   function generateLoop(){
+    // clue=4 (tek hücrelik mini-loop) klasik kural ihlali — varsa yeniden üret.
+    for(let retry=0;retry<20;retry++){
     const filled=Array.from({length:R},()=>Array(C).fill(false));
     filled[(R/2)|0][(C/2)|0]=true;
     const cnt=()=>{let n=0;for(let r=0;r<R;r++)for(let c=0;c<C;c++)if(filled[r][c])n++;return n;};
@@ -21,7 +23,10 @@ export function makePuzzle(R,C,keepRatio,rng,options){
     for(let r=0;r<R;r++)for(let c=0;c<=C;c++)vE[r][c]=(f(r,c-1)!==f(r,c))?1:0;
     const clue=Array.from({length:R},()=>Array(C).fill(-1));
     for(let r=0;r<R;r++)for(let c=0;c<C;c++)clue[r][c]=hE[r][c]+hE[r+1][c]+vE[r][c]+vE[r][c+1];
-    return {hE,vE,clue};
+    let has4=false;
+    for(let r=0;r<R&&!has4;r++)for(let c=0;c<C&&!has4;c++)if(clue[r][c]===4)has4=true;
+    if(!has4||retry===19)return {hE,vE,clue};
+    }
   }
 
   // Fast path: legacy random removal (no uniqueness guarantee)
