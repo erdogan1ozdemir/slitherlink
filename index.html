@@ -1242,6 +1242,16 @@ function showNodePreview(run,node,onStart){
   });
 }
 
+// Multi-stage boss aşama parametreleri — win() stage-advance ile enterRogueNode re-entry
+// AYNI formülü kullansın diye tek nokta (Plan 19, Task 11).
+function bossStageParams(run,node){
+  const realm=getRealm(run.realmId);
+  const fc=realm&&realm.floorConfig&&realm.floorConfig[node.floor];
+  const baseSize=fc?fc.sizes[0]:5, baseKeep=fc?fc.keep:0.75;
+  const stage=run.bossStage||1;
+  if(stage<=1)return {size:baseSize,keep:baseKeep,seedSuffix:""};
+  return {size:baseSize+stage-1,keep:Math.max(0.40,baseKeep-0.05*(stage-1)),seedSuffix:"-stage"+stage};
+}
 function enterRogueNode(nodeId){
   let run=store.get(KEYS.rogueRun,null);
   if(!run||run.ended)return;
@@ -1265,9 +1275,15 @@ function enterRogueNode(nodeId){
     // Start a fresh puzzle in rogue context
     const realm=getRealm(run.realmId);
     const floorCfg=realm&&realm.floorConfig&&realm.floorConfig[node.floor];
-    const size=floorCfg?floorCfg.sizes[0]:5;
-    const keep=floorCfg?floorCfg.keep:0.75;
-    const rng=mulberry32(hashSeed(run.seed+"-"+nodeId));
+    let size=floorCfg?floorCfg.sizes[0]:5;
+    let keep=floorCfg?floorCfg.keep:0.75;
+    let seedSuffix="";
+    // Boss ara aşamasından çıkıp dönüldüyse doğru stage puzzle'ı üret (Plan 19, Task 11)
+    if(node.type==="boss"&&(run.bossStage||1)>1){
+      const sp=bossStageParams(run,node);
+      size=sp.size;keep=sp.keep;seedSuffix=sp.seedSuffix;
+    }
+    const rng=mulberry32(hashSeed(run.seed+"-"+nodeId+seedSuffix));
     // Constraint tile density — realm bazlı, boss x1.5
     const tileDensity=({
       "sogut-esigi":0.15,
@@ -1296,10 +1312,11 @@ function enterRogueNode(nodeId){
     buildPuzzleThen(
       ()=>{
         const puzzle=makePuzzle(size,size,keep,rng,{checkUnique:true});
-        applyTiles(puzzle,run.realmId,mulberry32(hashSeed(run.seed+"-"+nodeId+"-tiles")),finalDensity);
+        // Boss stage>1 puzzle'larına win() stage-advance gibi tile uygulanmaz — re-entry birebir aynı puzzle
+        if(!seedSuffix)applyTiles(puzzle,run.realmId,mulberry32(hashSeed(run.seed+"-"+nodeId+"-tiles")),finalDensity);
         return puzzle;
       },
-      (puzzle)=>startGame(puzzle,{mode:"rogue",realmId:run.realmId,nodeId,runRef:true})
+      (puzzle)=>startGame(puzzle,seedSuffix?{mode:"rogue",realmId:run.realmId,nodeId,runRef:true,bossStage:run.bossStage}:{mode:"rogue",realmId:run.realmId,nodeId,runRef:true})
     );
     return;
   }
@@ -1617,10 +1634,11 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
             run.bossStage++;
             run.midPuzzle=null;
             store.set(KEYS.rogueRun,run);
-            const cfg=realmForBoss.floorConfig[node.floor];
-            const stageSize=cfg.sizes[0]+run.bossStage-1;
-            const stageKeep=Math.max(0.40,cfg.keep-0.05*(run.bossStage-1));
-            const stageRng=mulberry32(hashSeed(run.seed+"-"+ctx.nodeId+"-stage"+run.bossStage));
+            // Aşama parametreleri tek noktadan — enterRogueNode re-entry ile aynı (Plan 19, Task 11)
+            const sp=bossStageParams(run,node);
+            const stageSize=sp.size;
+            const stageKeep=sp.keep;
+            const stageRng=mulberry32(hashSeed(run.seed+"-"+ctx.nodeId+sp.seedSuffix));
             setTimeout(()=>{
               $("winOverlay").classList.remove("show");
               // Aşama üretimi "Üretiliyor…" overlay'li — senkron donma yok (Plan 19)
