@@ -704,7 +704,7 @@ function startGame(puzzle,context,restore){
 }
 function applyHintVisibility(){$("hintBtn").classList.toggle("hidden",!settings.hints);}
 function applyUndoVisibility(){const v=settings.undoButtons!==false;$("undoBtn").classList.toggle("hidden",!v);$("redoBtn").classList.toggle("hidden",!v);}
-function applyNewBtnVisibility(){$("gameNewBtn").classList.toggle("hidden",ctx.mode==="rogue");}
+function applyNewBtnVisibility(){$("gameNewBtn").classList.toggle("hidden",ctx.mode==="rogue"||ctx.mode==="daily");}
 
 /* cizim */
 function geom(){const R=P.R,C=P.C;const S=Math.max(34,Math.min(70,Math.floor(560/Math.max(R,C))));
