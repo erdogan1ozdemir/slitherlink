@@ -2372,6 +2372,11 @@ function setupYuvaListeners(){
     if(realmCard){
       if(realmCard.dataset.unlocked==="false")return;
       const realmId=realmCard.dataset.realm;
+      // Aktif koşu varken farklı diyara geçiş koşuyu siler — onay iste (Plan 19, Task 14)
+      const activeRun=store.get(KEYS.rogueRun,null);
+      if(activeRun&&!activeRun.ended&&activeRun.realmId!==realmId){
+        if(!confirm("Aktif koşun ve ilerlemesi silinecek. Yeni diyara geçilsin mi?"))return;
+      }
       startRogueRun(realmId);
       return;
     }
@@ -2599,9 +2604,19 @@ $("backupImportBtn")?.addEventListener("click",openBackupImport);
 $("resetAllBtn")?.addEventListener("click",()=>{
   if(!confirm("Tüm ilerleme (ayarlar, koşular, achievement, currency'ler) SİLİNECEK. Geri alınamaz. Devam edilsin mi?"))return;
   if(!confirm("Emin misin? Yedek almak istiyor musun? Önce 'Yedek Kodu Üret' ile kopyala."))return;
-  for(const k of Object.values(KEYS))store.del(k);
+  // Tüm cember: anahtarlarını sil (daily LB dahil) — KEYS listesi dışında kalanlar da temizlenir (Plan 19, Task 14).
+  // RESET_FLAG da silinir; reload'da one-time reset bloğu yeniden çalışıp flag'i yazar — zararsız.
+  {
+    const toRemove=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k&&k.startsWith("cember:"))toRemove.push(k);
+    }
+    toRemove.forEach(k=>localStorage.removeItem(k));
+  }
   if(idbStore&&idbStore.keys){idbStore.keys().then(ks=>{for(const k of ks)idbStore.del(k);});}
-  location.reload();
+  try{indexedDB.deleteDatabase("cember-db");}catch(e){}
+  setTimeout(()=>location.reload(),300);
 });
 
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&$("s-game").classList.contains("active"))autosave();});
@@ -2740,9 +2755,10 @@ function handleBackupAction(){
 })();
 
 // Esc — açık olan en üstteki overlay'i kapat (rogue modal dahil)
+// genOverlay muaf: üretim sürerken kapatılırsa kullanıcı boş ekranda kalır (Plan 19, Task 14)
 document.addEventListener("keydown",e=>{
   if(e.key!=="Escape")return;
-  const open=[...document.querySelectorAll(".overlay.show")];
+  const open=[...document.querySelectorAll(".overlay.show")].filter(o=>o.id!=="genOverlay");
   if(open.length)open[open.length-1].classList.remove("show");
 });
 
