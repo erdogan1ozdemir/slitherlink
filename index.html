@@ -1689,9 +1689,9 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
           if(run.visitedThread){
             meta.currencies.thread=(meta.currencies.thread||0)+run.visitedThread;
           }
-          // Mum Modu: puzzle/elite süresi şimdi düşülsün (boss=0)
+          // Mum Modu: floor bonus burada işlenir; puzzle/elite süresi gerçek-zaman tick ile sayılır (Plan 19 — çifte kesinti yok)
           if(run.candleMode){
-            const costs={puzzle:60,elite:120,boss:0};
+            const costs={puzzle:0,elite:0,boss:0};
             run.timeRemaining=Math.max(0,(run.timeRemaining||0)-(costs[node?.type]||0));
             if(node&&node.floor>prevFloor)run.timeRemaining+=90;
             if(run.timeRemaining<=0){
