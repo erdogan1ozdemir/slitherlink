@@ -1269,7 +1269,6 @@ function enterRogueNode(nodeId){
     const size=floorCfg?floorCfg.sizes[0]:5;
     const keep=floorCfg?floorCfg.keep:0.75;
     const rng=mulberry32(hashSeed(run.seed+"-"+nodeId));
-    const puzzle=makePuzzle(size,size,keep,rng,{checkUnique:true});
     // Constraint tile density — realm bazlı, boss x1.5
     const tileDensity=({
       "sogut-esigi":0.15,
@@ -1279,10 +1278,8 @@ function enterRogueNode(nodeId){
     })[run.realmId]||0.22;
     const isBoss=node.type==="boss";
     const finalDensity=isBoss?tileDensity*1.5:tileDensity;
-    applyTiles(puzzle,run.realmId,mulberry32(hashSeed(run.seed+"-"+nodeId+"-tiles")),finalDensity);
-    // İlk kez kısıt mührü içeren diyara girişte bir kez bilgi ver.
+    // İlk kez kısıt mührü içeren diyara girişte bir kez bilgi ver (üretim overlay'i ile çakışmasın diye önce).
     const realmHasConstraints=["sogut-esigi","karanlik-igne","yildiz-gecidi","dugumun-ardi"].includes(run.realmId);
-    startGame(puzzle,{mode:"rogue",realmId:run.realmId,nodeId,runRef:true});
     if(realmHasConstraints && !meta.constraintNoticeShown){
       meta.constraintNoticeShown=true;
       saveMeta();
@@ -1296,6 +1293,15 @@ function enterRogueNode(nodeId){
         </div>
       `,e=>{if(e.target.closest("[data-notice-ok]"))closeRogueModal();});
     }
+    // Üretim "Üretiliyor…" overlay'i ile — D4 büyük tahtalarda donma yok (Plan 19)
+    buildPuzzleThen(
+      ()=>{
+        const puzzle=makePuzzle(size,size,keep,rng,{checkUnique:true});
+        applyTiles(puzzle,run.realmId,mulberry32(hashSeed(run.seed+"-"+nodeId+"-tiles")),finalDensity);
+        return puzzle;
+      },
+      (puzzle)=>startGame(puzzle,{mode:"rogue",realmId:run.realmId,nodeId,runRef:true})
+    );
     return;
   }
 
@@ -1617,7 +1623,11 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
             const stageRng=mulberry32(hashSeed(run.seed+"-"+ctx.nodeId+"-stage"+run.bossStage));
             setTimeout(()=>{
               $("winOverlay").classList.remove("show");
-              startGame(makePuzzle(stageSize,stageSize,stageKeep,stageRng,{checkUnique:true}),{mode:"rogue",realmId:run.realmId,nodeId:ctx.nodeId,runRef:true,bossStage:run.bossStage});
+              // Aşama üretimi "Üretiliyor…" overlay'li — senkron donma yok (Plan 19)
+              buildPuzzleThen(
+                ()=>makePuzzle(stageSize,stageSize,stageKeep,stageRng,{checkUnique:true}),
+                (p)=>startGame(p,{mode:"rogue",realmId:run.realmId,nodeId:ctx.nodeId,runRef:true,bossStage:run.bossStage})
+              );
             },1200);
             $("winTime").textContent=fmt(elapsed);$("winHints").textContent=hints;
             setTimeout(()=>{$("winOverlay").classList.add("show");burst();},420);
