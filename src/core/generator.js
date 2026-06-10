@@ -78,10 +78,15 @@ export function makePuzzle(R,C,keepRatio,rng,options){
   }
 
   // 3) FINAL GUARD: sonuç MUTLAKA tek çözümlü olmalı. Değilse (base verify
-  //    edilememişse) full clue'a geri dön — en kısıtlı, neredeyse her zaman tekil form.
+  //    edilememişse / ilk deneme fallback ise) full clue'a geri dön ve YENİDEN
+  //    doğrula; hâlâ tekil değilse yeni bir loop üret ve onun full clue'unu döndür.
   if(countSolutions({R,C,clue},2,finalMs)!==1){
     for(let r=0;r<R;r++)for(let c=0;c<C;c++){
       clue[r][c]=hE[r][c]+hE[r+1][c]+vE[r][c]+vE[r][c+1];
+    }
+    if(countSolutions({R,C,clue},2,finalMs)!==1){
+      const lp2=generateLoop();
+      return {R,C,solH:lp2.hE,solV:lp2.vE,clue:lp2.clue.map(row=>row.slice())};
     }
   }
   return {R,C,solH:hE,solV:vE,clue};
