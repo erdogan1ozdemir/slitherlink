@@ -409,7 +409,7 @@ import {todaySeed, todayDate, hasPlayedToday as todayHasPlayed, recordResult as 
    0) ONE-TIME RESET (v4 cache bust + clean state)
    ========================================================================= */
 (function(){
-  const RESET_FLAG="cember:reset:v6";
+  const RESET_FLAG="cember:reset:v7";
   try{
     if(!localStorage.getItem(RESET_FLAG)){
       const toRemove=[];
@@ -516,7 +516,7 @@ const idbStore={
 /* =========================================================================
    5) AYARLAR
    ========================================================================= */
-const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true,mumModu:false,preventOverflow:true,preventVertex:true,uniquePuzzle:true,fadeDecided:false,colorblind:false};
+const DEFAULT_SETTINGS={hints:true,fade:true,errors:true,haptics:true,autoX:true,autoCheckMode:"mistakes-only",undoButtons:true,mumModu:false,preventOverflow:true,preventVertex:true,fadeDecided:false,colorblind:false};
 let settings=Object.assign({},DEFAULT_SETTINGS,store.get(KEYS.settings,{}));
 function saveSettings(){store.set(KEYS.settings,settings);}
 
@@ -702,9 +702,9 @@ function startGame(puzzle,context,restore){
   $("gameTitle").textContent = ctx.mode==="journey" ? levelParams(ctx.levelIndex).title : (ctx.mode==="rogue" ? (getRealm(ctx.realmId)?.name||"Rogue") : "Serbest");
   applyHintVisibility();applyUndoVisibility();applyNewBtnVisibility();render();startTimer();showScreen("s-game");
 }
-function applyHintVisibility(){$("hintBtn").classList.toggle("hidden",!settings.hints);}
+function applyHintVisibility(){$("hintBtn").classList.toggle("hidden",!settings.hints);$("hintChip").classList.toggle("hidden",!settings.hints);}
 function applyUndoVisibility(){const v=settings.undoButtons!==false;$("undoBtn").classList.toggle("hidden",!v);$("redoBtn").classList.toggle("hidden",!v);}
-function applyNewBtnVisibility(){$("gameNewBtn").classList.toggle("hidden",ctx.mode==="rogue");}
+function applyNewBtnVisibility(){$("gameNewBtn").classList.toggle("hidden",ctx.mode==="rogue"||ctx.mode==="daily");}
 
 /* cizim */
 function geom(){const R=P.R,C=P.C;const S=Math.max(34,Math.min(70,Math.floor(560/Math.max(R,C))));
@@ -962,7 +962,6 @@ function startRogueRun(realmId){
     if(settings.mumModu){
       activeRun.candleMode=true;
       activeRun.timeRemaining=600; // 10 dakika
-      activeRun.candleTickAt=Date.now();
     }
     // Permanent starter relic ekle (yeni koşuysa)
     if(meta.permanentStarters&&meta.permanentStarters[0]&&!activeRun.relics.includes(meta.permanentStarters[0])){
@@ -999,6 +998,8 @@ function startRogueRun(realmId){
         if(idx>=0)activeRun.relics.splice(idx,1);
       }
     }
+    // Neow armağanı seçilene kadar pending — backdrop/Esc ile kaybolmasın (Plan 19, Task 13)
+    activeRun.neowPending=true;
     store.set(KEYS.rogueRun,activeRun);
     meta.totalStats.runs=(meta.totalStats.runs||0)+1;
     if(!meta.realms[realmId])meta.realms[realmId]={};
@@ -1008,19 +1009,27 @@ function startRogueRun(realmId){
   }
   // Yuva Fısıltısı (Neow) — yeni koşularda armağan modal'ı
   if(wasNewRun){
-    const neowSeed=activeRun.seed+"-neow";
-    let h=2166136261>>>0;for(let i=0;i<neowSeed.length;i++){h^=neowSeed.charCodeAt(i);h=Math.imul(h,16777619);}
-    const neowRng=mulberry32(h>>>0);
-    const blessings=neowBlessings(neowRng,3);
-    openNeowModal(activeRun,blessings,()=>{
-      store.set(KEYS.rogueRun,activeRun);
-      renderRogueMap(activeRun);
-      showScreen("s-rogue-map");
-    });
+    maybeShowNeow(activeRun);
     return;
   }
   renderRogueMap(activeRun);
   showScreen("s-rogue-map");
+}
+
+// Neow blessing sunumu — seed deterministik olduğu için her çağrıda aynı 3 seçenek gelir.
+// startRogueRun (yeni koşu) ve renderRogueMap (pending re-sun) ortak kullanır (Plan 19, Task 13).
+function maybeShowNeow(run){
+  if(!run||!run.neowPending||run.ended)return false;
+  const neowSeed=run.seed+"-neow";
+  let h=2166136261>>>0;for(let i=0;i<neowSeed.length;i++){h^=neowSeed.charCodeAt(i);h=Math.imul(h,16777619);}
+  const neowRng=mulberry32(h>>>0);
+  const blessings=neowBlessings(neowRng,3);
+  openNeowModal(run,blessings,()=>{
+    store.set(KEYS.rogueRun,run);
+    renderRogueMap(run);
+    showScreen("s-rogue-map");
+  });
+  return true;
 }
 
 function openNeowModal(run,blessings,after){
@@ -1041,6 +1050,8 @@ function openNeowModal(run,blessings,after){
     if(!btn)return;
     const b=blessings.find(x=>x.id===btn.dataset.bless);
     applyNeowBlessing(run,meta,b);
+    run.neowPending=false; // seçim yapıldı — artık yeniden sunulmaz (Plan 19, Task 13)
+    store.set(KEYS.rogueRun,run);
     saveMeta();
     closeRogueModal();
     if(after)after();
@@ -1048,6 +1059,8 @@ function openNeowModal(run,blessings,after){
 }
 
 function renderRogueMap(run){
+  // Neow armağanı hâlâ bekliyorsa yeniden sun (backdrop/Esc ile kapatılmış olabilir) (Plan 19, Task 13)
+  if(run&&run.neowPending&&!run.ended)maybeShowNeow(run);
   const realm=getRealm(run.realmId)||REALMS["stub-diyar"];
   const W=360;
   const floorSpacing=90;
@@ -1243,6 +1256,16 @@ function showNodePreview(run,node,onStart){
   });
 }
 
+// Multi-stage boss aşama parametreleri — win() stage-advance ile enterRogueNode re-entry
+// AYNI formülü kullansın diye tek nokta (Plan 19, Task 11).
+function bossStageParams(run,node){
+  const realm=getRealm(run.realmId);
+  const fc=realm&&realm.floorConfig&&realm.floorConfig[node.floor];
+  const baseSize=fc?fc.sizes[0]:5, baseKeep=fc?fc.keep:0.75;
+  const stage=run.bossStage||1;
+  if(stage<=1)return {size:baseSize,keep:baseKeep,seedSuffix:""};
+  return {size:baseSize+stage-1,keep:Math.max(0.40,baseKeep-0.05*(stage-1)),seedSuffix:"-stage"+stage};
+}
 function enterRogueNode(nodeId){
   let run=store.get(KEYS.rogueRun,null);
   if(!run||run.ended)return;
@@ -1266,10 +1289,15 @@ function enterRogueNode(nodeId){
     // Start a fresh puzzle in rogue context
     const realm=getRealm(run.realmId);
     const floorCfg=realm&&realm.floorConfig&&realm.floorConfig[node.floor];
-    const size=floorCfg?floorCfg.sizes[0]:5;
-    const keep=floorCfg?floorCfg.keep:0.75;
-    const rng=mulberry32(hashSeed(run.seed+"-"+nodeId));
-    const puzzle=makePuzzle(size,size,keep,rng,{checkUnique:true});
+    let size=floorCfg?floorCfg.sizes[0]:5;
+    let keep=floorCfg?floorCfg.keep:0.75;
+    let seedSuffix="";
+    // Boss ara aşamasından çıkıp dönüldüyse doğru stage puzzle'ı üret (Plan 19, Task 11)
+    if(node.type==="boss"&&(run.bossStage||1)>1){
+      const sp=bossStageParams(run,node);
+      size=sp.size;keep=sp.keep;seedSuffix=sp.seedSuffix;
+    }
+    const rng=mulberry32(hashSeed(run.seed+"-"+nodeId+seedSuffix));
     // Constraint tile density — realm bazlı, boss x1.5
     const tileDensity=({
       "sogut-esigi":0.15,
@@ -1279,10 +1307,8 @@ function enterRogueNode(nodeId){
     })[run.realmId]||0.22;
     const isBoss=node.type==="boss";
     const finalDensity=isBoss?tileDensity*1.5:tileDensity;
-    applyTiles(puzzle,run.realmId,mulberry32(hashSeed(run.seed+"-"+nodeId+"-tiles")),finalDensity);
-    // İlk kez kısıt mührü içeren diyara girişte bir kez bilgi ver.
+    // İlk kez kısıt mührü içeren diyara girişte bir kez bilgi ver (üretim overlay'i ile çakışmasın diye önce).
     const realmHasConstraints=["sogut-esigi","karanlik-igne","yildiz-gecidi","dugumun-ardi"].includes(run.realmId);
-    startGame(puzzle,{mode:"rogue",realmId:run.realmId,nodeId,runRef:true});
     if(realmHasConstraints && !meta.constraintNoticeShown){
       meta.constraintNoticeShown=true;
       saveMeta();
@@ -1296,6 +1322,16 @@ function enterRogueNode(nodeId){
         </div>
       `,e=>{if(e.target.closest("[data-notice-ok]"))closeRogueModal();});
     }
+    // Üretim "Üretiliyor…" overlay'i ile — D4 büyük tahtalarda donma yok (Plan 19)
+    buildPuzzleThen(
+      ()=>{
+        const puzzle=makePuzzle(size,size,keep,rng,{checkUnique:true});
+        // Boss stage>1 puzzle'larına win() stage-advance gibi tile uygulanmaz — re-entry birebir aynı puzzle
+        if(!seedSuffix)applyTiles(puzzle,run.realmId,mulberry32(hashSeed(run.seed+"-"+nodeId+"-tiles")),finalDensity);
+        return puzzle;
+      },
+      (puzzle)=>startGame(puzzle,seedSuffix?{mode:"rogue",realmId:run.realmId,nodeId,runRef:true,bossStage:run.bossStage}:{mode:"rogue",realmId:run.realmId,nodeId,runRef:true})
+    );
     return;
   }
 
@@ -1588,6 +1624,7 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
       }
     }
   }
+  meta.totalStats.time=(meta.totalStats.time||0)+elapsed;saveMeta(); // Karakter ekranı SÜRE gerçek (Plan 19)
   if(!_isIntermediateBossStage){
     meta.totalStats.solves=(meta.totalStats.solves||0)+1;saveMeta();
     // Solve milestones
@@ -1611,14 +1648,21 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
             run.bossStage++;
             run.midPuzzle=null;
             store.set(KEYS.rogueRun,run);
-            const cfg=realmForBoss.floorConfig[node.floor];
-            const stageSize=cfg.sizes[0]+run.bossStage-1;
-            const stageKeep=Math.max(0.40,cfg.keep-0.05*(run.bossStage-1));
-            const stageRng=mulberry32(hashSeed(run.seed+"-"+ctx.nodeId+"-stage"+run.bossStage));
+            // Aşama parametreleri tek noktadan — enterRogueNode re-entry ile aynı (Plan 19, Task 11)
+            const sp=bossStageParams(run,node);
+            const stageSize=sp.size;
+            const stageKeep=sp.keep;
+            const stageRng=mulberry32(hashSeed(run.seed+"-"+ctx.nodeId+sp.seedSuffix));
             setTimeout(()=>{
               $("winOverlay").classList.remove("show");
-              startGame(makePuzzle(stageSize,stageSize,stageKeep,stageRng,{checkUnique:true}),{mode:"rogue",realmId:run.realmId,nodeId:ctx.nodeId,runRef:true,bossStage:run.bossStage});
+              // Aşama üretimi "Üretiliyor…" overlay'li — senkron donma yok (Plan 19)
+              buildPuzzleThen(
+                ()=>makePuzzle(stageSize,stageSize,stageKeep,stageRng,{checkUnique:true}),
+                (p)=>startGame(p,{mode:"rogue",realmId:run.realmId,nodeId:ctx.nodeId,runRef:true,bossStage:run.bossStage})
+              );
             },1200);
+            saveMeta(); // ara aşama iplik ödülü persist (Plan 19, Task 12)
+            const wn=$("winNext");if(wn)wn.style.display="none"; // ara aşamada Devam gizli — otomatik geçişle yarışmasın
             $("winTime").textContent=fmt(elapsed);$("winHints").textContent=hints;
             setTimeout(()=>{$("winOverlay").classList.add("show");burst();},420);
             return;
@@ -1689,9 +1733,9 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
           if(run.visitedThread){
             meta.currencies.thread=(meta.currencies.thread||0)+run.visitedThread;
           }
-          // Mum Modu: puzzle/elite süresi şimdi düşülsün (boss=0)
+          // Mum Modu: floor bonus burada işlenir; puzzle/elite süresi gerçek-zaman tick ile sayılır (Plan 19 — çifte kesinti yok)
           if(run.candleMode){
-            const costs={puzzle:60,elite:120,boss:0};
+            const costs={puzzle:0,elite:0,boss:0};
             run.timeRemaining=Math.max(0,(run.timeRemaining||0)-(costs[node?.type]||0));
             if(node&&node.floor>prevFloor)run.timeRemaining+=90;
             if(run.timeRemaining<=0){
@@ -1713,7 +1757,7 @@ function win(){solved=true;stopTimer();buzz([16,40,24]);
   else store.del(KEYS.freeCur);
   $("winTime").textContent=fmt(elapsed);$("winHints").textContent=hints;
   const next=$("winNext");
-  const showNext=(ctx.mode==="journey"&&ctx.levelIndex+1<TOTAL_LEVELS)||ctx.mode==="rogue";
+  const showNext=(ctx.mode==="journey"&&ctx.levelIndex+1<TOTAL_LEVELS)||ctx.mode==="rogue"||ctx.mode==="free"; // free: Devam = yeni puzzle (Plan 19, Task 15)
   next.style.display=showNext?"block":"none";
   setTimeout(()=>{$("winOverlay").classList.add("show");burst();},420);
   setTimeout(()=>{showPawTrail();},900);
@@ -1760,10 +1804,17 @@ function hint(){
   if(!cand.length)return;
   const[k,r,c]=cand[(Math.random()*cand.length)|0];
   (k==="h"?hState:vState)[r][c]=1;
+  // Hint çizgisi de manuel çizgiyle tutarlı autoX uygular (Plan 19)
+  if(settings.autoX){
+    if(k==="h"){applyAutoXAround(r,c);applyAutoXAround(r,c+1);}
+    else{applyAutoXAround(r,c);applyAutoXAround(r+1,c);}
+    applyCornerAutoX();
+  }
+  meta.totalStats.hintsUsed=(meta.totalStats.hintsUsed||0)+1;saveMeta(); // Karakter ekranı İPUCU gerçek (Plan 19)
   // İpliklik talent "Sezgi": ilk hint ücretsiz — sayılmaz
   let freeHint=false;
   if(ctx.mode==="rogue"){
-    const run=store.get(KEYS.rogueRun,null);
+    const run=activeCandleRun||store.get(KEYS.rogueRun,null); // bellekteki mum run'ını ezme (Plan 19)
     if(run&&run.firstHintFree&&!run.firstHintUsed){
       freeHint=true;
       run.firstHintUsed=true;
@@ -1774,6 +1825,7 @@ function hint(){
   $("hintsUsed").textContent=hints;render();autosave();checkWin();
 }
 function resetBoard(){
+  if(solved)return;
   undoStack.push(snapshotState());
   if(undoStack.length>200)undoStack.shift();
   redoStack=[];
@@ -1784,17 +1836,23 @@ function resetBoard(){
 
 /* sure */
 function fmt(s){const m=(s/60)|0,ss=s%60;return m+":"+(ss<10?"0":"")+ss;}
+let activeCandleRun=null; // Mum Modu: run bellekte tutulur, tick azaltımı kaybolmaz (Plan 19)
 function startTimer(){
   timerBase=Date.now()-elapsed*1000;stopTimer();
   let lastCandleSec=elapsed;
+  activeCandleRun=null;
+  if(ctx.mode==="rogue"){
+    const r=store.get(KEYS.rogueRun,null);
+    if(r&&r.candleMode&&!r.ended)activeCandleRun=r;
+  }
   timerId=setInterval(()=>{
     elapsed=((Date.now()-timerBase)/1000)|0;
     $("timer").textContent=fmt(elapsed);
-    // Mum Modu — puzzle içi tick (her saniye -1)
+    // Mum Modu — puzzle içi tick (her saniye -1); okuma hep bellekten
     if(ctx.mode==="rogue"&&elapsed!==lastCandleSec){
       const deltaSec=elapsed-lastCandleSec;
       lastCandleSec=elapsed;
-      const run=store.get(KEYS.rogueRun,null);
+      const run=activeCandleRun;
       if(run&&run.candleMode&&!run.ended&&(run.timeRemaining||0)>0){
         run.timeRemaining=Math.max(0,(run.timeRemaining||0)-deltaSec);
         // throttle saves — her 5sn'de bir
@@ -1802,13 +1860,14 @@ function startTimer(){
         if(run.timeRemaining<=0){
           run.ended=true;run.endReason="timeout";run.timeRemaining=0;
           store.set(KEYS.rogueRun,run);
+          activeCandleRun=null;
           stopTimer();
           openRogueModal(`
             <div style="text-align:center;font-family:var(--font-mono);font-size:9px;letter-spacing:.22em;color:var(--bad);text-transform:uppercase;">koşu sonu</div>
             <h2 style="text-align:center;margin:6px 0 8px;">Mum söndü</h2>
             <p style="font-family:var(--font-serif);font-style:italic;color:var(--ink-dim);text-align:center;line-height:1.55;">Süre doldu — bu koşu burada bitti. İpliğin izi Yuva'da kalır.</p>
             <div style="margin-top:14px;display:flex;justify-content:center;">
-              <button class="opt" data-end-ok="1" style="background:var(--accent);border:none;color:var(--bg);padding:10px 22px;font-weight:600;border-radius:10px;">Yuva'ya dön</button>
+              <button class="opt" data-end-ok="1" style="background:var(--accent);border:none;color:var(--bg);padding:10px 22px;font-weight:600;border-radius:10px;">Haritaya dön</button>
             </div>
           `,e=>{if(e.target.closest("[data-end-ok]")){closeRogueModal();renderRogueMap(run);showScreen("s-rogue-map");}});
         }
@@ -1817,14 +1876,15 @@ function startTimer(){
   },500);
   $("timer").textContent=fmt(elapsed);
 }
-function stopTimer(){if(timerId)clearInterval(timerId);timerId=null;}
+function stopTimer(){if(timerId)clearInterval(timerId);timerId=null;if(activeCandleRun){store.set(KEYS.rogueRun,activeCandleRun);activeCandleRun=null;}}
 
 /* otomatik kayit */
 function snapshot(){return {puzzle:P,ctx,hState,vState,hints,elapsed};}
 function autosave(){
   if(solved)return;
   if(ctx.mode==="rogue"){
-    const run=store.get(KEYS.rogueRun,null);
+    // activeCandleRun varsa onu kullan — store'dan taze okuma bellekteki timeRemaining'i ezer (Plan 19)
+    const run=activeCandleRun||store.get(KEYS.rogueRun,null);
     if(run){run.midPuzzle=snapshot();store.set(KEYS.rogueRun,run);}
   }else if(ctx.mode==="daily"){
     store.set(KEYS.dailyCur,snapshot());
@@ -1919,7 +1979,7 @@ function renderYuva(){
         <path d="M58 44 Q66 38 64 30" fill="none" stroke="var(--accent)" stroke-width="1.2" opacity=".6"/>
       </svg>
       <div style="font-family:var(--font-serif);font-style:italic;font-size:14px;color:var(--ink-dim);margin-top:6px;">
-        ${activeRun?"koşu yarıda kaldı":"yeni bir iplik bekler"}
+        ${(activeRun&&!activeRun.ended)?"koşu yarıda kaldı":"yeni bir iplik bekler"}
       </div>
     </div>
     <div class="cards" style="margin-top:18px;">
@@ -2312,6 +2372,11 @@ function setupYuvaListeners(){
     if(realmCard){
       if(realmCard.dataset.unlocked==="false")return;
       const realmId=realmCard.dataset.realm;
+      // Aktif koşu varken farklı diyara geçiş koşuyu siler — onay iste (Plan 19, Task 14)
+      const activeRun=store.get(KEYS.rogueRun,null);
+      if(activeRun&&!activeRun.ended&&activeRun.realmId!==realmId){
+        if(!confirm("Aktif koşun ve ilerlemesi silinecek. Yeni diyara geçilsin mi?"))return;
+      }
       startRogueRun(realmId);
       return;
     }
@@ -2353,8 +2418,9 @@ function buildPuzzleThen(genFn, then){
     if(p)then(p);
   },24);
 }
-function startFree(){
-  const seedStr=$("seedInput").value.trim();
+function startFree(forceNewSeed){
+  // forceNewSeed=true (✦ Yeni / win Devam): seed input'u yok say, her seferinde taze rastgele seed (Plan 19, Task 15)
+  const seedStr=forceNewSeed?"":$("seedInput").value.trim();
   const seed=seedStr?seedStr:("r"+Math.floor(Math.random()*1e9));
   const rng=mulberry32(hashSeed(seed));
   buildPuzzleThen(
@@ -2453,8 +2519,6 @@ $("homeCards").addEventListener("click",e=>{const c=e.target.closest("[data-card
   if(id==="rogue"){
     const rr=store.get(KEYS.rogueRun,null);
     if(rr&&!rr.ended){
-      rr.wasResumed=true;
-      store.set(KEYS.rogueRun,rr);
       renderRogueMap(rr);showScreen("s-rogue-map");return;
     }
     renderYuva();showScreen("s-yuva");return;
@@ -2463,6 +2527,12 @@ $("homeCards").addEventListener("click",e=>{const c=e.target.closest("[data-card
   if(id==="journey"){const r=loadResume(KEYS.jrnCur);if(r)startGame(r.puzzle,r.ctx,r);else{renderJourney();showScreen("s-journey");}}
   if(id==="daily"){
     if(todayHasPlayed(store)){showDailyLeaderboard();return;}
+    const dr=loadResume(KEYS.dailyCur);
+    if(dr&&dr.ctx&&dr.ctx.date===todayDate()){
+      startGame(dr.puzzle,dr.ctx,dr);
+      return;
+    }
+    if(dr)store.del(KEYS.dailyCur); // stale (dünden kalan)
     const seed=todaySeed();
     const rng=mulberry32(hashSeed(seed));
     buildPuzzleThen(
@@ -2487,12 +2557,12 @@ $("sizeChips").addEventListener("click",e=>{const o=e.target.closest("[data-size
 $("presetChips").addEventListener("click",e=>{const o=e.target.closest("[data-preset]");if(!o)return;const idx=+o.dataset.preset;const p=PRESETS[idx];if(p.rand){setupSize=SIZE_OPTS[(Math.random()*SIZE_OPTS.length)|0];setupDens=40+((Math.random()*45)|0);}else{setupSize=p.size;setupDens=p.dens;}setupActivePreset=idx;renderSetup();});
 $("density").addEventListener("input",e=>{setupDens=+e.target.value;$("densVal").textContent="%"+setupDens;if(setupActivePreset!==-1){setupActivePreset=-1;$("presetChips").innerHTML=PRESETS.map((p,i)=>`<div class="opt ${setupActivePreset===i?'sel':''}" data-preset="${i}">${p.n}</div>`).join("");}});
 $("seedRand").addEventListener("click",()=>{$("seedInput").value="merve-"+(Math.floor(Math.random()*900)+100);});
-$("startFreeBtn").addEventListener("click",startFree);
+$("startFreeBtn").addEventListener("click",()=>startFree()); // event objesi forceNewSeed sanılmasın
 $("levelList").addEventListener("click",e=>{const l=e.target.closest("[data-level]");if(!l||l.dataset.level==="")return;startJourney(+l.dataset.level);});
 $("journeyReset").addEventListener("click",()=>{if(confirm("Yolculuk ilerlemesi sıfırlansın mı?")){store.del(KEYS.jrnProg);store.del(KEYS.jrnCur);renderJourney();}});
 $("gameNewBtn").addEventListener("click",()=>{
   if(!confirm("Yeni bulmaca başlatılsın mı? Mevcut ilerleme kaybolacak."))return;
-  if(ctx.mode==="journey")startJourney(ctx.levelIndex);else startFree();
+  if(ctx.mode==="journey")startJourney(ctx.levelIndex);else startFree(true);
 });
 $("undoBtn").addEventListener("click",undo);
 $("redoBtn").addEventListener("click",redo);
@@ -2518,7 +2588,8 @@ $("winNext").addEventListener("click",()=>{
     const run=store.get(KEYS.rogueRun,null);
     if(run){renderRogueMap(run);showScreen("s-rogue-map");}
   }
-  else startFree();
+  else if(ctx.mode==="daily"){renderHome();showScreen("s-home");} // güvenlik dalı — daily'de Devam ana ekrana (Plan 19, Task 15)
+  else startFree(true);
 });
 function openHow(){renderHowTab("rules");$("howTabs").querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("sel",i===0));$("howOverlay").classList.add("show");}
 $("howBtn")?.addEventListener("click",openHow);
@@ -2533,16 +2604,26 @@ $("backupImportBtn")?.addEventListener("click",openBackupImport);
 $("resetAllBtn")?.addEventListener("click",()=>{
   if(!confirm("Tüm ilerleme (ayarlar, koşular, achievement, currency'ler) SİLİNECEK. Geri alınamaz. Devam edilsin mi?"))return;
   if(!confirm("Emin misin? Yedek almak istiyor musun? Önce 'Yedek Kodu Üret' ile kopyala."))return;
-  for(const k of Object.values(KEYS))store.del(k);
+  // Tüm cember: anahtarlarını sil (daily LB dahil) — KEYS listesi dışında kalanlar da temizlenir (Plan 19, Task 14).
+  // RESET_FLAG da silinir; reload'da one-time reset bloğu yeniden çalışıp flag'i yazar — zararsız.
+  {
+    const toRemove=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k&&k.startsWith("cember:"))toRemove.push(k);
+    }
+    toRemove.forEach(k=>localStorage.removeItem(k));
+  }
   if(idbStore&&idbStore.keys){idbStore.keys().then(ks=>{for(const k of ks)idbStore.del(k);});}
-  location.reload();
+  try{indexedDB.deleteDatabase("cember-db");}catch(e){}
+  setTimeout(()=>location.reload(),300);
 });
 
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&$("s-game").classList.contains("active"))autosave();});
 window.addEventListener("pagehide",()=>{if($("s-game").classList.contains("active"))autosave();});
 
 const BACKUP_PREFIX="CEMBER-v1:";
-const BACKUP_KEYS=[KEYS.settings,KEYS.freeCur,KEYS.jrnProg,KEYS.jrnCur,KEYS.stats,KEYS.meta];
+const BACKUP_KEYS=[KEYS.settings,KEYS.freeCur,KEYS.jrnProg,KEYS.jrnCur,KEYS.stats,KEYS.meta,KEYS.rogueRun,KEYS.dailyCur];
 function backupCollect(){
   const data={v:1,t:Date.now(),keys:{}};
   for(const k of BACKUP_KEYS){
@@ -2674,11 +2755,18 @@ function handleBackupAction(){
 })();
 
 // Esc — açık olan en üstteki overlay'i kapat (rogue modal dahil)
+// genOverlay muaf: üretim sürerken kapatılırsa kullanıcı boş ekranda kalır (Plan 19, Task 14)
 document.addEventListener("keydown",e=>{
   if(e.key!=="Escape")return;
-  const open=[...document.querySelectorAll(".overlay.show")];
+  const open=[...document.querySelectorAll(".overlay.show")].filter(o=>o.id!=="genOverlay");
   if(open.length)open[open.length-1].classList.remove("show");
 });
+
+// wasResumed: sayfa yüklenirken bir kez işaretle — gerçek "farklı oturumda devam edildi" anlamı (Plan 19, Task 16)
+(function markResumedRun(){
+  const r0=store.get(KEYS.rogueRun,null);
+  if(r0&&!r0.ended&&!r0.wasResumed){r0.wasResumed=true;store.set(KEYS.rogueRun,r0);}
+})();
 
 applyColorblind();
 renderHome();
